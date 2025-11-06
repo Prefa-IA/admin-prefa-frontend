@@ -11,8 +11,8 @@ interface Plan {
   id: string;
   name: string;
   price: number;
-  creditosMes?: number;
-  creditosDia?: number;
+  creditosTotales?: number;
+  freeCredits?: number;
   permiteCompuestas?: boolean;
   watermarkOrg?: boolean;
   watermarkPrefas?: boolean;
@@ -22,20 +22,22 @@ interface Plan {
 }
 
 const FacturacionPage: React.FC = () => {
-  const [tab, setTab] = useState<'pagos' | 'planes'>('pagos');
+  const [tab, setTab] = useState<'pagos' | 'planes' | 'overages'>('pagos');
   const [pagos, setPagos] = useState<any[]>([]);
   const [planes, setPlanes] = useState<Plan[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [editing, setEditing] = useState<Partial<Plan> | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{id:string,name:string}|null>(null);
+  const [basePlans,setBasePlans]=useState<Plan[]>([]); // planes normales para dropdown
+  const [parentPlanFilter,setParentPlanFilter]=useState<string>('');
 
   useEffect(() => {
     if (tab === 'pagos') {
       axios.get('/api/admin/billing/pagos')
         .then(res => setPagos(res.data))
         .catch(() => setPagos([]));
-    } else {
+    } else if (tab === 'planes') {
       axios.get('/api/admin/billing/planes')
         .then(res => {
           const data = res.data;
@@ -43,18 +45,22 @@ const FacturacionPage: React.FC = () => {
           setPlanes(arr as any);
           setError(null);
         })
-        .catch(err => {
-          setError('Error al cargar planes');
-          setSuccess(null);
-        });
+        .catch(() => { setError('Error al cargar planes'); setSuccess(null); });
+    } else if (tab==='overages') {
+      if(basePlans.length===0){ axios.get('/api/admin/billing/planes') .then(res=>{setBasePlans(res.data); if(!parentPlanFilter && res.data.length) setParentPlanFilter(res.data[0].id);}); }
+      const url=`/api/admin/billing/planes?isOverage=1${parentPlanFilter?`&parentPlan=${parentPlanFilter}`:''}`;
+      axios.get(url)
+        .then(res=>setPlanes(res.data))
+        .catch(()=>{setError('Error al cargar overages'); setSuccess(null);});
     }
-  }, [tab]);
+  }, [tab,parentPlanFilter]);
 
   return (
     <div className="space-y-6">
       <div className="flex space-x-4 mb-4">
         <button className={`btn-primary ${tab === 'pagos' ? '' : 'opacity-50'}`} onClick={() => setTab('pagos')}>Pagos</button>
         <button className={`btn-primary ${tab === 'planes' ? '' : 'opacity-50'}`} onClick={() => setTab('planes')}>Planes</button>
+        <button className={`btn-primary ${tab === 'overages' ? '' : 'opacity-50'}`} onClick={() => setTab('overages')}>Overages</button>
       </div>
 
       {tab === 'pagos' && (
@@ -74,8 +80,7 @@ const FacturacionPage: React.FC = () => {
               <tr>
                 <th className="px-4 py-2 text-left">Plan</th>
                 <th className="px-4 py-2 text-left">Precio (ARS)</th>
-                <th className="px-4 py-2 text-left">Créditos/mes</th>
-                <th className="px-4 py-2 text-left">Créditos/día</th>
+                <th className="px-4 py-2 text-left">Créditos totales</th>
                 <th className="px-4 py-2 text-left">Compuestas</th>
                 <th className="px-4 py-2 text-left">Prioridad</th>
                 <th className="px-4 py-2 text-left">Descuento</th>
@@ -88,8 +93,7 @@ const FacturacionPage: React.FC = () => {
                 <tr key={p.id}>
                   <td className="px-4 py-2">{p.name}</td>
                   <td className="px-4 py-2">{p.price != null ? `$${p.price.toLocaleString('es-AR')}` : '—'}</td>
-                  <td className="px-4 py-2">{p.creditosMes ?? 'Ilimitado'}</td>
-                  <td className="px-4 py-2">{p.creditosDia ?? 'Ilimitado'}</td>
+                  <td className="px-4 py-2">{(p.creditosTotales || 0) + (p.freeCredits || 0)}</td>
                   <td className="px-4 py-2">{p.permiteCompuestas ? 'Sí' : 'No'}</td>
                   <td className="px-4 py-2">{(p as any).prioridad ?? '—'}</td>
                   <td className="px-4 py-2">{p.discountPct ? `${p.discountPct}%` : '—'}</td>
@@ -109,9 +113,58 @@ const FacturacionPage: React.FC = () => {
         </Card>
       )}
 
+      {tab === 'overages' && (
+        <Card>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">Paquetes Overages</h3>
+            <div className="flex items-center space-x-2">
+              <label className="text-sm font-medium">Plan base:</label>
+              <select
+                className="input-field"
+                value={parentPlanFilter}
+                onChange={e=>setParentPlanFilter(e.target.value)}
+              >
+                {basePlans.map(bp=> (
+                  <option key={bp.id} value={bp.id}>{bp.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          {error && <p className="text-red-500 mb-4 text-sm">{error}</p>}
+          {success && <p className="text-green-600 mb-4 text-sm">{success}</p>}
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr>
+                <th className="px-4 py-2 text-left">Paquete</th>
+                <th className="px-4 py-2 text-left">Precio</th>
+                <th className="px-4 py-2 text-left">Créditos</th>
+                <th className="px-4 py-2 text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {planes.map(p=> (
+                <tr key={p.id}>
+                  <td className="px-4 py-2">{p.name}</td>
+                  <td className="px-4 py-2">${p.price}</td>
+                  <td className="px-4 py-2">{p.creditosTotales}</td>
+                  <td className="px-4 py-2 text-right space-x-2">
+                    <EditIconButton onClick={()=>setEditing(p)} />
+                    <DeleteIconButton onClick={()=>setConfirmDelete({id:p.id,name:p.name})} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="flex justify-end mt-4">
+            <NewItemButton label="+ Nuevo paquete" onClick={()=>setEditing({isOverage:true,parentPlan:parentPlanFilter} as Partial<Plan>)} />
+          </div>
+        </Card>
+      )}
+
       {editing && (
         <EditPlanModal
           plan={editing}
+          basePlans={basePlans}
           onClose={() => setEditing(null)}
           onSave={async (updated) => {
             try {

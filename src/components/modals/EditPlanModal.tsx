@@ -10,12 +10,15 @@ interface Plan {
   freeCredits?: number;
   discountUntil?: string | null;
   prioridad?: number;
+  isOverage?: boolean;
+  parentPlan?: string | null;
 }
 
 interface Props {
   plan: Partial<Plan> & { id?: string };
   onClose: () => void;
   onSave: (updated: Partial<Plan>) => void;
+  basePlans?: { id: string; name: string }[];
 }
 
 const EditPlanModal: React.FC<Props> = ({ plan, onClose, onSave }) => {
@@ -23,16 +26,16 @@ const EditPlanModal: React.FC<Props> = ({ plan, onClose, onSave }) => {
   const [name, setName] = useState(plan.name || '');
   const isNew = !plan.id;
   const [price, setPrice] = useState<string>(isNew ? '' : String(plan.price ?? ''));
-  const [creditosMes, setCreditosMes] = useState<string>((plan as any).creditosMes !== undefined ? String((plan as any).creditosMes) : '');
-  const [creditosDia, setCreditosDia] = useState<string>((plan as any).creditosDia !== undefined ? String((plan as any).creditosDia) : '');
+  const [creditosTotales, setCreditosTotales] = useState<string>((plan as any).creditosTotales !== undefined ? String((plan as any).creditosTotales) : '');
   const [permiteCompuestas, setPermiteCompuestas] = useState<boolean>((plan as any).permiteCompuestas ?? false);
   const [wmOrg, setWmOrg] = useState<boolean>((plan as any).watermarkOrg ?? false);
   const [wmPrefas, setWmPrefas] = useState<boolean>((plan as any).watermarkPrefas ?? false);
   const [discountPct, setDiscountPct] = useState<string>(isNew ? '' : String(plan.discountPct ?? ''));
   const [discountUntil, setDiscountUntil] = useState<string>(plan.discountUntil ?? '');
-  const [freeCredits, setFreeCredits] = useState<string>(plan.freeCredits !== undefined ? String(plan.freeCredits) : '');
   const [prioridad, setPrioridad] = useState<string>(isNew ? '' : String((plan as any).prioridad ?? ''));
   const [tags, setTags] = useState<{_id:string,name:string,slug:string}[]>([]);
+  const [isOverage,setIsOverage]=useState<boolean>(plan.isOverage ?? false);
+  const [parentPlan,setParentPlan]=useState<string>(plan.parentPlan || '');
   const [tagId, setTagId] = useState<string>(()=>{
     const tagField:any = (plan as any).tag;
     if (!tagField) return '';
@@ -41,6 +44,7 @@ const EditPlanModal: React.FC<Props> = ({ plan, onClose, onSave }) => {
   });
   const [showSticker, setShowSticker] = useState<boolean>((plan as any).showDiscountSticker !== false);
   const [errorMsg,setErrorMsg]=useState<string>('');
+  const [freeCredits, setFreeCredits] = useState<string>((plan as any).freeCredits !== undefined ? String((plan as any).freeCredits) : '');
 
   useEffect(()=>{
     axios.get('/api/admin/plan-tags').then(res=>setTags(res.data));
@@ -51,7 +55,6 @@ const EditPlanModal: React.FC<Props> = ({ plan, onClose, onSave }) => {
 
   const handleSubmit = () => {
     // Validaciones
-    const selectedTag= tags.find(t=>t._id===tagId);
     if(prioridad==='2'){
       if(Number(freeCredits)<=0){ setErrorMsg('Debes ingresar créditos promocionales > 0 para prioridad 2'); return; }
     }
@@ -64,17 +67,18 @@ const EditPlanModal: React.FC<Props> = ({ plan, onClose, onSave }) => {
       id: plan.id ?? id,
       name: name.trim(),
       price: price === '' ? undefined : Number(price),
-      creditosMes: creditosMes === '' ? undefined : Number(creditosMes),
-      creditosDia: creditosDia === '' ? undefined : Number(creditosDia),
+      creditosTotales: creditosTotales === '' ? undefined : Number(creditosTotales),
+      freeCredits: freeCredits === '' ? undefined : Number(freeCredits),
       permiteCompuestas,
       watermarkOrg: wmOrg,
       watermarkPrefas: wmPrefas,
       discountPct: discountPct === '' ? undefined : Number(discountPct),
       discountUntil: discountUntil || undefined,
       prioridad: prioridad === '' ? undefined : Number(prioridad),
-      freeCredits: prioridad==='2' && freeCredits !== '' ? Number(freeCredits) : undefined,
       tag: tagId === '' ? null : tagId,
-      showDiscountSticker: showSticker
+      showDiscountSticker: showSticker,
+      isOverage,
+      parentPlan: isOverage ? parentPlan : undefined,
     };
     onSave(payload);
   };
@@ -95,11 +99,8 @@ const EditPlanModal: React.FC<Props> = ({ plan, onClose, onSave }) => {
           <label className="block text-sm font-medium">Precio (ARS)
             <input type="number" className="input-field w-full" value={price} placeholder="Ej: 210000" onChange={e => setPrice(e.target.value)} />
           </label>
-          <label className="block text-sm font-medium">Créditos por mes (vacío = ilimitado)
-            <input type="number" className="input-field w-full" value={creditosMes} onChange={e => setCreditosMes(e.target.value)} />
-          </label>
-          <label className="block text-sm font-medium">Créditos por día (vacío = ilimitado)
-            <input type="number" className="input-field w-full" value={creditosDia} onChange={e => setCreditosDia(e.target.value)} />
+          <label className="block text-sm font-medium md:col-span-2">Créditos totales del plan
+            <input type="number" className="input-field w-full" value={creditosTotales} placeholder="Ej: 1800" onChange={e => setCreditosTotales(e.target.value)} />
           </label>
           <div className="md:col-span-2 flex flex-col space-y-2">
             <label className="flex items-center space-x-2 text-sm font-medium">
@@ -122,11 +123,6 @@ const EditPlanModal: React.FC<Props> = ({ plan, onClose, onSave }) => {
           <label className="block text-sm font-medium">Descuento %
             <input type="number" className="input-field w-full" value={discountPct} placeholder="Ej: 10" onChange={e => setDiscountPct(e.target.value)} />
           </label>
-          {prioridad==='2' && (
-          <label className="block text-sm font-medium">Créditos promocionales (solo prioridad 2)
-            <input type="number" className="input-field w-full" value={freeCredits} placeholder="Ej: 3" onChange={e=>setFreeCredits(e.target.value)} />
-          </label>
-          )}
           <label className="block text-sm font-medium">Descuento hasta (YYYY-MM-DD)
             <input type="date" className="input-field w-full" value={discountUntil?.substring(0,10) || ''} onChange={e => setDiscountUntil(e.target.value)} />
           </label>
@@ -134,7 +130,7 @@ const EditPlanModal: React.FC<Props> = ({ plan, onClose, onSave }) => {
             <select
               className="input-field w-full"
               value={prioridad}
-              onChange={e => { const val=e.target.value; setPrioridad(val); if(val!=='2') setFreeCredits('0'); }}
+              onChange={e => { const val=e.target.value; setPrioridad(val); }}
             >
               <option value="">— Seleccionar —</option>
               <option value="1">1 (Recomendado)</option>
@@ -151,6 +147,11 @@ const EditPlanModal: React.FC<Props> = ({ plan, onClose, onSave }) => {
               ))}
             </select>
           </label>
+          {prioridad==='2' && (
+          <label className="block text-sm font-medium">Créditos promocionales (solo prioridad 2)
+            <input type="number" className="input-field w-full" value={freeCredits} placeholder="Ej: 3000" onChange={e=>setFreeCredits(e.target.value)} />
+          </label>
+          )}
         </div>
         {errorMsg && <p className="text-red-600 text-sm">{errorMsg}</p>}
         <div className="flex justify-end space-x-3 pt-2">

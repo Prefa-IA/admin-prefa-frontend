@@ -12,6 +12,7 @@ function deslugify(str: string) {
 
 const ReglasCategoriaPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
+  if (slug === 'ver-todas') return <ReglasPage mode="view" />;
   const categoria = slug ? deslugify(slug) : '';
   return <ReglasPage mode="view" categoria={categoria} />;
 };

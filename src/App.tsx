@@ -18,18 +18,20 @@ import NormativaPage from './pages/NormativaPage';
 import CodigoUrbanisticoPage from './pages/CodigoUrbanisticoPage';
 import ParametrosEdificabilidadPage from './pages/ParametrosEdificabilidadPage';
 import AfectacionesPage from './pages/AfectacionesPage';
-import ApiServiciosPage from './pages/ApiServiciosPage';
-import AlgoritmosScoringPage from './pages/AlgoritmosScoringPage';
 import ReglasAdminPage from './pages/ReglasAdminPage';
 import ReglasCategoriaPage from './pages/ReglasCategoriaPage';
 import PromptTemplatesPage from './pages/PromptTemplatesPage';
 import EmailTemplatesPage from './pages/EmailTemplatesPage';
 import PlanTagsPage from './pages/PlanTagsPage';
 import ConstantesTronerasPage from './pages/ConstantesTronerasPage';
+import ReglasAllPage from './pages/ReglasAllPage';
+import SendNewsletterPage from './pages/SendNewsletterPage';
+import CalculoPasosPage from './pages/CalculoPasosPage';
+import ReglasLogicasPage from './pages/ReglasLogicasPage';
 
 const PrivateRoute: React.FC<{ children: JSX.Element }> = ({ children }) => {
   const { user, loading } = useAuth();
-  if (loading) return null; // o spinner
+  if (loading) return null;
   return user && user.role === 'admin' ? children : <Navigate to="/login" />;
 };
 
@@ -145,26 +147,6 @@ const App: React.FC = () => {
               </PrivateRoute>
             }
           />
-          <Route
-            path="/api-servicios"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <ApiServiciosPage />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/algoritmos-scoring"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <AlgoritmosScoringPage />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
 
           <Route
             path="/prompts"
@@ -197,11 +179,11 @@ const App: React.FC = () => {
             }
           />
           <Route
-            path="/analytics"
+            path="/reglas/ver-todas"
             element={
               <PrivateRoute>
                 <Layout>
-                  <Dashboard />
+                  <ReglasAllPage />
                 </Layout>
               </PrivateRoute>
             }
@@ -226,6 +208,18 @@ const App: React.FC = () => {
               </PrivateRoute>
             }
           />
+          <Route
+            path="/newsletter"
+            element={
+              <PrivateRoute>
+                <Layout>
+                  <SendNewsletterPage />
+                </Layout>
+              </PrivateRoute>
+            }
+          />
+          <Route path="/calculo-pasos" element={<PrivateRoute><Layout><CalculoPasosPage/></Layout></PrivateRoute>} />
+          <Route path="/reglas-logicas" element={<PrivateRoute><Layout><ReglasLogicasPage/></Layout></PrivateRoute>} />
         </Routes>
       </Router>
     </AuthProvider>

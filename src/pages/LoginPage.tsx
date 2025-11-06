@@ -8,15 +8,17 @@ const LoginPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const [submitting,setSubmitting]=useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      setSubmitting(true);
       await login(email, password);
       navigate('/');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Error de autenticación');
-    }
+    } finally { setSubmitting(false); }
   };
 
   return (
@@ -44,8 +46,8 @@ const LoginPage: React.FC = () => {
             required
           />
         </div>
-        <button type="submit" className="btn-primary w-full">
-          Iniciar sesión
+        <button type="submit" className="btn-primary w-full disabled:opacity-50" disabled={submitting}>
+          {submitting? 'Ingresando…':'Iniciar sesión'}
         </button>
       </form>
     </div>
