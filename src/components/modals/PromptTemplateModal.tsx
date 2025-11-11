@@ -33,7 +33,6 @@ const PromptTemplateModal: React.FC<Props> = ({ initialData, onClose, onSave }) 
     const insertion = `SELECTOR:{${ruleId}}`;
     const newContent = before + insertion + after;
     setContenido(newContent);
-    // mover cursor
     setTimeout(()=>{
       if(textareaRef.current){
         textareaRef.current.selectionStart = textareaRef.current.selectionEnd = start + insertion.length;

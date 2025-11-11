@@ -1,58 +1,164 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { PageHeader, Card, Table, TableHeader, TableRow, TableHead, TableCell, TableBody } from '../components/ui';
 import NewItemButton from '../components/NewItemButton';
 import EditIconButton from '../components/EditIconButton';
 import DeleteIconButton from '../components/DeleteIconButton';
 import ConfirmModal from '../components/ConfirmModal';
 import EditReglaLogicaModal from '../components/modals/EditReglaLogicaModal';
+import { ReglaLogica } from '../types/reglas';
+import { Paso } from '../types/pasos';
 
-interface Regla { _id?:string; id_paso?:string; distrito_cpu:string; condicion_json:any; formula_json:any; id_cu_referencia?:string|string[]; descripcion?:string; activo?:boolean; }
-interface Paso { _id:string; nombre_paso:string; }
+const ReglasLogicasPage: React.FC = () => {
+  const [reglas, setReglas] = useState<ReglaLogica[]>([]);
+  const [pasos, setPasos] = useState<Paso[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [editing, setEditing] = useState<ReglaLogica | null>(null);
+  const [toDelete, setToDelete] = useState<ReglaLogica | null>(null);
 
-const ReglasLogicasPage:React.FC = () => {
-  const [reglas,setReglas]=useState<Regla[]>([]);
-  const [pasos,setPasos]=useState<Paso[]>([]);
-  const [loading,setLoading]=useState(true);
-  const [selected,setSelected]=useState<Set<string>>(new Set());
-  const [showModal,setShowModal]=useState(false);
-  const [editing,setEditing]=useState<Regla|null>(null);
-  const [toDelete,setToDelete]=useState<Regla|null>(null);
-
-  const fetchAll=async()=>{
+  const fetchAll = async () => {
     setLoading(true);
-    try{
-      const [{data:reglasData},{data:pasosData}] = await Promise.all([
-        axios.get<Regla[]>('/admin/reglas-logicas'), axios.get<Paso[]>('/admin/calculo-pasos')
+    try {
+      const [{ data: reglasData }, { data: pasosData }] = await Promise.all([
+        axios.get<ReglaLogica[]>('/admin/reglas-logicas'),
+        axios.get<Paso[]>('/admin/calculo-pasos')
       ]);
-      setReglas(reglasData); setPasos(pasosData);
-    }catch(e){console.error(e);} setLoading(false);
-  };
-  useEffect(()=>{fetchAll();},[]);
-
-  const handleSave=async(r:Regla)=>{
-    try{
-      if(editing&&editing._id) await axios.put(`/admin/reglas-logicas/${editing._id}`,r);
-      else await axios.post('/admin/reglas-logicas',r);
-      setShowModal(false); setEditing(null); fetchAll();
-    }catch(e){console.error(e); alert('Error');}
-  };
-  const handleDelete=async()=>{
-    if(!toDelete?._id) return; try{await axios.delete(`/admin/reglas-logicas/${toDelete._id}`); setToDelete(null); fetchAll();}catch(e){console.error(e);} };
-
-  const pasoNombre=(id?:string)=>pasos.find(p=>p._id===id)?.nombre_paso||'';
-
-  const toggleSel=(id:string)=>setSelected(prev=>{const s=new Set(prev); s.has(id)?s.delete(id):s.add(id); return s;});
-  const allChecked=reglas.length>0 && selected.size===reglas.length;
-  const toggleAll=()=>{ if(allChecked) setSelected(new Set()); else setSelected(new Set(reglas.map(r=>r._id!))); };
-  const batch=async(accion:'aceptar'|'rechazar')=>{
-    try{await axios.post('/admin/reglas-logicas/batch',{ids:Array.from(selected),accion}); setSelected(new Set()); fetchAll();}catch(e){alert('Error');}
+      setReglas(reglasData);
+      setPasos(pasosData);
+    } catch (e) {
+      console.error(e);
+    }
+    setLoading(false);
   };
 
-  return(<div className="p-6 space-y-4">
-    <div className="flex gap-4">
-      <button className="btn-primary" disabled={!selected.size} onClick={()=>batch('aceptar')}>Aceptar seleccionadas</button>
-      <button className="btn-danger" disabled={!selected.size} onClick={()=>batch('rechazar')}>Rechazar seleccionadas</button>
+  useEffect(() => {
+    fetchAll();
+  }, []);
+
+  const handleSave = async (r: ReglaLogica) => {
+    try {
+      if (editing && editing._id) {
+        await axios.put(`/admin/reglas-logicas/${editing._id}`, r);
+      } else {
+        await axios.post('/admin/reglas-logicas', r);
+      }
+      setShowModal(false);
+      setEditing(null);
+      fetchAll();
+    } catch (e) {
+      console.error(e);
+      alert('Error guardando regla');
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!toDelete?._id) return;
+    try {
+      await axios.delete(`/admin/reglas-logicas/${toDelete._id}`);
+      setToDelete(null);
+      fetchAll();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const pasoNombre = (id?: string) => pasos.find(p => p._id === id)?.nombre_paso || '';
+  const pasosSafe = pasos.filter((p): p is Paso & { _id: string } => !!p._id);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Cargando reglas lógicas...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <PageHeader
+        title="Reglas Lógicas"
+        description="Gestiona las reglas lógicas del sistema"
+        actions={
+          <NewItemButton label="Nueva regla" onClick={() => setShowModal(true)} />
+        }
+      />
+
+      <Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Paso</TableHead>
+              <TableHead>Distrito</TableHead>
+              <TableHead>Ref CU</TableHead>
+              <TableHead>Activo</TableHead>
+              <TableHead align="right">Acciones</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {reglas.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  No hay reglas lógicas registradas
+                </TableCell>
+              </TableRow>
+            ) : (
+              reglas.map(r => (
+                <TableRow key={r._id}>
+                  <TableCell>{pasoNombre(r.id_paso)}</TableCell>
+                  <TableCell>{r.distrito_cpu}</TableCell>
+                  <TableCell>
+                    {(Array.isArray(r.id_cu_referencia)
+                      ? r.id_cu_referencia
+                      : (r.id_cu_referencia ? [r.id_cu_referencia] : [])
+                    ).join(', ')}
+                  </TableCell>
+                  <TableCell>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      r.activo
+                        ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                        : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                    }`}>
+                      {r.activo ? 'Sí' : 'No'}
+                    </span>
+                  </TableCell>
+                  <TableCell align="right">
+                    <div className="flex items-center justify-end gap-1">
+                      <EditIconButton onClick={() => { setEditing(r); setShowModal(true); }} />
+                      <DeleteIconButton onClick={() => setToDelete(r)} />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </Card>
+
+      {showModal && (
+        <EditReglaLogicaModal
+          show={showModal}
+          onClose={() => { setShowModal(false); setEditing(null); }}
+          onSave={handleSave}
+          editing={editing as any}
+          pasos={pasosSafe}
+        />
+      )}
+
+      {toDelete && (
+        <ConfirmModal
+          open={true}
+          onCancel={() => setToDelete(null)}
+          onConfirm={handleDelete}
+          title="Eliminar regla"
+          message="¿Estás seguro de que deseas eliminar esta regla lógica?"
+        />
+      )}
     </div>
-    <div className="flex justify-between items-center"><h1 className="text-2xl font-semibold">Reglas Lógicas</h1><NewItemButton label="Nueva" onClick={()=>setShowModal(true)} /></div>{loading? <p>Cargando…</p> :(<div className="overflow-x-auto"><table className="min-w-full border bg-white shadow"><thead className="bg-gray-100"><tr><th className="px-2"><input type="checkbox" checked={allChecked} onChange={toggleAll}/></th><th className="px-4 py-2">Paso</th><th className="px-4 py-2">Distrito</th><th className="px-4 py-2">Ref CU</th><th className="px-4 py-2">Activo</th><th className="px-4 py-2">Acciones</th></tr></thead><tbody>{reglas.map(r=> (<tr key={r._id} className="border-t"><td className="px-2 text-center"><input type="checkbox" checked={selected.has(r._id!)} onChange={()=>toggleSel(r._id!)}/></td><td className="px-4 py-2">{pasoNombre(r.id_paso)}</td><td className="px-4 py-2">{r.distrito_cpu}</td><td className="px-4 py-2">{(Array.isArray(r.id_cu_referencia)? r.id_cu_referencia : (r.id_cu_referencia? [r.id_cu_referencia]:[])).join(', ')}</td><td className="px-4 py-2 text-center">{r.activo?'✓':'—'}</td><td className="px-4 py-2 flex gap-2 justify-center"><EditIconButton onClick={()=>{setEditing(r);setShowModal(true);}}/><DeleteIconButton onClick={()=>setToDelete(r)} /></td></tr>))}</tbody></table></div>)}{showModal&& (<EditReglaLogicaModal show={showModal} onClose={()=>{setShowModal(false);setEditing(null);}} onSave={handleSave} editing={editing as any} pasos={pasos} />)}{toDelete&& (<ConfirmModal open={true} onCancel={()=>setToDelete(null)} onConfirm={handleDelete} title="Eliminar" message="¿Eliminar regla?"/>)} </div>);
+  );
 };
+
 export default ReglasLogicasPage;

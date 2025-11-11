@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { NavLink } from 'react-router-dom';
 import { HomeIcon, UsersIcon, DocumentTextIcon, Cog6ToothIcon, Square3Stack3DIcon, CurrencyDollarIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { slugify } from '../utils/slugify';
 
 interface LinkItem {
-  to?: string; // si no hay "to" es un item colapsable
+  to?: string;
   label: string;
   children?: LinkItem[];
 }
@@ -23,7 +24,10 @@ const baseGroups: Group[] = [
   {
     label: 'Usuarios',
     icon: UsersIcon,
-    links: [{ to: '/usuarios', label: 'Usuarios' }],
+    links: [
+      { to: '/usuarios', label: 'Usuarios' },
+      { to: '/admin-users', label: 'Administradores' },
+    ],
   },
   {
     label: 'Consultas',
@@ -59,6 +63,7 @@ const baseGroups: Group[] = [
       { to: '/prompts', label: 'Prompts' },
       { to: '/email-templates', label: 'Email Templates' },
       { to: '/newsletter', label: 'Newsletters' },
+      { to: '/newsletter-history', label: 'Historial Newsletters' },
       { to: '/calculo-pasos', label: 'Pasos de Cálculo' },
       { to: '/reglas-logicas', label: 'Reglas Lógicas' },
     ],
@@ -75,7 +80,7 @@ const Sidebar: React.FC = () => {
         const { data } = await axios.get<string[]>('/api/reglas/categorias');
         if (Array.isArray(data)) {
           const links = data.map((cat: string) => ({
-            to: `/reglas/${slugifyCat(cat)}`,
+            to: `/reglas/${slugify(cat)}`,
             label: cat,
           }));
           setDynGroups(prev => prev.map(g => {
@@ -85,7 +90,6 @@ const Sidebar: React.FC = () => {
               links: g.links.map(link => {
                 if (link.label !== 'Reglas' || !link.children) return link;
                 const baseChildren = link.children!.filter(ch => ch.to === '/reglas' || ch.to === '/reglas/ver-todas');
-                // Evitar duplicados
                 const merged = [...baseChildren, ...links].reduce<LinkItem[]>((arr,item)=>{
                   if (!arr.find(i=>i.to===item.to)) arr.push(item);
                   return arr;
@@ -155,15 +159,6 @@ const Sidebar: React.FC = () => {
 
 export default Sidebar;
 
-function slugifyCat(str: string): string {
-  return str.toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '') // remove accents
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-
-// Helper component
 function NavItem({ link }: { link: LinkItem }) {
   const [openLocal, setOpenLocal] = React.useState(false);
   if (link.children) {

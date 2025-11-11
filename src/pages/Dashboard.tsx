@@ -1,37 +1,24 @@
 import React from 'react';
 import axios from 'axios';
 import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer, XAxis, YAxis, LineChart, Line, CartesianGrid } from 'recharts';
-import Card from '../components/Card';
+import { PageHeader, Card } from '../components/ui';
 import MetricTile from '../components/dashboard/MetricTile';
 import HeatMapCard from '../components/dashboard/HeatMapCard';
-import RevenueBarChart from '../components/dashboard/RevenueBarChart';
-import FunnelChart from '../components/dashboard/FunnelChart';
-
-interface AnalyticsResponse {
-  activeUsers: number;
-  suspendedUsers: number;
-  recurringCustomers: number;
-  monthlyRevenue: number;
-  topMonth: { usuarioId: string; nombre: string; email: string; count: number }[];
-  topAllTime: { usuarioId: string; nombre: string; email: string; count: number }[];
-}
+import { AnalyticsResponse } from '../types/dashboard';
 
 const Dashboard: React.FC = () => {
   const [data, setData] = React.useState<AnalyticsResponse | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [range, setRange] = React.useState<'day' | 'week' | 'month'>('month');
-  const [series, setSeries] = React.useState<{ label: string; count: number }[]>([]);
+  const [series, setSeries] = React.useState<{ label: string; busquedas: number; reportes: number; prefa1: number; prefa2: number }[]>([]);
   const [topDirecciones, setTopDirecciones] = React.useState<{ direccion: string; count: number }[]>([]);
   const [zonificaciones, setZonificaciones] = React.useState<{ zonificacion: string; count: number }[]>([]);
   const [heatPoints, setHeatPoints] = React.useState<any[]>([]);
-  const [revenuePlan, setRevenuePlan] = React.useState<any[]>([]);
-  const [funnel, setFunnel] = React.useState<any[]>([]);
 
   React.useEffect(() => {
     const load = async () => {
       setLoading(true);
       try {
-        // Gateway ya elimina "/api"; usamos base /admin para futuras rutas del MS
         const res = await axios.get<AnalyticsResponse>('/admin/analytics');
         setData(res.data);
       } catch (e) {
@@ -75,14 +62,8 @@ const Dashboard: React.FC = () => {
   React.useEffect(() => {
     const loadExtra = async () => {
       try {
-        const [heatRes, revRes, funnelRes] = await Promise.all([
-          axios.get('/admin/analytics/heatmap').catch(() => ({ data: [] })),
-          axios.get('/admin/analytics/revenue-plan').catch(() => ({ data: [] })),
-          axios.get('/admin/analytics/funnel').catch(() => ({ data: [] })),
-        ]);
+        const heatRes = await axios.get('/admin/analytics/heatmap').catch(() => ({ data: [] }));
         setHeatPoints(heatRes.data);
-        setRevenuePlan(revRes.data);
-        setFunnel(funnelRes.data);
       } catch (e) {
         console.error('Error analíticas extra', e);
       }
@@ -90,7 +71,16 @@ const Dashboard: React.FC = () => {
     loadExtra();
   }, []);
 
-  if (loading || !data) return <p className="p-6">Cargando...</p>;
+  if (loading || !data) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Cargando datos del dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   const pieData = [
     { name: 'Activos', value: data.activeUsers },
@@ -106,15 +96,16 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="p-6 space-y-8">
-      <h1 className="text-3xl font-semibold">Panel de administración</h1>
+    <div className="space-y-8">
+      <PageHeader
+        title="Panel de administración"
+        description="Vista general del sistema y métricas"
+      />
 
       {/* Métricas rápidas */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <MetricTile title="Usuarios activos" value={data.activeUsers} />
         <MetricTile title="Usuarios suspendidos" value={data.suspendedUsers} variant="danger" />
-        <MetricTile title="Clientes recurrentes" value={data.recurringCustomers} />
-        <MetricTile title="Ingresos mes (ARS)" value={`$${data.monthlyRevenue}`} variant="success" />
       </div>
 
       {/* Gráficos principales */}
@@ -142,93 +133,90 @@ const Dashboard: React.FC = () => {
           </ResponsiveContainer>
         </Card>
 
-        {/* Consultas por rango */}
-        <Card className="lg:col-span-3">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">Consultas por {RANGE_LABELS[range]}</h3>
+        <Card className="lg:col-span-3" title={`Consultas por ${RANGE_LABELS[range]}`} headerActions={
+          <div className="min-w-[150px]">
             <select
               value={range}
-              onChange={e => setRange(e.target.value as any)}
-              className="input-field max-w-xs"
+              onChange={(e) => setRange(e.target.value as any)}
+              className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
             >
               <option value="day">Día</option>
               <option value="week">Semana</option>
               <option value="month">Mes</option>
             </select>
           </div>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={series} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-              <Line type="monotone" dataKey="count" stroke="#1976d2" />
-              <CartesianGrid stroke="#ccc" strokeDasharray="5 5" />
-              <XAxis dataKey="label" hide={range === 'day'} />
-              <YAxis />
-              <Tooltip />
-            </LineChart>
-          </ResponsiveContainer>
+        }>
+          <div className="mt-4">
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={series} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                <CartesianGrid stroke="#e5e7eb" strokeDasharray="5 5" />
+                <XAxis dataKey="label" hide={range === 'day'} stroke="#6b7280" />
+                <YAxis stroke="#6b7280" />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="busquedas" stroke="#f59e0b" strokeWidth={2} name="Búsquedas básicas" />
+                <Line type="monotone" dataKey="reportes" stroke="#0284c7" strokeWidth={2} name="Reportes generados" />
+                <Line type="monotone" dataKey="prefa1" stroke="#10b981" strokeWidth={2} name="PreFa1" />
+                <Line type="monotone" dataKey="prefa2" stroke="#8b5cf6" strokeWidth={2} name="PreFa2" />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </Card>
       </div>
 
       {/* Top tablas */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <h3 className="text-lg font-semibold mb-2">Direcciones más consultadas</h3>
-          <ul className="space-y-1 text-sm">
-            {topDirecciones.map((d, idx) => (
-              <li key={idx} className="flex justify-between">
-                <span>{d.direccion}</span>
-                <span className="font-semibold">{d.count}</span>
-              </li>
-            ))}
+        <Card title="Direcciones más consultadas">
+          <ul className="space-y-2 text-sm">
+            {topDirecciones.length === 0 ? (
+              <li className="text-gray-500 dark:text-gray-400 text-center py-4">No hay datos disponibles</li>
+            ) : (
+              topDirecciones.map((d, idx) => (
+                <li key={idx} className="flex justify-between items-center py-1 border-b border-gray-100 dark:border-gray-700 last:border-0">
+                  <span className="text-gray-700 dark:text-gray-300">{d.direccion}</span>
+                  <span className="font-semibold text-primary-600 dark:text-primary-400">{d.count}</span>
+                </li>
+              ))
+            )}
           </ul>
         </Card>
-        <Card>
-          <h3 className="text-lg font-semibold mb-2">Zonificaciones populares</h3>
-          <ul className="space-y-1 text-sm">
-            {zonificaciones.map((z, idx) => (
-              <li key={idx} className="flex justify-between">
-                <span>{z.zonificacion || '—'}</span>
-                <span className="font-semibold">{z.count}</span>
-              </li>
-            ))}
-          </ul>
-        </Card>
-      </div>
-
-      {/* Top 10 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <h3 className="text-lg font-semibold mb-2">Top 10 usuarios del mes</h3>
-          <ul className="space-y-1 text-sm">
-            {data.topMonth.map((u, idx) => (
-              <li key={u.usuarioId} className="flex justify-between">
-                <span>{idx + 1}. {u.nombre} ({u.email})</span>
-                <span className="font-semibold">{u.count}</span>
-              </li>
-            ))}
-          </ul>
-        </Card>
-        <Card>
-          <h3 className="text-lg font-semibold mb-2">Top 10 usuarios histórico</h3>
-          <ul className="space-y-1 text-sm">
-            {data.topAllTime.map((u, idx) => (
-              <li key={u.usuarioId} className="flex justify-between">
-                <span>{idx + 1}. {u.nombre} ({u.email})</span>
-                <span className="font-semibold">{u.count}</span>
-              </li>
-            ))}
+        <Card title="Zonificaciones populares">
+          <ul className="space-y-2 text-sm">
+            {zonificaciones.length === 0 ? (
+              <li className="text-gray-500 dark:text-gray-400 text-center py-4">No hay datos disponibles</li>
+            ) : (
+              zonificaciones.map((z, idx) => (
+                <li key={idx} className="flex justify-between items-center py-1 border-b border-gray-100 dark:border-gray-700 last:border-0">
+                  <span className="text-gray-700 dark:text-gray-300">{z.zonificacion || '—'}</span>
+                  <span className="font-semibold text-primary-600 dark:text-primary-400">{z.count}</span>
+                </li>
+              ))
+            )}
           </ul>
         </Card>
       </div>
 
-      {/* Heatmap y revenue/funnel */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
-        <div className="lg:col-span-2">
-          <HeatMapCard points={heatPoints} />
-        </div>
-        <div className="space-y-6">
-          <RevenueBarChart data={revenuePlan} />
-          <FunnelChart data={funnel} />
-        </div>
+      {/* Top 10 usuarios del mes */}
+      <Card title="Top 10 usuarios del mes (por créditos consumidos)">
+        <ul className="space-y-2 text-sm">
+          {data.topMonth.length === 0 ? (
+            <li className="text-gray-500 dark:text-gray-400 text-center py-4">No hay datos disponibles</li>
+          ) : (
+            data.topMonth.map((u, idx) => (
+              <li key={u.usuarioId} className="flex justify-between items-center py-1 border-b border-gray-100 dark:border-gray-700 last:border-0">
+                <span className="text-gray-700 dark:text-gray-300">
+                  <span className="font-medium text-primary-600 dark:text-primary-400">{idx + 1}.</span> {u.nombre} <span className="text-gray-500 dark:text-gray-400">({u.email})</span>
+                </span>
+                <span className="font-semibold text-primary-600 dark:text-primary-400">{u.count.toLocaleString('es-AR')} créditos</span>
+              </li>
+            ))
+          )}
+        </ul>
+      </Card>
+
+      {/* Heatmap */}
+      <div className="mt-8">
+        <HeatMapCard points={heatPoints} />
       </div>
     </div>
   );

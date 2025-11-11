@@ -1,31 +1,37 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { PageHeader, Card, Table, TableHeader, TableRow, TableHead, TableCell, TableBody, Modal, Input, Button } from '../components/ui';
 import NewItemButton from '../components/NewItemButton';
 import EditIconButton from '../components/EditIconButton';
 import DeleteIconButton from '../components/DeleteIconButton';
 import ConfirmModal from '../components/ConfirmModal';
-
-interface PlanTag {
-  _id?: string;
-  slug: string;
-  name: string;
-  bgClass: string;
-  icon?: string;
-}
+import { PlanTag } from '../types/planTags';
 
 const emptyTag: PlanTag = { slug: '', name: '', bgClass: '', icon: '' };
 
 const PlanTagsPage: React.FC = () => {
   const [tags, setTags] = useState<PlanTag[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState<PlanTag | null>(null);
   const [confirmDel, setConfirmDel] = useState<PlanTag | null>(null);
 
   const fetchTags = async () => {
     setLoading(true);
-    const { data } = await axios.get<PlanTag[]>('/api/admin/plan-tags');
-    setTags(data);
-    setLoading(false);
+    setError(null);
+    try {
+      const { data } = await axios.get<PlanTag[]>('/api/admin/plan-tags');
+      console.log('PlanTags recibidos:', data);
+      setTags(Array.isArray(data) ? data : []);
+    } catch (err: any) {
+      console.error('Error al cargar etiquetas:', err);
+      console.error('Response:', err.response?.data);
+      const errorMessage = err.response?.data?.error || err.message || 'Error al cargar etiquetas';
+      setError(errorMessage);
+      setTags([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchTags(); }, []);
@@ -44,42 +50,70 @@ const PlanTagsPage: React.FC = () => {
     fetchTags();
   };
 
-  return (
-    <div className="p-6 space-y-4">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-semibold">Etiquetas de Planes</h1>
-        <NewItemButton label="Nueva" onClick={() => setEditing({ ...emptyTag })} />
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Cargando etiquetas...</p>
+        </div>
       </div>
+    );
+  }
 
-      {loading ? (
-        <p>Cargando…</p>
-      ) : (
-        <table className="min-w-full text-sm border bg-white shadow">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="px-4 py-2 text-left">Slug</th>
-              <th className="px-4 py-2 text-left">Nombre</th>
-              <th className="px-4 py-2 text-left">Icono</th>
-              <th className="px-4 py-2 text-left">Classes</th>
-              <th className="px-4 py-2 text-center">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {tags.map(t => (
-              <tr key={t._id} className="border-t">
-                <td className="px-4 py-2 font-mono">{t.slug}</td>
-                <td className="px-4 py-2">{t.name}</td>
-                <td className="px-4 py-2 text-center">{t.icon||'—'}</td>
-                <td className="px-4 py-2 text-xs">{t.bgClass}</td>
-                <td className="px-4 py-2 space-x-2 text-center">
-                  <EditIconButton onClick={() => setEditing(t)} />
-                  <DeleteIconButton onClick={() => setConfirmDel(t)} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+  return (
+    <div>
+      <PageHeader
+        title="Etiquetas de Planes"
+        description="Gestiona las etiquetas visuales para los planes"
+        actions={
+          <NewItemButton label="Nueva etiqueta" onClick={() => setEditing({ ...emptyTag })} />
+        }
+      />
+
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+          <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
+        </div>
       )}
+
+      <Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Slug</TableHead>
+              <TableHead>Nombre</TableHead>
+              <TableHead>Icono</TableHead>
+              <TableHead>Clases</TableHead>
+              <TableHead align="right">Acciones</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {tags.length === 0 && !loading ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  {error ? 'Error al cargar etiquetas' : 'No hay etiquetas registradas'}
+                </TableCell>
+              </TableRow>
+            ) : (
+              tags.map(t => (
+                <TableRow key={t._id || t.slug}>
+                  <TableCell className="font-mono text-sm">{t.slug}</TableCell>
+                  <TableCell className="font-medium">{t.name}</TableCell>
+                  <TableCell className="text-center">{t.icon||'—'}</TableCell>
+                  <TableCell className="text-xs font-mono">{t.bgClass}</TableCell>
+                  <TableCell align="right">
+                    <div className="flex items-center justify-end gap-1">
+                      <EditIconButton onClick={() => setEditing(t)} />
+                      <DeleteIconButton onClick={() => setConfirmDel(t)} />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </Card>
 
       {editing && (
         <TagModal
@@ -93,7 +127,7 @@ const PlanTagsPage: React.FC = () => {
         <ConfirmModal
           open={true}
           title="Eliminar etiqueta"
-          message={`¿Eliminar "${confirmDel.name}"?`}
+          message={`¿Estás seguro de que deseas eliminar la etiqueta "${confirmDel.name}"?`}
           onCancel={() => setConfirmDel(null)}
           onConfirm={deleteTag}
         />
@@ -104,31 +138,49 @@ const PlanTagsPage: React.FC = () => {
 
 export default PlanTagsPage;
 
-// Modal inline
 const TagModal: React.FC<{ tag: PlanTag; onClose: () => void; onSave: (t: PlanTag) => void }> = ({ tag: init, onClose, onSave }) => {
   const [tag, setTag] = useState<PlanTag>(init);
   const handle = (k: keyof PlanTag, v: any) => setTag(prev => ({ ...prev, [k]: v }));
+  
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="bg-white rounded p-6 w-full max-w-md space-y-4 shadow-xl">
-        <h3 className="text-lg font-semibold">{tag._id ? 'Editar' : 'Nueva'} Etiqueta</h3>
-        <label className="block text-sm font-medium">Slug
-          <input className="input-field w-full" value={tag.slug} onChange={e=>handle('slug',e.target.value)} />
-        </label>
-        <label className="block text-sm font-medium">Nombre
-          <input className="input-field w-full" value={tag.name} onChange={e=>handle('name',e.target.value)} />
-        </label>
-        <label className="block text-sm font-medium">Clases Tailwind
-          <input className="input-field w-full" value={tag.bgClass} onChange={e=>handle('bgClass',e.target.value)} />
-        </label>
-        <label className="block text-sm font-medium">Icono (emoji opcional)
-          <input className="input-field w-full" value={tag.icon||''} onChange={e=>handle('icon',e.target.value)} />
-        </label>
-        <div className="flex justify-end space-x-3 pt-2">
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={()=>onSave(tag)}>Guardar</button>
-        </div>
+    <Modal
+      show={true}
+      title={tag._id ? 'Editar Etiqueta' : 'Nueva Etiqueta'}
+      onClose={onClose}
+      size="md"
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>Cancelar</Button>
+          <Button variant="primary" onClick={()=>onSave(tag)}>Guardar</Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <Input
+          label="Slug"
+          value={tag.slug}
+          onChange={(e) => handle('slug', e.target.value)}
+          placeholder="ej: super-save"
+        />
+        <Input
+          label="Nombre"
+          value={tag.name}
+          onChange={(e) => handle('name', e.target.value)}
+          placeholder="Ej: Super Ahorro"
+        />
+        <Input
+          label="Clases Tailwind"
+          value={tag.bgClass}
+          onChange={(e) => handle('bgClass', e.target.value)}
+          placeholder="Ej: bg-gradient-to-r from-emerald-500 to-green-600"
+        />
+        <Input
+          label="Icono (emoji opcional)"
+          value={tag.icon||''}
+          onChange={(e) => handle('icon', e.target.value)}
+          placeholder="Ej: ⚡"
+        />
       </div>
-    </div>
+    </Modal>
   );
 }; 

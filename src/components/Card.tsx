@@ -1,7 +1,17 @@
 import React from 'react';
+import { Card as UICard } from './ui';
 
-const Card: React.FC<{ className?: string; children: React.ReactNode }> = ({ className = '', children }) => (
-  <div className={`bg-white shadow rounded-lg p-6 ${className}`}>{children}</div>
+interface CardProps {
+  className?: string;
+  children: React.ReactNode;
+  title?: string;
+  headerActions?: React.ReactNode;
+}
+
+const Card: React.FC<CardProps> = ({ className = '', children, title, headerActions }) => (
+  <UICard className={className} title={title} headerActions={headerActions}>
+    {children}
+  </UICard>
 );
 
 export default Card; 

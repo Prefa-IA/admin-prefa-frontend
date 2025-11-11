@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import axios from 'axios';
+import { toast } from 'react-toastify';
 
 interface User {
   _id: string;
@@ -76,14 +77,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = async (email: string, password: string) => {
-    setLoading(true);
-    const res = await axios.post('/auth/login', { email, password });
-    const { token, usuario } = res.data;
-    const fullUser = { ...usuario, token } as User;
-    setUser(fullUser);
-    localStorage.setItem('adminUser', JSON.stringify(fullUser));
-    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    setLoading(false);
+    try {
+      setLoading(true);
+      const enc = new TextEncoder().encode(password);
+      const buf = await crypto.subtle.digest('SHA-256', enc);
+      const hashHex = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+
+      const res = await axios.post('/admin/auth/login', { email, password: hashHex });
+      const { token, usuario } = res.data;
+      const fullUser = { ...usuario, token } as User;
+      setUser(fullUser);
+      localStorage.setItem('adminUser', JSON.stringify(fullUser));
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      toast.success('¡Bienvenido de nuevo!');
+    } catch (error: any) {
+      const mensaje = error.response?.data?.error || 'Error al iniciar sesión';
+      toast.error(mensaje);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
   };
 
   const logout = () => {

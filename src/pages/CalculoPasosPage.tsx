@@ -1,19 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { PageHeader, Card, Table, TableHeader, TableRow, TableHead, TableCell, TableBody } from '../components/ui';
 import NewItemButton from '../components/NewItemButton';
 import EditIconButton from '../components/EditIconButton';
 import DeleteIconButton from '../components/DeleteIconButton';
 import ConfirmModal from '../components/ConfirmModal';
 import EditCalculoPasoModal from '../components/modals/EditCalculoPasoModal';
-
-interface Paso {
-  _id?: string;
-  orden: number;
-  nombre_paso: string;
-  metodo_interno: string;
-  descripcion?: string;
-  activo?: boolean;
-}
+import { Paso } from '../types/pasos';
 
 const CalculoPasosPage: React.FC = () => {
   const [pasos, setPasos] = useState<Paso[]>([]);
@@ -60,37 +53,85 @@ const CalculoPasosPage: React.FC = () => {
     } catch (err) { console.error(err); }
   };
 
-  return (
-    <div className="p-6 space-y-4">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-semibold">Secuencia de Cálculo</h1>
-        <NewItemButton label="Nuevo" onClick={()=>setShowModal(true)} />
-      </div>
-      {loading ? <p>Cargando…</p> : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full border bg-white shadow">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="px-4 py-2">Orden</th><th className="px-4 py-2 text-left">Nombre</th><th className="px-4 py-2">Método</th><th className="px-4 py-2">Activo</th><th className="px-4 py-2">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pasos.map(p=> (
-                <tr key={p._id} className="border-t">
-                  <td className="px-4 py-2 text-center">{p.orden}</td>
-                  <td className="px-4 py-2">{p.nombre_paso}</td>
-                  <td className="px-4 py-2">{p.metodo_interno}</td>
-                  <td className="px-4 py-2 text-center">{p.activo? '✓':'—'}</td>
-                  <td className="px-4 py-2 flex gap-2 justify-center"><EditIconButton onClick={()=>{setEditing(p); setShowModal(true);}}/><DeleteIconButton onClick={()=>setToDelete(p)}/></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Cargando pasos de cálculo...</p>
         </div>
-      )}
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <PageHeader
+        title="Secuencia de Cálculo"
+        description="Gestiona los pasos del proceso de cálculo"
+        actions={
+          <NewItemButton label="Nuevo paso" onClick={()=>setShowModal(true)} />
+        }
+      />
+
+      <Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Orden</TableHead>
+              <TableHead>Nombre</TableHead>
+              <TableHead>Método</TableHead>
+              <TableHead>Activo</TableHead>
+              <TableHead align="right">Acciones</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {pasos.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  No hay pasos de cálculo registrados
+                </TableCell>
+              </TableRow>
+            ) : (
+              pasos.map(p=> (
+                <TableRow key={p._id}>
+                  <TableCell className="text-center">{p.orden}</TableCell>
+                  <TableCell className="font-medium">{p.nombre_paso}</TableCell>
+                  <TableCell>{p.metodo_interno}</TableCell>
+                  <TableCell>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      p.activo
+                        ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                        : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                    }`}>
+                      {p.activo ? 'Sí' : 'No'}
+                    </span>
+                  </TableCell>
+                  <TableCell align="right">
+                    <div className="flex items-center justify-end gap-1">
+                      <EditIconButton onClick={()=>{setEditing(p); setShowModal(true);}}/>
+                      <DeleteIconButton onClick={()=>setToDelete(p)}/>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </Card>
+
       {showModal && (
-        <EditCalculoPasoModal show={showModal} onClose={()=>{setShowModal(false); setEditing(null);}} onSave={handleSave} editing={editing} /> )}
-      {toDelete && (<ConfirmModal open={true} onCancel={()=>setToDelete(null)} onConfirm={handleDelete} title="Eliminar" message="¿Eliminar paso?" />)}
+        <EditCalculoPasoModal show={showModal} onClose={()=>{setShowModal(false); setEditing(null);}} onSave={handleSave} editing={editing} />
+      )}
+      {toDelete && (
+        <ConfirmModal
+          open={true}
+          onCancel={()=>setToDelete(null)}
+          onConfirm={handleDelete}
+          title="Eliminar paso"
+          message="¿Estás seguro de que deseas eliminar este paso?"
+        />
+      )}
     </div>
   );
 };

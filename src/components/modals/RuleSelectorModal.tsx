@@ -1,21 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-// Simple placeholders para carga y error
-
-interface Rule {
-  _id: string;
-  id_regla: string;
-  titulo_regla: string;
-  categoria?: string;
-}
+import { RuleSelectorRule } from '../../types/components';
 
 interface Props {
   onClose: () => void;
-  onSelect: (rule: Rule) => void;
+  onSelect: (rule: RuleSelectorRule) => void;
 }
 
 const RuleSelectorModal: React.FC<Props> = ({ onClose, onSelect }) => {
-  const [rules, setRules] = useState<Rule[]>([]);
+  const [rules, setRules] = useState<RuleSelectorRule[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
@@ -24,7 +17,7 @@ const RuleSelectorModal: React.FC<Props> = ({ onClose, onSelect }) => {
     setLoading(true);
     setError('');
     try {
-      const { data } = await axios.get<Rule[]>(`/api/reglas?search=${encodeURIComponent(search)}`);
+      const { data } = await axios.get<RuleSelectorRule[]>(`/api/reglas?search=${encodeURIComponent(search)}`);
       setRules(data);
     } catch (err) {
       console.error(err);

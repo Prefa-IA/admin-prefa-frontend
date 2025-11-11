@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
+import { formatDate } from '../../utils/formatDate';
 
 interface Props {
   onClose: () => void;
@@ -28,9 +29,7 @@ const OcrExtractModal: React.FC<Props> = ({ onClose, onSubmit, defaultStart = 13
 
   const handleSubmit = () => {
     if (!isValidRange() || !file) return;
-    // versionIso es YYYY-MM-DD -> DD/MM/YYYY
-    const [y, m, d] = versionIso.split('-');
-    const formatted = `${d}/${m}/${y}`;
+    const formatted = formatDate(versionIso);
     onSubmit({ startPage, endPage, version: formatted, file });
   };
 

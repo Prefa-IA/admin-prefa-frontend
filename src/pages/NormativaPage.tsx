@@ -1,12 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import Card from '../components/Card';
+import { Card, PageHeader, Table, TableHeader, TableRow, TableHead, TableCell, TableBody } from '../components/ui';
 import NewItemButton from '../components/NewItemButton';
 import NewTipologiaModal from '../components/modals/NewTipologiaModal';
 import NewZonificacionModal from '../components/modals/NewZonificacionModal';
 import axios from 'axios';
-
-interface Tipologia { _id:string; etiqueta:string; alturaMin:number; alturaMax:number }
-interface Zonificacion { _id:string; codigo:string; nombre:string; alturaMax:number }
+import { Tipologia, Zonificacion } from '../types/normativa';
 
 const NormativaPage: React.FC = () => {
   const [tab,setTab]=useState<'tipologias'|'zonificaciones'>('tipologias');
@@ -27,45 +25,101 @@ const NormativaPage: React.FC = () => {
 
   useEffect(()=>{ reload(); },[tab]);
 
+  const tabs = [
+    { id: 'tipologias' as const, label: 'Tipologías' },
+    { id: 'zonificaciones' as const, label: 'Zonificaciones' }
+  ];
+
   return (
-    <div className="space-y-6">
-      <div className="flex space-x-4 mb-4">
-        <button className={`btn-primary ${tab==='tipologias'?'':'opacity-50'}`} onClick={()=>setTab('tipologias')}>Tipologías</button>
-        <button className={`btn-primary ${tab==='zonificaciones'?'':'opacity-50'}`} onClick={()=>setTab('zonificaciones')}>Zonificaciones</button>
+    <div>
+      <PageHeader
+        title="Normativa"
+        description="Gestiona tipologías y zonificaciones"
+      />
+
+      <div className="mb-6 flex space-x-2 border-b border-gray-200 dark:border-gray-700">
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${
+              tab === t.id
+                ? 'border-primary-600 text-primary-600 dark:text-primary-400'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+            }`}
+            onClick={()=>setTab(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
       {tab==='tipologias' && (
-        <Card>
-          <h3 className="text-lg font-semibold mb-2">Tipologías</h3>
-          <table className="min-w-full text-sm">
-            <thead><tr><th className="px-4 py-2 text-left">Etiqueta</th><th className="px-4 py-2 text-left">Altura (m)</th></tr></thead>
-            <tbody>
-              {tipos.map(t=>(
-                <tr key={t._id}><td className="px-4 py-2">{t.etiqueta}</td><td className="px-4 py-2">{t.alturaMin} – {t.alturaMax}</td></tr>
-              ))}
-            </tbody>
-          </table>
-
-          <div className="flex justify-end mt-4">
-            <NewItemButton label="+ Nueva tipología" onClick={() => setShowTipModal(true)} />
-          </div>
+        <Card
+          title="Tipologías"
+          headerActions={
+            <NewItemButton label="Nueva tipología" onClick={() => setShowTipModal(true)} />
+          }
+        >
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Etiqueta</TableHead>
+                <TableHead>Altura (m)</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {tipos.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={2} className="text-center py-8 text-gray-500 dark:text-gray-400">
+                    No hay tipologías registradas
+                  </TableCell>
+                </TableRow>
+              ) : (
+                tipos.map(t=>(
+                  <TableRow key={t._id}>
+                    <TableCell className="font-medium">{t.etiqueta}</TableCell>
+                    <TableCell>{t.alturaMin} – {t.alturaMax}</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
         </Card>
       )}
 
       {tab==='zonificaciones' && (
-        <Card>
-          <h3 className="text-lg font-semibold mb-2">Zonificaciones</h3>
-          <table className="min-w-full text-sm"><thead><tr><th className="px-4 py-2 text-left">Código</th><th className="px-4 py-2 text-left">Nombre</th><th className="px-4 py-2 text-left">Altura Máx</th></tr></thead>
-            <tbody>
-              {zonis.map(z=>(
-                <tr key={z._id}><td className="px-4 py-2">{z.codigo}</td><td className="px-4 py-2">{z.nombre}</td><td className="px-4 py-2">{z.alturaMax}</td></tr>
-              ))}
-            </tbody>
-          </table>
-
-          <div className="flex justify-end mt-4">
-            <NewItemButton label="+ Nueva zonificación" onClick={() => setShowZoniModal(true)} />
-          </div>
+        <Card
+          title="Zonificaciones"
+          headerActions={
+            <NewItemButton label="Nueva zonificación" onClick={() => setShowZoniModal(true)} />
+          }
+        >
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Código</TableHead>
+                <TableHead>Nombre</TableHead>
+                <TableHead>Altura Máx</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {zonis.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-center py-8 text-gray-500 dark:text-gray-400">
+                    No hay zonificaciones registradas
+                  </TableCell>
+                </TableRow>
+              ) : (
+                zonis.map(z=>(
+                  <TableRow key={z._id}>
+                    <TableCell className="font-medium">{z.codigo}</TableCell>
+                    <TableCell>{z.nombre}</TableCell>
+                    <TableCell>{z.alturaMax}</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
         </Card>
       )}
 

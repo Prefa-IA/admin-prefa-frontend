@@ -1,15 +1,5 @@
 import React, { useState } from 'react';
-
-interface Regla {
-  id_regla: string;
-  titulo_regla: string;
-  descripcion_completa: string;
-  categoria?: string;
-  parametros_clave?: string[];
-  condiciones?: string;
-  referencia_original?: string;
-  estado?: string;
-}
+import { Regla } from '../../types/reglas';
 
 interface Props {
   regla: Regla;

@@ -1,14 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import BasicModal from '../BasicModal';
-
-interface Paso {
-  _id?: string;
-  orden: number;
-  nombre_paso: string;
-  metodo_interno: string;
-  descripcion?: string;
-  activo?: boolean;
-}
+import { Paso } from '../../types/pasos';
 
 interface Props {
   show: boolean;
@@ -25,7 +17,6 @@ const EditCalculoPasoModal: React.FC<Props> = ({ show, onClose, onSave, editing 
     else setForm({ orden: 1, nombre_paso: '', metodo_interno: '', descripcion: '', activo: true });
   }, [editing]);
 
-  // Render
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type, checked } = e.target as any;
     setForm(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));

@@ -1,17 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import axios from 'axios';
-import Card from '../components/Card';
+import { PageHeader, Card, Table, TableHeader, TableRow, TableHead, TableCell, TableBody, Button } from '../components/ui';
 import ShpUploadAndGrid from '../components/shp/ShpUploadAndGrid';
-
-interface Capa {
-  _id: string;
-  nombre: string;
-  categoria: string;
-  version: string;
-  status: string;
-  createdAt: string;
-}
+import { Capa } from '../types/capas';
+import { qualityColor } from '../utils/qualityColor';
 
 const categoriaConst = 'afectacion';
 
@@ -65,62 +58,73 @@ const AfectacionesPage: React.FC = () => {
     setLoading(false);
   };
 
-  const qualityColor = (count?: number) => {
-    if (count === undefined) return 'bg-gray-400';
-    if (count === 0) return 'bg-red-500';
-    if (count < 50) return 'bg-yellow-500';
-    return 'bg-green-500';
-  };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Afectaciones y Restricciones</h1>
-      </div>
-      <Card>
+    <div>
+      <PageHeader
+        title="Afectaciones y Restricciones"
+        description="Gestiona las capas de afectaciones y restricciones del sistema"
+      />
+
+      <Card title="Subir nueva capa" className="mb-6">
         <div
           {...getRootProps()}
-          className={`border-2 border-dashed rounded p-6 text-center cursor-pointer ${
-            isDragActive ? 'border-blue-500' : 'border-gray-300'
+          className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+            isDragActive
+              ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+              : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
           }`}
         >
           <input {...getInputProps()} />
-          {isDragActive ? 'Suelta el ZIP/SHP aquí…' : 'Arrastra un .zip/.shp o haz clic para seleccionar'}
+          <p className="text-gray-600 dark:text-gray-400">
+            {isDragActive ? 'Suelta el ZIP/SHP aquí…' : 'Arrastra un .zip/.shp o haz clic para seleccionar'}
+          </p>
         </div>
         {selectedFile && (
-          <div className="mt-4 space-y-4">
-            <h4 className="font-semibold">Vista previa: {selectedFile.name}</h4>
+          <div className="mt-6 space-y-4">
+            <h4 className="font-semibold text-gray-900 dark:text-gray-100">Vista previa: {selectedFile.name}</h4>
             <ShpUploadAndGrid />
-            <button className="btn-primary" disabled={loading} onClick={upload}>
-              {loading ? 'Subiendo…' : 'Confirmar y guardar capa'}
-            </button>
+            <div className="flex justify-end">
+              <Button variant="primary" disabled={loading} onClick={upload} isLoading={loading}>
+                Confirmar y guardar capa
+              </Button>
+            </div>
           </div>
         )}
       </Card>
 
-      <Card>
-        <h3 className="text-lg font-semibold mb-2">Afectaciones cargadas</h3>
-        <table className="min-w-full text-sm">
-          <thead>
-            <tr>
-              <th className="px-4 py-2 text-left">Nombre</th>
-              <th className="px-4 py-2 text-left">Estado</th>
-              <th className="px-4 py-2 text-left">Fecha</th>
-            </tr>
-          </thead>
-          <tbody>
-            {capas.map((c) => (
-              <tr key={c._id} className="odd:bg-gray-50">
-                <td className="px-4 py-2">{c.nombre}</td>
-                <td className="px-4 py-2 flex items-center space-x-2">
-                  <span className={`inline-block w-3 h-3 rounded-full ${qualityColor(statsMap[c._id]?.featureCount)}`}></span>
-                  <span>{c.status}</span>
-                </td>
-                <td className="px-4 py-2">{new Date(c.createdAt).toLocaleDateString()}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <Card title="Afectaciones cargadas">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nombre</TableHead>
+              <TableHead>Estado</TableHead>
+              <TableHead>Fecha</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {capas.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={3} className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  No hay afectaciones cargadas
+                </TableCell>
+              </TableRow>
+            ) : (
+              capas.map((c) => (
+                <TableRow key={c._id}>
+                  <TableCell className="font-medium">{c.nombre}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center space-x-2">
+                      <span className={`inline-block w-3 h-3 rounded-full ${qualityColor(statsMap[c._id]?.featureCount)}`}></span>
+                      <span>{c.status}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>{new Date(c.createdAt).toLocaleDateString('es-AR')}</TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
       </Card>
     </div>
   );

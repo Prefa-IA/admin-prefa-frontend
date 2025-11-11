@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { PageHeader, Card, Button } from '../components/ui';
 import OcrExtractModal from '../components/modals/OcrExtractModal';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -15,7 +16,7 @@ const CodigoUrbanisticoPage: React.FC = () => {
     setIsProcessing(true);
     setMessage(null);
     try {
-      if (!file) return; // debería estar validado por modal
+      if (!file) return;
       const fd = new FormData();
       fd.append('startPage', String(startPage));
       fd.append('endPage', String(endPage));
@@ -37,9 +38,7 @@ const CodigoUrbanisticoPage: React.FC = () => {
     }
   };
 
-  // Polling de estado
   useEffect(() => {
-    // al montar, retomar último job si está en progreso
     const last = localStorage.getItem('lastJobId');
     if (last && !jobId) {
       (async () => {
@@ -78,7 +77,6 @@ const CodigoUrbanisticoPage: React.FC = () => {
         console.error(err);
       }
     };
-    // Primer llamada inmediata
     fetchStatus();
     interval = setInterval(fetchStatus, 5000);
     return () => clearInterval(interval);
@@ -102,32 +100,62 @@ const CodigoUrbanisticoPage: React.FC = () => {
   const [chunkProgress, setChunkProgress] = useState<{p:number;t:number;i:number}>({p:0,t:0,i:0});
 
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-2xl font-bold">Código Urbanístico</h1>
-      <p className="text-sm text-gray-600 max-w-xl">
-        Selecciona el rango de páginas del PDF que deseas analizar y el sistema extraerá las reglas urbanísticas para su
-        posterior revisión.
-      </p>
-      <button className="btn-primary" onClick={() => setShowModal(true)} disabled={isProcessing || jobStatus==='processing' || jobStatus==='queued'}>
-        {isProcessing ? 'Procesando…' : 'Iniciar extracción de reglas'}
-      </button>
+    <div>
+      <PageHeader
+        title="Código Urbanístico"
+        description="Selecciona el rango de páginas del PDF que deseas analizar y el sistema extraerá las reglas urbanísticas para su posterior revisión."
+      />
 
-      {message && <p className="text-sm text-blue-600">{message}</p>}
+      <Card>
+        <div className="space-y-6">
+          <Button
+            variant="primary"
+            onClick={() => setShowModal(true)}
+            disabled={isProcessing || jobStatus === 'processing' || jobStatus === 'queued'}
+            isLoading={isProcessing}
+          >
+        {isProcessing ? 'Procesando…' : 'Iniciar extracción de reglas'}
+          </Button>
+
+          {message && (
+            <div className={`p-3 rounded-lg ${
+              message.includes('error') || message.includes('Error')
+                ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
+                : 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800'
+            }`}>
+              <p className={`text-sm ${
+                message.includes('error') || message.includes('Error')
+                  ? 'text-red-600 dark:text-red-400'
+                  : 'text-blue-600 dark:text-blue-400'
+              }`}>{message}</p>
+            </div>
+          )}
 
       {jobStatus && (
         <div className="space-y-2 max-w-md">
-          {jobStatus==='processing' || jobStatus==='queued' ? (
+              {jobStatus === 'processing' || jobStatus === 'queued' ? (
             <>
-              <p className="text-sm text-gray-700">Procesando reglas mediante IA… ({chunkProgress.p}/{chunkProgress.t} bloques)</p>
-              <div className="w-full bg-gray-200 rounded h-2">
-                <div className="bg-blue-600 h-2 rounded" style={{ width: `${chunkProgress.t? Math.floor(chunkProgress.p/chunkProgress.t*100):0}%` }}></div>
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    Procesando reglas mediante IA… ({chunkProgress.p}/{chunkProgress.t} bloques)
+                  </p>
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                    <div
+                      className="bg-primary-600 h-2.5 rounded-full transition-all duration-300"
+                      style={{ width: `${chunkProgress.t ? Math.floor((chunkProgress.p / chunkProgress.t) * 100) : 0}%` }}
+                    ></div>
               </div>
             </>
           ) : (
-            <p className="text-sm text-green-700">Proceso completado. Reglas nuevas: {chunkProgress.i}</p>
+                <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                  <p className="text-sm text-green-700 dark:text-green-400">
+                    Proceso completado. Reglas nuevas: {chunkProgress.i}
+                  </p>
+                </div>
+              )}
+            </div>
           )}
         </div>
-      )}
+      </Card>
 
       {showModal && <OcrExtractModal onClose={() => setShowModal(false)} onSubmit={handleSubmit} />}
     </div>

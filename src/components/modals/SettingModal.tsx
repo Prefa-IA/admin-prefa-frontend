@@ -1,12 +1,5 @@
 import React, { useState, useEffect } from 'react';
-
-export interface Setting {
-  _id?: string;
-  key: string;
-  category: string;
-  value: any;
-  description?: string;
-}
+import { Setting } from '../../types/settings';
 
 interface Props {
   initial?: Setting;
@@ -34,7 +27,6 @@ const SettingModal: React.FC<Props> = ({ initial, category, onClose, onSave }) =
     try {
       parsed = JSON.parse(value);
     } catch (err) {
-      // fallback string
       parsed = value;
     }
     onSave({ _id: initial?._id, key: keyValue.trim(), category, value: parsed, description });
@@ -84,4 +76,5 @@ const SettingModal: React.FC<Props> = ({ initial, category, onClose, onSave }) =
   );
 };
 
+export type { Setting };
 export default SettingModal; 

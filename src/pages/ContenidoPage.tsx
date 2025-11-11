@@ -1,12 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import Card from '../components/Card';
+import { Card, PageHeader, Table, TableHeader, TableRow, TableHead, TableCell, TableBody } from '../components/ui';
 import NewItemButton from '../components/NewItemButton';
 import NewCodigoModal from '../components/modals/NewCodigoModal';
 import NewPrecioModal from '../components/modals/NewPrecioModal';
 import axios from 'axios';
-
-interface Codigo { _id: string; codigo: string; descripcion: string }
-interface Precio { _id: string; barrio: string; valor: number }
+import { Codigo, Precio } from '../types/contenido';
 
 const ContenidoPage: React.FC = () => {
   const [tab, setTab] = useState<'codigos' | 'precios'>('codigos');
@@ -29,62 +27,99 @@ const ContenidoPage: React.FC = () => {
     reload();
   }, [tab]);
 
+  const tabs = [
+    { id: 'codigos' as const, label: 'Códigos Urbanísticos' },
+    { id: 'precios' as const, label: 'Precios m²' }
+  ];
+
   return (
-    <div className="space-y-6">
-      <div className="flex space-x-4 mb-4">
-        <button className={`btn-primary ${tab === 'codigos' ? '' : 'opacity-50'}`} onClick={() => setTab('codigos')}>Códigos</button>
-        <button className={`btn-primary ${tab === 'precios' ? '' : 'opacity-50'}`} onClick={() => setTab('precios')}>Precios m²</button>
+    <div>
+      <PageHeader
+        title="Contenido"
+        description="Gestiona códigos urbanísticos y precios por m²"
+      />
+
+      <div className="mb-6 flex space-x-2 border-b border-gray-200 dark:border-gray-700">
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${
+              tab === t.id
+                ? 'border-primary-600 text-primary-600 dark:text-primary-400'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+            }`}
+            onClick={() => setTab(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
       </div>
 
       {tab === 'codigos' && (
-        <Card>
-          <h3 className="text-lg font-semibold mb-2">Códigos Urbanísticos</h3>
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr>
-                <th className="px-4 py-2 text-left">Código</th>
-                <th className="px-4 py-2 text-left">Descripción</th>
-              </tr>
-            </thead>
-            <tbody>
-              {codigos.map(c => (
-                <tr key={c._id}>
-                  <td className="px-4 py-2">{c.codigo}</td>
-                  <td className="px-4 py-2">{c.descripcion}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          <div className="flex justify-end mt-4">
-            <NewItemButton label="+ Nuevo código" onClick={() => setShowCodigoModal(true)} />
-          </div>
+        <Card
+          title="Códigos Urbanísticos"
+          headerActions={
+            <NewItemButton label="Nuevo código" onClick={() => setShowCodigoModal(true)} />
+          }
+        >
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Código</TableHead>
+                <TableHead>Descripción</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {codigos.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={2} className="text-center py-8 text-gray-500 dark:text-gray-400">
+                    No hay códigos registrados
+                  </TableCell>
+                </TableRow>
+              ) : (
+                codigos.map(c => (
+                  <TableRow key={c._id}>
+                    <TableCell className="font-medium">{c.codigo}</TableCell>
+                    <TableCell>{c.descripcion}</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
         </Card>
       )}
 
       {tab === 'precios' && (
-        <Card>
-          <h3 className="text-lg font-semibold mb-2">Precios por m²</h3>
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr>
-                <th className="px-4 py-2 text-left">Barrio</th>
-                <th className="px-4 py-2 text-left">Valor USD</th>
-              </tr>
-            </thead>
-            <tbody>
-              {precios.map(p => (
-                <tr key={p._id}>
-                  <td className="px-4 py-2">{p.barrio}</td>
-                  <td className="px-4 py-2">{p.valor}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          <div className="flex justify-end mt-4">
-            <NewItemButton label="+ Nuevo precio" onClick={() => setShowPrecioModal(true)} />
-          </div>
+        <Card
+          title="Precios por m²"
+          headerActions={
+            <NewItemButton label="Nuevo precio" onClick={() => setShowPrecioModal(true)} />
+          }
+        >
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Barrio</TableHead>
+                <TableHead>Valor USD</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {precios.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={2} className="text-center py-8 text-gray-500 dark:text-gray-400">
+                    No hay precios registrados
+                  </TableCell>
+                </TableRow>
+              ) : (
+                precios.map(p => (
+                  <TableRow key={p._id}>
+                    <TableCell className="font-medium">{p.barrio}</TableCell>
+                    <TableCell>${p.valor}</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
         </Card>
       )}
 

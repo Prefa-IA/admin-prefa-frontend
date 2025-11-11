@@ -4,20 +4,27 @@ import { LatLngExpression } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.heat';
 import Card from '../Card';
+import { HeatMapPoint } from '../../types/components';
 
-interface Point {
-  lat: number;
-  lon: number;
-  count: number;
-}
-
-const HeatLayer: React.FC<{ points: Point[] }> = ({ points }) => {
+const HeatLayer: React.FC<{ points: HeatMapPoint[] }> = ({ points }) => {
   const map = useMap();
   useEffect(() => {
     // @ts-ignore
     const heat = (window as any).L.heatLayer(
-      points.map(p => [p.lat, p.lon, p.count]),
-      { radius: 25, blur: 15, maxZoom: 17 }
+      points.map(p => [p.lat, p.lon, p.count || 1]),
+      {
+        radius: 35,
+        blur: 25,
+        maxZoom: 17,
+        gradient: {
+          0.0: 'rgba(255, 255, 0, 0.4)',      // Amarillo visible desde el inicio
+          0.2: 'rgba(255, 200, 0, 0.7)',      // Amarillo más opaco
+          0.4: 'rgba(255, 150, 0, 0.8)',      // Amarillo-naranja
+          0.6: 'rgba(255, 100, 0, 0.9)',      // Naranja
+          0.8: 'rgba(255, 50, 0, 0.95)',     // Naranja-rojo
+          1.0: 'rgba(255, 0, 0, 1)'          // Rojo intenso
+        }
+      }
     ).addTo(map);
     return () => {
       map.removeLayer(heat);
@@ -26,7 +33,7 @@ const HeatLayer: React.FC<{ points: Point[] }> = ({ points }) => {
   return null;
 };
 
-const HeatMapCard: React.FC<{ points: Point[] }> = ({ points }) => {
+const HeatMapCard: React.FC<{ points: HeatMapPoint[] }> = ({ points }) => {
   return (
     <Card>
       <h3 className="text-lg font-semibold mb-2">Heatmap de barrios</h3>

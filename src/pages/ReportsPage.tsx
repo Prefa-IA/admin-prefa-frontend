@@ -1,15 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import Pagination from '../components/Pagination';
-
-interface Informe {
-  _id: string;
-  direccionCompleta?: string;
-  pdfUrl?: string;
-  estado: string;
-  createdAt: string;
-  usuario?: { nombre: string; email: string };
-}
+import { Pagination, PageHeader, FilterBar, Card, Table, TableHeader, TableRow, TableHead, TableCell, TableBody, Button } from '../components/ui';
+import { Informe } from '../types/reports';
+import { ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 
 const ReportsPage: React.FC = () => {
   const [informes, setInformes] = useState<Informe[]>([]);
@@ -42,60 +35,111 @@ const ReportsPage: React.FC = () => {
 
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  if (loading) return <p className="p-6">Cargando...</p>;
-  if (error) return <p className="p-6 text-red-500">{error}</p>;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Cargando informes...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <div className="text-center py-8">
+          <p className="text-red-600 dark:text-red-400">{error}</p>
+        </div>
+      </Card>
+    );
+  }
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-semibold mb-4">Informes</h2>
-      <input
-        type="text"
-        placeholder="Buscar por dirección o email de usuario..."
-        value={query}
-        onChange={e => setQuery(e.target.value)}
-        className="input-field mb-4 max-w-sm"
+    <div>
+      <PageHeader
+        title="Informes"
+        description="Visualiza y gestiona los informes generados"
       />
-      <table className="min-w-full divide-y divide-gray-200 text-sm">
-        <thead>
-          <tr>
-            <th className="px-4 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">Dirección</th>
-            <th className="px-4 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
-            <th className="px-4 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-            <th className="px-4 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
-            <th className="px-4 py-2"></th>
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {paginated.map(inf => (
-            <tr key={inf._id}>
-              <td className="px-4 py-2 whitespace-nowrap">{inf.direccionCompleta || '—'}</td>
-              <td className="px-4 py-2 whitespace-nowrap">{inf.usuario ? `${inf.usuario.nombre} (${inf.usuario.email})` : '—'}</td>
-              <td className="px-4 py-2 whitespace-nowrap">{inf.estado}</td>
-              <td className="px-4 py-2 whitespace-nowrap">{new Date(inf.createdAt).toLocaleDateString()}</td>
-              <td className="px-4 py-2 whitespace-nowrap text-right">
-                {inf.pdfUrl && (
-                  <a
-                    href={inf.pdfUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-blue-600 hover:underline"
-                  >
-                    Ver PDF
-                  </a>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
 
-      <Pagination
-        total={filtered.length}
-        current={page}
-        pageSize={PAGE_SIZE}
-        onPageChange={(p) => setPage(p)}
-        className="mt-4"
+      <FilterBar
+        searchValue={query}
+        onSearchChange={setQuery}
+        searchPlaceholder="Buscar por dirección o email de usuario..."
       />
+
+      <Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Dirección</TableHead>
+              <TableHead>Usuario</TableHead>
+              <TableHead>Estado</TableHead>
+              <TableHead>Fecha</TableHead>
+              <TableHead align="right">Acciones</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {paginated.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  No se encontraron informes
+                </TableCell>
+              </TableRow>
+            ) : (
+              paginated.map(inf => (
+                <TableRow key={inf._id}>
+                  <TableCell>{inf.direccionCompleta || '—'}</TableCell>
+                  <TableCell>
+                    {inf.usuario ? (
+                      <div>
+                        <div className="font-medium">{inf.usuario.nombre}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">{inf.usuario.email}</div>
+                      </div>
+                    ) : '—'}
+                  </TableCell>
+                  <TableCell>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      inf.estado === 'completado' 
+                        ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                        : inf.estado === 'procesando'
+                        ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                        : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                    }`}>
+                      {inf.estado}
+                    </span>
+                  </TableCell>
+                  <TableCell>{new Date(inf.createdAt).toLocaleDateString('es-AR')}</TableCell>
+                  <TableCell align="right">
+                    {inf.pdfUrl && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => window.open(inf.pdfUrl, '_blank')}
+                      >
+                        <ArrowDownTrayIcon className="h-4 w-4 mr-1.5" />
+                        Ver PDF
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+
+        {filtered.length > 0 && (
+          <div className="mt-6">
+            <Pagination
+              total={filtered.length}
+              current={page}
+              pageSize={PAGE_SIZE}
+              onPageChange={(p) => setPage(p)}
+            />
+          </div>
+        )}
+      </Card>
     </div>
   );
 };

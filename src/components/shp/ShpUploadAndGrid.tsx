@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-// @ts-ignore – la librería no proporciona tipos
 import shp from 'shpjs';
 
 interface Props {
@@ -25,7 +24,6 @@ const ShpUploadAndGrid: React.FC<Props> = ({ onDataLoaded }) => {
       try {
         const arrayBuffer = await file.arrayBuffer();
         const geojson: any = await shp(arrayBuffer);
-        // shpjs puede devolver FeatureCollection o Array de FC
         const feats: any[] =
           geojson?.features ?? (Array.isArray(geojson) ? geojson.flatMap((fc: any) => fc.features) : []);
         setFeatures(feats);

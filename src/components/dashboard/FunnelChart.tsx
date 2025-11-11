@@ -1,8 +1,7 @@
 import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import Card from '../Card';
-
-interface Item { label: string; count: number }
+import { DashboardItem } from '../../types/components';
 
 const COLORS: Record<string, string> = {
   gratuito: '#90caf9',
@@ -11,7 +10,7 @@ const COLORS: Record<string, string> = {
   gold: '#f9a825',
 };
 
-const FunnelChart: React.FC<{ data: Item[] }> = ({ data }) => (
+const FunnelChart: React.FC<{ data: DashboardItem[] }> = ({ data }) => (
   <Card>
     <h3 className="text-lg font-semibold mb-2">Funnel de conversión de planes</h3>
     {data.length === 0 ? (

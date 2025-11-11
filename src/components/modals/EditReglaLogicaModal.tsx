@@ -1,23 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import BasicModal from '../BasicModal';
-
-interface Regla {
-  _id?: string;
-  id_paso?: string;
-  distrito_cpu: string;
-  condicion_json: any;
-  formula_json: any;
-  /** Puede ser varias referencias CU */
-  id_cu_referencia?: string[];
-  descripcion?: string;
-  activo?: boolean;
-}
+import { ReglaLogica } from '../../types/reglas';
 
 interface Props {
   show: boolean;
   onClose: () => void;
-  onSave: (r: Regla) => void;
-  editing?: Regla | null;
+  onSave: (r: ReglaLogica) => void;
+  editing?: ReglaLogica | null;
   pasos: { _id: string; nombre_paso: string }[];
 }
 
@@ -67,7 +56,7 @@ const EditReglaLogicaModal: React.FC<Props> = ({ show, onClose, onSave, editing,
             id_cu_referencia: typeof form.id_cu_referencia === 'string'
               ? form.id_cu_referencia.split(',').map((s: string) => s.trim()).filter(Boolean)
               : form.id_cu_referencia
-          } as Regla;
+          } as ReglaLogica;
           onSave(payload);
         }}>Guardar</button>
       </div>

@@ -1,7 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import Card from '../components/Card';
-import SettingModal, { Setting } from '../components/modals/SettingModal';
+import { PageHeader, Card, Table, TableHeader, TableRow, TableHead, TableCell, TableBody, Button } from '../components/ui';
+import NewItemButton from '../components/NewItemButton';
+import EditIconButton from '../components/EditIconButton';
+import DeleteIconButton from '../components/DeleteIconButton';
+import ConfirmModal from '../components/ConfirmModal';
+import SettingModal from '../components/modals/SettingModal';
+import { Setting } from '../types/settings';
 
 const CATEGORY = 'edificabilidad';
 
@@ -10,6 +15,7 @@ const ParametrosEdificabilidadPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<Setting | undefined>();
+  const [toDelete, setToDelete] = useState<Setting | null>(null);
 
   const fetchSettings = async () => {
     setLoading(true);
@@ -33,47 +39,68 @@ const ParametrosEdificabilidadPage: React.FC = () => {
     fetchSettings();
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('¿Eliminar parámetro?')) return;
-    await axios.delete(`/api/admin/settings/${id}`);
+  const handleDelete = async () => {
+    if (!toDelete?._id) return;
+    await axios.delete(`/api/admin/settings/${toDelete._id}`);
+    setToDelete(null);
     fetchSettings();
   };
 
-  return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Parámetros de Edificabilidad</h1>
-        <button className="btn-primary" onClick={() => { setEditing(undefined); setShowModal(true); }}>Nuevo</button>
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Cargando parámetros...</p>
+        </div>
       </div>
+    );
+  }
+
+  return (
+    <div>
+      <PageHeader
+        title="Parámetros de Edificabilidad"
+        description="Gestiona los parámetros de edificabilidad del sistema"
+        actions={
+          <NewItemButton label="Nuevo parámetro" onClick={() => { setEditing(undefined); setShowModal(true); }} />
+        }
+      />
 
       <Card>
-        {loading ? (
-          <p>Cargando…</p>
-        ) : (
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr>
-                <th className="px-4 py-2 text-left">Clave</th>
-                <th className="px-4 py-2 text-left">Valor</th>
-                <th className="px-4 py-2 text-left">Descripción</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {settings.map((s) => (
-                <tr key={s._id} className="odd:bg-gray-50">
-                  <td className="px-4 py-2 font-mono">{s.key}</td>
-                  <td className="px-4 py-2 truncate max-w-xs">{JSON.stringify(s.value)}</td>
-                  <td className="px-4 py-2">{s.description}</td>
-                  <td className="px-4 py-2 space-x-2 text-right">
-                    <button className="text-blue-600 text-xs" onClick={() => { setEditing(s); setShowModal(true); }}>Editar</button>
-                    <button className="text-red-600 text-xs" onClick={() => handleDelete(s._id!)}>Eliminar</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Clave</TableHead>
+              <TableHead>Valor</TableHead>
+              <TableHead>Descripción</TableHead>
+              <TableHead align="right">Acciones</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {settings.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  No hay parámetros registrados
+                </TableCell>
+              </TableRow>
+            ) : (
+              settings.map((s) => (
+                <TableRow key={s._id}>
+                  <TableCell className="font-mono text-sm">{s.key}</TableCell>
+                  <TableCell className="max-w-xs truncate">{JSON.stringify(s.value)}</TableCell>
+                  <TableCell>{s.description}</TableCell>
+                  <TableCell align="right">
+                    <div className="flex items-center justify-end gap-1">
+                      <EditIconButton onClick={() => { setEditing(s); setShowModal(true); }} />
+                      <DeleteIconButton onClick={() => setToDelete(s)} />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
       </Card>
 
       {showModal && (
@@ -82,6 +109,16 @@ const ParametrosEdificabilidadPage: React.FC = () => {
           category={CATEGORY}
           onClose={() => setShowModal(false)}
           onSave={handleSave}
+        />
+      )}
+
+      {toDelete && (
+        <ConfirmModal
+          open={true}
+          title="Eliminar parámetro"
+          message={`¿Estás seguro de que deseas eliminar el parámetro "${toDelete.key}"?`}
+          onCancel={() => setToDelete(null)}
+          onConfirm={handleDelete}
         />
       )}
     </div>

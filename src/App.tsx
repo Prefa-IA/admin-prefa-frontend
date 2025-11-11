@@ -26,8 +26,10 @@ import PlanTagsPage from './pages/PlanTagsPage';
 import ConstantesTronerasPage from './pages/ConstantesTronerasPage';
 import ReglasAllPage from './pages/ReglasAllPage';
 import SendNewsletterPage from './pages/SendNewsletterPage';
+import NewsletterHistoryPage from './pages/NewsletterHistoryPage';
 import CalculoPasosPage from './pages/CalculoPasosPage';
 import ReglasLogicasPage from './pages/ReglasLogicasPage';
+import AdminUsersPage from './pages/AdminUsersPage';
 
 const PrivateRoute: React.FC<{ children: JSX.Element }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -218,8 +220,28 @@ const App: React.FC = () => {
               </PrivateRoute>
             }
           />
+          <Route
+            path="/newsletter-history"
+            element={
+              <PrivateRoute>
+                <Layout>
+                  <NewsletterHistoryPage />
+                </Layout>
+              </PrivateRoute>
+            }
+          />
           <Route path="/calculo-pasos" element={<PrivateRoute><Layout><CalculoPasosPage/></Layout></PrivateRoute>} />
           <Route path="/reglas-logicas" element={<PrivateRoute><Layout><ReglasLogicasPage/></Layout></PrivateRoute>} />
+          <Route
+            path="/admin-users"
+            element={
+              <PrivateRoute>
+                <Layout>
+                  <AdminUsersPage />
+                </Layout>
+              </PrivateRoute>
+            }
+          />
         </Routes>
       </Router>
     </AuthProvider>

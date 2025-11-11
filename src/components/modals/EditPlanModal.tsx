@@ -1,18 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-
-interface Plan {
-  id: string;
-  name: string;
-  price: number;
-  maxPrefactibilidades?: number;
-  discountPct?: number;
-  freeCredits?: number;
-  discountUntil?: string | null;
-  prioridad?: number;
-  isOverage?: boolean;
-  parentPlan?: string | null;
-}
+import { Plan } from '../../types/planes';
 
 interface Props {
   plan: Partial<Plan> & { id?: string };
@@ -54,7 +42,6 @@ const EditPlanModal: React.FC<Props> = ({ plan, onClose, onSave }) => {
   const isSuperSave = selectedTag?.slug==='super-save';
 
   const handleSubmit = () => {
-    // Validaciones
     if(prioridad==='2'){
       if(Number(freeCredits)<=0){ setErrorMsg('Debes ingresar créditos promocionales > 0 para prioridad 2'); return; }
     }

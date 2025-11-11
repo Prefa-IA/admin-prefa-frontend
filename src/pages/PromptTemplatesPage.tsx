@@ -1,23 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { PageHeader, Card, Table, TableHeader, TableRow, TableHead, TableCell, TableBody, Button } from '../components/ui';
 import NewItemButton from '../components/NewItemButton';
 import EditIconButton from '../components/EditIconButton';
 import DeleteIconButton from '../components/DeleteIconButton';
 import ConfirmModal from '../components/ConfirmModal';
 import PromptTemplateModal from '../components/modals/PromptTemplateModal';
-
-interface PromptTemplate {
-  _id?: string;
-  id?: string;
-  nombre?: string;
-  name?: string;
-  version: string;
-  contenido_prompt?: string;
-  template?: string;
-  activo?: boolean;
-  isActive?: boolean;
-  fecha_creacion?: string;
-}
+import { PromptTemplate } from '../types/prompts';
 
 const PromptTemplatesPage: React.FC = () => {
   const [templates, setTemplates] = useState<PromptTemplate[]>([]);
@@ -78,52 +67,81 @@ const PromptTemplatesPage: React.FC = () => {
     }
   };
 
-  return (
-    <div className="p-6 space-y-4">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-semibold">Plantillas de Prompt</h1>
-        <NewItemButton label="Nueva" onClick={() => setShowModal(true)} />
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Cargando plantillas...</p>
+        </div>
       </div>
+    );
+  }
 
-      {loading ? (
-        <p>Cargando...</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full border bg-white shadow">
-            <thead className="bg-gray-100">
-              <tr>
-                <th className="px-4 py-2 text-left">Nombre</th>
-                <th className="px-4 py-2">Versión</th>
-                <th className="px-4 py-2">Activo</th>
-                <th className="px-4 py-2">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {templates.map(tpl => {
+  return (
+    <div>
+      <PageHeader
+        title="Plantillas de Prompt"
+        description="Gestiona las plantillas de prompts del sistema"
+        actions={
+          <NewItemButton label="Nueva plantilla" onClick={() => setShowModal(true)} />
+        }
+      />
+
+      <Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nombre</TableHead>
+              <TableHead>Versión</TableHead>
+              <TableHead>Activo</TableHead>
+              <TableHead align="right">Acciones</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {templates.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  No hay plantillas registradas
+                </TableCell>
+              </TableRow>
+            ) : (
+              templates.map(tpl => {
                 const activo = tpl.activo ?? tpl.isActive;
                 const nombre = tpl.nombre || tpl.name;
                 return (
-                  <tr key={tpl._id} className="border-t">
-                    <td className="px-4 py-2">{nombre}</td>
-                    <td className="px-4 py-2 text-center">{tpl.version}</td>
-                    <td className="px-4 py-2 text-center">
-                      {activo ? <span className="text-green-600 font-semibold">Activo</span> : '—'}
-                    </td>
-                    <td className="px-4 py-2 flex gap-2 justify-center">
-                      <button
-                        className="btn-secondary text-xs"
-                        onClick={() => handleActivate(tpl)}
-                      >Activar</button>
-                      <EditIconButton onClick={() => { setEditing(tpl); setShowModal(true); }} />
-                      <DeleteIconButton onClick={() => setToDelete(tpl)} />
-                    </td>
-                  </tr>
+                  <TableRow key={tpl._id}>
+                    <TableCell className="font-medium">{nombre}</TableCell>
+                    <TableCell>{tpl.version}</TableCell>
+                    <TableCell>
+                      {activo ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                          Activo
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell align="right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => handleActivate(tpl)}
+                        >
+                          Activar
+                        </Button>
+                        <EditIconButton onClick={() => { setEditing(tpl); setShowModal(true); }} />
+                        <DeleteIconButton onClick={() => setToDelete(tpl)} />
+                      </div>
+                    </TableCell>
+                  </TableRow>
                 );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+              })
+            )}
+          </TableBody>
+        </Table>
+      </Card>
 
       {showModal && (
         <PromptTemplateModal

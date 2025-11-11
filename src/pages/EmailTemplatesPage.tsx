@@ -1,29 +1,17 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
-import { EyeIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { EyeIcon } from '@heroicons/react/24/outline';
+import { PageHeader, Card, Table, TableHeader, TableRow, TableHead, TableCell, TableBody, Modal, Input, Button, Checkbox, FilterBar } from '../components/ui';
 import EditIconButton from '../components/EditIconButton';
 import DeleteIconButton from '../components/DeleteIconButton';
 import NewItemButton from '../components/NewItemButton';
 import ConfirmModal from '../components/ConfirmModal';
-import Card from '../components/Card';
 import Editor from 'react-simple-code-editor';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-markup';
 import 'prismjs/components/prism-css';
 import 'prismjs/themes/prism-tomorrow.css';
-
-type Template = {
-  _id?: string;
-  slug: string;
-  nombre: string;
-  subject: string;
-  html: string;
-  variables?: string[];
-  description?: string;
-  isActive?: boolean;
-  updatedAt?: string;
-  createdAt?: string;
-};
+import { Template } from '../types/emails';
 
 const defaultTemplate: Template = {
   slug: '',
@@ -120,91 +108,159 @@ const EmailTemplatesPage: React.FC = () => {
     }
   };
 
-  // removed variable preview logic
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">Cargando plantillas...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Templates de Email</h1>
-        <NewItemButton label="Nuevo" onClick={startNew} />
-      </div>
+    <div>
+      <PageHeader
+        title="Templates de Email"
+        description="Gestiona las plantillas de correo electrónico"
+        actions={
+          <NewItemButton label="Nueva plantilla" onClick={startNew} />
+        }
+      />
 
-      <input value={q} onChange={e => setQ(e.target.value)} placeholder="Buscar" className="w-full border rounded px-3 py-2" />
-      {loading ? (
-        <div>Cargando…</div>
-      ) : (
-        <Card className="p-0 divide-y">
-          {filtered.map(t => (
-            <div key={t._id} className="p-3 flex items-center justify-between">
-              <div>
-                <div className="font-medium">{t.slug}</div>
-                <div className="text-sm text-gray-600 truncate">{t.description}</div>
-              </div>
-              <div className="flex gap-2">
-                <EditIconButton onClick={() => edit(t)} />
-                <button title="Preview" onClick={() => preview(t)} className="p-1 hover:bg-gray-100 rounded"><EyeIcon className="h-5 w-5"/></button>
-                <DeleteIconButton onClick={() => askDelete(t._id)} />
-              </div>
-            </div>
-          ))}
-        </Card>
-      )}
+      <FilterBar
+        searchValue={q}
+        onSearchChange={setQ}
+        searchPlaceholder="Buscar por slug, nombre o subject..."
+      />
+
+      <Card>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Slug</TableHead>
+              <TableHead>Descripción</TableHead>
+              <TableHead>Estado</TableHead>
+              <TableHead align="right">Acciones</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filtered.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={4} className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  No hay plantillas registradas
+                </TableCell>
+              </TableRow>
+            ) : (
+              filtered.map(t => (
+                <TableRow key={t._id}>
+                  <TableCell className="font-medium font-mono text-sm">{t.slug}</TableCell>
+                  <TableCell>{t.description || '—'}</TableCell>
+                  <TableCell>
+                    {t.isActive ? (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                        Activo
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">Inactivo</span>
+                    )}
+                  </TableCell>
+                  <TableCell align="right">
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        title="Preview"
+                        onClick={() => preview(t)}
+                        className="text-gray-600 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                      >
+                        <EyeIcon className="h-5 w-5" />
+                      </button>
+                      <EditIconButton onClick={() => edit(t)} />
+                      <DeleteIconButton onClick={() => askDelete(t._id)} />
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </Card>
 
       {/* Modal de edición/creación */}
       {showModal && selected && (
-        <div className="fixed inset-0 bg-black/30 flex items-start justify-center z-50 overflow-y-auto">
-          <div className="bg-white w-full max-w-3xl mt-10 rounded shadow-lg p-6 relative">
-            <button onClick={closeModal} className="absolute top-2 right-2 p-1 hover:bg-gray-100 rounded"><XMarkIcon className="h-6 w-6"/></button>
-            <h2 className="text-lg font-semibold mb-4">{selected._id ? 'Editar' : 'Nuevo'} Template</h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm mb-1">Slug</label>
-                <input className="w-full border rounded px-3 py-2" value={selected.slug} onChange={e => setSelected(s => ({ ...(s as Template), slug: e.target.value }))} />
-              </div>
-              <div>
-                <label className="block text-sm mb-1">Subject</label>
-                <input className="w-full border rounded px-3 py-2" value={selected.subject} onChange={e => setSelected(s => ({ ...(s as Template), subject: e.target.value }))} />
-              </div>
-              <div>
-                <label className="block text-sm mb-1">HTML / CSS</label>
+        <Modal
+          show={true}
+          title={selected._id ? 'Editar Template' : 'Nuevo Template'}
+          onClose={closeModal}
+          size="xl"
+          footer={
+            <>
+              <Button variant="secondary" onClick={closeModal}>Cancelar</Button>
+              <Button variant="primary" onClick={save} disabled={saving} isLoading={saving}>
+                Guardar
+              </Button>
+            </>
+          }
+        >
+          <div className="space-y-4">
+            <Input
+              label="Slug"
+              value={selected.slug}
+              onChange={(e) => setSelected(s => ({ ...(s as Template), slug: e.target.value }))}
+              placeholder="ej: bienvenida-usuario"
+            />
+            <Input
+              label="Subject"
+              value={selected.subject}
+              onChange={(e) => setSelected(s => ({ ...(s as Template), subject: e.target.value }))}
+              placeholder="Asunto del email"
+            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                HTML / CSS
+              </label>
+              <div className="border rounded-lg overflow-hidden dark:border-gray-600">
                 <Editor
                   value={selected.html}
                   onValueChange={code => setSelected(s => ({ ...(s as Template), html: code }))}
                   highlight={code => Prism.highlight(code, Prism.languages.markup, 'markup')}
                   padding={12}
-                  className="w-full border rounded font-mono text-sm"
-                  style={{ minHeight: '240px', background: '#2d2d2d', color: '#ccc', overflow: 'auto' }}
+                  className="w-full font-mono text-sm dark:bg-gray-900"
+                  style={{ minHeight: '300px', background: '#1e293b', color: '#e2e8f0', overflow: 'auto' }}
                 />
               </div>
-              <div>
-                <label className="block text-sm mb-1">Variables (coma separadas)</label>
-                <input className="w-full border rounded px-3 py-2" value={(selected.variables || []).join(', ')} onChange={e => setSelected(s => ({ ...(s as Template), variables: e.target.value.split(',').map(v => v.trim()).filter(Boolean) }))} />
-              </div>
-              <div>
-                <label className="block text-sm mb-1">Descripción</label>
-                <input className="w-full border rounded px-3 py-2" value={selected.description || ''} onChange={e => setSelected(s => ({ ...(s as Template), description: e.target.value }))} />
-              </div>
-              <div className="flex items-center gap-2">
-                <input type="checkbox" checked={!!selected.isActive} onChange={e => setSelected(s => ({ ...(s as Template), isActive: e.target.checked }))} />
-                <span className="text-sm">Activo</span>
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <button className="px-4 py-2 border rounded" onClick={closeModal}>Cancelar</button>
-                <button className="px-4 py-2 bg-blue-600 text-white rounded" onClick={save} disabled={saving}>{saving ? 'Guardando…' : 'Guardar'}</button>
-              </div>
             </div>
+            <Input
+              label="Variables (coma separadas)"
+              value={(selected.variables || []).join(', ')}
+              onChange={(e) => setSelected(s => ({ ...(s as Template), variables: e.target.value.split(',').map(v => v.trim()).filter(Boolean) }))}
+              placeholder="nombre, email, fecha"
+            />
+            <Input
+              label="Descripción"
+              value={selected.description || ''}
+              onChange={(e) => setSelected(s => ({ ...(s as Template), description: e.target.value }))}
+              placeholder="Descripción del template"
+            />
+            <Checkbox
+              label="Activo"
+              checked={!!selected.isActive}
+              onChange={(e) => setSelected(s => ({ ...(s as Template), isActive: e.target.checked }))}
+            />
           </div>
-        </div>
+        </Modal>
       )}
 
       {/* Modal Preview */}
       {previewHtml && (
-        <div className="fixed inset-0 bg-black/30 flex items-start justify-center z-50 overflow-y-auto" onClick={()=>setPreviewHtml('')}>
-          <div className="bg-white w-full max-w-4xl mt-10 rounded shadow-lg p-4 relative" onClick={e=>e.stopPropagation()}>
-            <button onClick={()=>setPreviewHtml('')} className="absolute top-2 right-2 p-1 hover:bg-gray-100 rounded"><XMarkIcon className="h-6 w-6"/></button>
-            <iframe title="preview" className="w-full h-[70vh] border rounded" srcDoc={previewHtml} />
-          </div>
-        </div>
+        <Modal
+          show={true}
+          title="Vista previa del email"
+          onClose={() => setPreviewHtml('')}
+          size="xl"
+        >
+          <iframe title="preview" className="w-full h-[70vh] border rounded" srcDoc={previewHtml} />
+        </Modal>
       )}
       <ConfirmModal
         open={confirmOpen}
