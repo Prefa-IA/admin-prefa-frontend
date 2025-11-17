@@ -1,13 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { PageHeader, Card, Table, TableHeader, TableRow, TableHead, TableCell, TableBody } from '../components/ui';
-import NewItemButton from '../components/NewItemButton';
-import EditIconButton from '../components/EditIconButton';
-import DeleteIconButton from '../components/DeleteIconButton';
+
 import ConfirmModal from '../components/ConfirmModal';
+import DeleteIconButton from '../components/DeleteIconButton';
+import EditIconButton from '../components/EditIconButton';
 import EditReglaLogicaModal from '../components/modals/EditReglaLogicaModal';
-import { ReglaLogica } from '../types/reglas';
+import NewItemButton from '../components/NewItemButton';
+import {
+  Card,
+  PageHeader,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../components/ui';
 import { Paso } from '../types/pasos';
+import { ReglaLogica } from '../types/reglas';
 
 const ReglasLogicasPage: React.FC = () => {
   const [reglas, setReglas] = useState<ReglaLogica[]>([]);
@@ -22,7 +32,7 @@ const ReglasLogicasPage: React.FC = () => {
     try {
       const [{ data: reglasData }, { data: pasosData }] = await Promise.all([
         axios.get<ReglaLogica[]>('/admin/reglas-logicas'),
-        axios.get<Paso[]>('/admin/calculo-pasos')
+        axios.get<Paso[]>('/admin/calculo-pasos'),
       ]);
       setReglas(reglasData);
       setPasos(pasosData);
@@ -33,7 +43,7 @@ const ReglasLogicasPage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchAll();
+    void fetchAll();
   }, []);
 
   const handleSave = async (r: ReglaLogica) => {
@@ -45,7 +55,7 @@ const ReglasLogicasPage: React.FC = () => {
       }
       setShowModal(false);
       setEditing(null);
-      fetchAll();
+      void fetchAll();
     } catch (e) {
       console.error(e);
       alert('Error guardando regla');
@@ -57,13 +67,13 @@ const ReglasLogicasPage: React.FC = () => {
     try {
       await axios.delete(`/admin/reglas-logicas/${toDelete._id}`);
       setToDelete(null);
-      fetchAll();
+      void fetchAll();
     } catch (e) {
       console.error(e);
     }
   };
 
-  const pasoNombre = (id?: string) => pasos.find(p => p._id === id)?.nombre_paso || '';
+  const pasoNombre = (id?: string) => pasos.find((p) => p._id === id)?.nombre_paso || '';
   const pasosSafe = pasos.filter((p): p is Paso & { _id: string } => !!p._id);
 
   if (loading) {
@@ -82,9 +92,7 @@ const ReglasLogicasPage: React.FC = () => {
       <PageHeader
         title="Reglas Lógicas"
         description="Gestiona las reglas lógicas del sistema"
-        actions={
-          <NewItemButton label="Nueva regla" onClick={() => setShowModal(true)} />
-        }
+        actions={<NewItemButton label="Nueva regla" onClick={() => setShowModal(true)} />}
       />
 
       <Card>
@@ -101,33 +109,45 @@ const ReglasLogicasPage: React.FC = () => {
           <TableBody>
             {reglas.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-gray-500 dark:text-gray-400">
+                <TableCell
+                  colSpan={5}
+                  className="text-center py-8 text-gray-500 dark:text-gray-400"
+                >
                   No hay reglas lógicas registradas
                 </TableCell>
               </TableRow>
             ) : (
-              reglas.map(r => (
+              reglas.map((r) => (
                 <TableRow key={r._id}>
                   <TableCell>{pasoNombre(r.id_paso)}</TableCell>
                   <TableCell>{r.distrito_cpu}</TableCell>
                   <TableCell>
                     {(Array.isArray(r.id_cu_referencia)
                       ? r.id_cu_referencia
-                      : (r.id_cu_referencia ? [r.id_cu_referencia] : [])
+                      : r.id_cu_referencia
+                        ? [r.id_cu_referencia]
+                        : []
                     ).join(', ')}
                   </TableCell>
                   <TableCell>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      r.activo
-                        ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                        : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                    }`}>
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        r.activo
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                          : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                      }`}
+                    >
                       {r.activo ? 'Sí' : 'No'}
                     </span>
                   </TableCell>
                   <TableCell align="right">
                     <div className="flex items-center justify-end gap-1">
-                      <EditIconButton onClick={() => { setEditing(r); setShowModal(true); }} />
+                      <EditIconButton
+                        onClick={() => {
+                          setEditing(r);
+                          setShowModal(true);
+                        }}
+                      />
                       <DeleteIconButton onClick={() => setToDelete(r)} />
                     </div>
                   </TableCell>
@@ -141,9 +161,14 @@ const ReglasLogicasPage: React.FC = () => {
       {showModal && (
         <EditReglaLogicaModal
           show={showModal}
-          onClose={() => { setShowModal(false); setEditing(null); }}
-          onSave={handleSave}
-          editing={editing as any}
+          onClose={() => {
+            setShowModal(false);
+            setEditing(null);
+          }}
+          onSave={(r) => {
+            void handleSave(r);
+          }}
+          editing={editing}
           pasos={pasosSafe}
         />
       )}
@@ -152,7 +177,9 @@ const ReglasLogicasPage: React.FC = () => {
         <ConfirmModal
           open={true}
           onCancel={() => setToDelete(null)}
-          onConfirm={handleDelete}
+          onConfirm={() => {
+            void handleDelete();
+          }}
           title="Eliminar regla"
           message="¿Estás seguro de que deseas eliminar esta regla lógica?"
         />

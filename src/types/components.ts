@@ -20,4 +20,3 @@ export interface HeatMapPoint {
   lon: number;
   count: number;
 }
-

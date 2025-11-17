@@ -27,10 +27,12 @@ interface TableCellProps {
 const Table: React.FC<TableProps> = ({ children, className = '' }) => {
   return (
     <div className="overflow-x-auto">
-      <table className={`
+      <table
+        className={`
         w-full divide-y divide-gray-200 dark:divide-gray-700
         ${className}
-      `}>
+      `}
+      >
         {children}
       </table>
     </div>
@@ -39,10 +41,12 @@ const Table: React.FC<TableProps> = ({ children, className = '' }) => {
 
 const TableHeader: React.FC<TableHeaderProps> = ({ children, className = '' }) => {
   return (
-    <thead className={`
+    <thead
+      className={`
       bg-gray-50 dark:bg-gray-900/50
       ${className}
-    `}>
+    `}
+    >
       {children}
     </thead>
   );
@@ -64,15 +68,21 @@ const TableRow: React.FC<TableRowProps> = ({ children, className = '', onClick }
   );
 };
 
-const TableHead: React.FC<TableCellProps> = ({ children, className = '', align = 'left', colSpan, title }) => {
+const TableHead: React.FC<TableCellProps> = ({
+  children,
+  className = '',
+  align = 'left',
+  colSpan,
+  title,
+}) => {
   const alignClasses = {
     left: 'text-left',
     center: 'text-center',
-    right: 'text-right'
+    right: 'text-right',
   };
 
   return (
-    <th 
+    <th
       className={`
         px-4 md:px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider
         ${alignClasses[align]}
@@ -86,15 +96,21 @@ const TableHead: React.FC<TableCellProps> = ({ children, className = '', align =
   );
 };
 
-const TableCell: React.FC<TableCellProps> = ({ children, className = '', align = 'left', colSpan, title }) => {
+const TableCell: React.FC<TableCellProps> = ({
+  children,
+  className = '',
+  align = 'left',
+  colSpan,
+  title,
+}) => {
   const alignClasses = {
     left: 'text-left',
     center: 'text-center',
-    right: 'text-right'
+    right: 'text-right',
   };
 
   return (
-    <td 
+    <td
       className={`
         px-4 md:px-6 py-4 text-sm text-gray-900 dark:text-gray-100
         ${alignClasses[align]}
@@ -112,5 +128,4 @@ const TableBody: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return <tbody className="divide-y divide-gray-200 dark:divide-gray-700">{children}</tbody>;
 };
 
-export { Table, TableHeader, TableRow, TableHead, TableCell, TableBody };
-
+export { Table, TableBody, TableCell, TableHead, TableHeader, TableRow };

@@ -9,4 +9,3 @@ export interface Precio {
   barrio: string;
   valor: number;
 }
-

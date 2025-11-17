@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { EyeIcon, EyeSlashIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-toastify';
+import { ArrowLeftIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+
+import { useAuth } from '../contexts/AuthContext';
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -29,7 +30,7 @@ const LoginPage: React.FC = () => {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email }),
-          }).then(async r => {
+          }).then(async (r) => {
             if (!r.ok) {
               const d = await r.json().catch(() => ({}));
               throw new Error(d.error || 'No se pudo enviar el email');
@@ -38,11 +39,12 @@ const LoginPage: React.FC = () => {
             setMode('login');
             setEmail('');
           });
-        } catch (err: any) {
-          toast.error(err.message || 'Error al enviar el correo');
+        } catch (err: unknown) {
+          const error = err as { message?: string };
+          toast.error(error.message || 'Error al enviar el correo');
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       // El error ya se maneja en AuthContext con toast
       console.error(err);
     }
@@ -50,7 +52,10 @@ const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-screen pt-[90px] flex justify-center items-center w-full px-4 sm:px-0">
-      <div className="bg-white dark:bg-gray-800 p-4 sm:p-8 rounded shadow w-full sm:w-auto" style={{ maxWidth: '28rem', width: '95%' }}>
+      <div
+        className="bg-white dark:bg-gray-800 p-4 sm:p-8 rounded shadow w-full sm:w-auto"
+        style={{ maxWidth: '28rem', width: '95%' }}
+      >
         {mode === 'forgot' && (
           <button
             type="button"
@@ -64,11 +69,19 @@ const LoginPage: React.FC = () => {
             <span className="text-sm">Volver</span>
           </button>
         )}
-        
-        <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-6">
+
+        <form
+          onSubmit={(e) => {
+            void handleSubmit(e);
+          }}
+          className="mt-8 flex flex-col gap-6"
+        >
           <div className="rounded-md shadow-sm flex flex-col gap-4">
             <div className="flex flex-col">
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
                 Email
               </label>
               <input
@@ -86,7 +99,10 @@ const LoginPage: React.FC = () => {
 
             {mode !== 'forgot' && (
               <div className="flex flex-col">
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                >
                   Contraseña
                 </label>
                 <div className="relative">
@@ -147,4 +163,4 @@ const LoginPage: React.FC = () => {
   );
 };
 
-export default LoginPage; 
+export default LoginPage;

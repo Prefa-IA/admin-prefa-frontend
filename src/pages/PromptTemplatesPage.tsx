@@ -1,11 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { PageHeader, Card, Table, TableHeader, TableRow, TableHead, TableCell, TableBody, Button } from '../components/ui';
-import NewItemButton from '../components/NewItemButton';
-import EditIconButton from '../components/EditIconButton';
-import DeleteIconButton from '../components/DeleteIconButton';
+
 import ConfirmModal from '../components/ConfirmModal';
+import DeleteIconButton from '../components/DeleteIconButton';
+import EditIconButton from '../components/EditIconButton';
 import PromptTemplateModal from '../components/modals/PromptTemplateModal';
+import NewItemButton from '../components/NewItemButton';
+import {
+  Button,
+  Card,
+  PageHeader,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../components/ui';
 import { PromptTemplate } from '../types/prompts';
 
 const PromptTemplatesPage: React.FC = () => {
@@ -27,7 +38,7 @@ const PromptTemplatesPage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchData();
+    void fetchData();
   }, []);
 
   const handleSave = async (tpl: PromptTemplate) => {
@@ -39,7 +50,7 @@ const PromptTemplatesPage: React.FC = () => {
       }
       setShowModal(false);
       setEditing(null);
-      fetchData();
+      void fetchData();
     } catch (err) {
       console.error(err);
       alert('Error guardando plantilla');
@@ -50,7 +61,7 @@ const PromptTemplatesPage: React.FC = () => {
     if (!tpl._id) return;
     try {
       await axios.put(`/api/prompts/${tpl._id}/activate`);
-      fetchData();
+      void fetchData();
     } catch (err) {
       console.error(err);
     }
@@ -61,7 +72,7 @@ const PromptTemplatesPage: React.FC = () => {
     try {
       await axios.delete(`/api/prompts/${toDelete._id}`);
       setToDelete(null);
-      fetchData();
+      void fetchData();
     } catch (err) {
       console.error(err);
     }
@@ -83,9 +94,7 @@ const PromptTemplatesPage: React.FC = () => {
       <PageHeader
         title="Plantillas de Prompt"
         description="Gestiona las plantillas de prompts del sistema"
-        actions={
-          <NewItemButton label="Nueva plantilla" onClick={() => setShowModal(true)} />
-        }
+        actions={<NewItemButton label="Nueva plantilla" onClick={() => setShowModal(true)} />}
       />
 
       <Card>
@@ -101,12 +110,15 @@ const PromptTemplatesPage: React.FC = () => {
           <TableBody>
             {templates.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-8 text-gray-500 dark:text-gray-400">
+                <TableCell
+                  colSpan={4}
+                  className="text-center py-8 text-gray-500 dark:text-gray-400"
+                >
                   No hay plantillas registradas
                 </TableCell>
               </TableRow>
             ) : (
-              templates.map(tpl => {
+              templates.map((tpl) => {
                 const activo = tpl.activo ?? tpl.isActive;
                 const nombre = tpl.nombre || tpl.name;
                 return (
@@ -127,11 +139,18 @@ const PromptTemplatesPage: React.FC = () => {
                         <Button
                           variant="secondary"
                           size="sm"
-                          onClick={() => handleActivate(tpl)}
+                          onClick={() => {
+                            void handleActivate(tpl);
+                          }}
                         >
                           Activar
                         </Button>
-                        <EditIconButton onClick={() => { setEditing(tpl); setShowModal(true); }} />
+                        <EditIconButton
+                          onClick={() => {
+                            setEditing(tpl);
+                            setShowModal(true);
+                          }}
+                        />
                         <DeleteIconButton onClick={() => setToDelete(tpl)} />
                       </div>
                     </TableCell>
@@ -146,8 +165,13 @@ const PromptTemplatesPage: React.FC = () => {
       {showModal && (
         <PromptTemplateModal
           initialData={editing || undefined}
-          onClose={() => { setShowModal(false); setEditing(null); }}
-          onSave={handleSave}
+          onClose={() => {
+            setShowModal(false);
+            setEditing(null);
+          }}
+          onSave={(tpl) => {
+            void handleSave(tpl);
+          }}
         />
       )}
 
@@ -157,11 +181,13 @@ const PromptTemplatesPage: React.FC = () => {
           title="Eliminar plantilla"
           message={`¿Seguro que deseas eliminar "${toDelete.nombre || toDelete.name}"?`}
           onCancel={() => setToDelete(null)}
-          onConfirm={handleDelete}
+          onConfirm={() => {
+            void handleDelete();
+          }}
         />
       )}
     </div>
   );
 };
 
-export default PromptTemplatesPage; 
+export default PromptTemplatesPage;

@@ -7,4 +7,3 @@ export interface Paso {
   descripcion?: string;
   activo?: boolean;
 }
-

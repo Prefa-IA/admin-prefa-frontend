@@ -1,10 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { PageHeader, Card, Table, TableHeader, TableRow, TableHead, TableCell, TableBody, Modal, Input, Button } from '../components/ui';
-import NewItemButton from '../components/NewItemButton';
-import EditIconButton from '../components/EditIconButton';
-import DeleteIconButton from '../components/DeleteIconButton';
+
 import ConfirmModal from '../components/ConfirmModal';
+import DeleteIconButton from '../components/DeleteIconButton';
+import EditIconButton from '../components/EditIconButton';
+import NewItemButton from '../components/NewItemButton';
+import {
+  Button,
+  Card,
+  Input,
+  Modal,
+  PageHeader,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../components/ui';
 import { PlanTag } from '../types/planTags';
 
 const emptyTag: PlanTag = { slug: '', name: '', bgClass: '', icon: '' };
@@ -23,10 +36,12 @@ const PlanTagsPage: React.FC = () => {
       const { data } = await axios.get<PlanTag[]>('/api/admin/plan-tags');
       console.log('PlanTags recibidos:', data);
       setTags(Array.isArray(data) ? data : []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error al cargar etiquetas:', err);
-      console.error('Response:', err.response?.data);
-      const errorMessage = err.response?.data?.error || err.message || 'Error al cargar etiquetas';
+      const error = err as { response?: { data?: { error?: string } }; message?: string };
+      console.error('Response:', error.response?.data);
+      const errorMessage =
+        error.response?.data?.error || error.message || 'Error al cargar etiquetas';
       setError(errorMessage);
       setTags([]);
     } finally {
@@ -34,20 +49,22 @@ const PlanTagsPage: React.FC = () => {
     }
   };
 
-  useEffect(() => { fetchTags(); }, []);
+  useEffect(() => {
+    void fetchTags();
+  }, []);
 
   const saveTag = async (tag: PlanTag) => {
     if (tag._id) await axios.put(`/api/admin/plan-tags/${tag._id}`, tag);
     else await axios.post('/api/admin/plan-tags', tag);
     setEditing(null);
-    fetchTags();
+    void fetchTags();
   };
 
   const deleteTag = async () => {
     if (!confirmDel?._id) return;
     await axios.delete(`/api/admin/plan-tags/${confirmDel._id}`);
     setConfirmDel(null);
-    fetchTags();
+    void fetchTags();
   };
 
   if (loading) {
@@ -91,16 +108,19 @@ const PlanTagsPage: React.FC = () => {
           <TableBody>
             {tags.length === 0 && !loading ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-gray-500 dark:text-gray-400">
+                <TableCell
+                  colSpan={5}
+                  className="text-center py-8 text-gray-500 dark:text-gray-400"
+                >
                   {error ? 'Error al cargar etiquetas' : 'No hay etiquetas registradas'}
                 </TableCell>
               </TableRow>
             ) : (
-              tags.map(t => (
+              tags.map((t) => (
                 <TableRow key={t._id || t.slug}>
                   <TableCell className="font-mono text-sm">{t.slug}</TableCell>
                   <TableCell className="font-medium">{t.name}</TableCell>
-                  <TableCell className="text-center">{t.icon||'—'}</TableCell>
+                  <TableCell className="text-center">{t.icon || '—'}</TableCell>
                   <TableCell className="text-xs font-mono">{t.bgClass}</TableCell>
                   <TableCell align="right">
                     <div className="flex items-center justify-end gap-1">
@@ -119,7 +139,9 @@ const PlanTagsPage: React.FC = () => {
         <TagModal
           tag={editing}
           onClose={() => setEditing(null)}
-          onSave={saveTag}
+          onSave={(t) => {
+            void saveTag(t);
+          }}
         />
       )}
 
@@ -129,7 +151,9 @@ const PlanTagsPage: React.FC = () => {
           title="Eliminar etiqueta"
           message={`¿Estás seguro de que deseas eliminar la etiqueta "${confirmDel.name}"?`}
           onCancel={() => setConfirmDel(null)}
-          onConfirm={deleteTag}
+          onConfirm={() => {
+            void deleteTag();
+          }}
         />
       )}
     </div>
@@ -138,10 +162,14 @@ const PlanTagsPage: React.FC = () => {
 
 export default PlanTagsPage;
 
-const TagModal: React.FC<{ tag: PlanTag; onClose: () => void; onSave: (t: PlanTag) => void }> = ({ tag: init, onClose, onSave }) => {
+const TagModal: React.FC<{ tag: PlanTag; onClose: () => void; onSave: (t: PlanTag) => void }> = ({
+  tag: init,
+  onClose,
+  onSave,
+}) => {
   const [tag, setTag] = useState<PlanTag>(init);
-  const handle = (k: keyof PlanTag, v: any) => setTag(prev => ({ ...prev, [k]: v }));
-  
+  const handle = (k: keyof PlanTag, v: string | boolean) => setTag((prev) => ({ ...prev, [k]: v }));
+
   return (
     <Modal
       show={true}
@@ -150,8 +178,12 @@ const TagModal: React.FC<{ tag: PlanTag; onClose: () => void; onSave: (t: PlanTa
       size="md"
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>Cancelar</Button>
-          <Button variant="primary" onClick={()=>onSave(tag)}>Guardar</Button>
+          <Button variant="secondary" onClick={onClose}>
+            Cancelar
+          </Button>
+          <Button variant="primary" onClick={() => onSave(tag)}>
+            Guardar
+          </Button>
         </>
       }
     >
@@ -176,11 +208,11 @@ const TagModal: React.FC<{ tag: PlanTag; onClose: () => void; onSave: (t: PlanTa
         />
         <Input
           label="Icono (emoji opcional)"
-          value={tag.icon||''}
+          value={tag.icon || ''}
           onChange={(e) => handle('icon', e.target.value)}
           placeholder="Ej: ⚡"
         />
       </div>
     </Modal>
   );
-}; 
+};

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+
 import { Regla } from '../../types/reglas';
 
 interface Props {
@@ -22,7 +23,10 @@ const EditReglaModal: React.FC<Props> = ({ regla, onClose, onSave }) => {
       titulo_regla: titulo,
       descripcion_completa: descripcion,
       categoria,
-      parametros_clave: params.split(',').map(p => p.trim()).filter(Boolean),
+      parametros_clave: params
+        .split(',')
+        .map((p) => p.trim())
+        .filter(Boolean),
       condiciones,
       estado,
     };
@@ -34,34 +38,73 @@ const EditReglaModal: React.FC<Props> = ({ regla, onClose, onSave }) => {
       <div className="bg-white rounded-lg p-6 w-full max-w-lg space-y-4 shadow-xl max-h-[90vh] overflow-y-auto">
         <h3 className="text-xl font-semibold">Editar regla {regla.id_regla}</h3>
         <div className="space-y-2">
-          <label className="block text-sm font-medium">Título
-            <input className="input-field w-full" value={titulo} onChange={e => setTitulo(e.target.value)} />
+          <label className="block text-sm font-medium">
+            Título
+            <input
+              className="input-field w-full"
+              value={titulo}
+              onChange={(e) => setTitulo(e.target.value)}
+            />
           </label>
-          <label className="block text-sm font-medium">Descripción
-            <textarea className="input-field w-full" value={descripcion} onChange={e => setDescripcion(e.target.value)} rows={4} />
+          <label className="block text-sm font-medium">
+            Descripción
+            <textarea
+              className="input-field w-full"
+              value={descripcion}
+              onChange={(e) => setDescripcion(e.target.value)}
+              rows={4}
+            />
           </label>
-          <label className="block text-sm font-medium">Categoría
-            <input className="input-field w-full" value={categoria} onChange={e => setCategoria(e.target.value)} />
+          <label className="block text-sm font-medium">
+            Categoría
+            <input
+              className="input-field w-full"
+              value={categoria}
+              onChange={(e) => setCategoria(e.target.value)}
+            />
           </label>
-          <label className="block text-sm font-medium">Parámetros clave (separados por coma)
-            <input className="input-field w-full" value={params} onChange={e => setParams(e.target.value)} />
+          <label className="block text-sm font-medium">
+            Parámetros clave (separados por coma)
+            <input
+              className="input-field w-full"
+              value={params}
+              onChange={(e) => setParams(e.target.value)}
+            />
           </label>
-          <label className="block text-sm font-medium">Condiciones
-            <input className="input-field w-full" value={condiciones} onChange={e => setCondiciones(e.target.value)} />
+          <label className="block text-sm font-medium">
+            Condiciones
+            <input
+              className="input-field w-full"
+              value={condiciones}
+              onChange={(e) => setCondiciones(e.target.value)}
+            />
           </label>
-          <label className="block text-sm font-medium">Estado
-            <select className="input-field w-full" value={estado} onChange={e => setEstado(e.target.value)}>
-              {estados.map(e => <option key={e} value={e}>{e}</option>)}
+          <label className="block text-sm font-medium">
+            Estado
+            <select
+              className="input-field w-full"
+              value={estado}
+              onChange={(e) => setEstado(e.target.value)}
+            >
+              {estados.map((e) => (
+                <option key={e} value={e}>
+                  {e}
+                </option>
+              ))}
             </select>
           </label>
         </div>
         <div className="flex justify-end space-x-3 pt-2">
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSubmit}>Guardar</button>
+          <button className="btn-secondary" onClick={onClose}>
+            Cancelar
+          </button>
+          <button className="btn-primary" onClick={handleSubmit}>
+            Guardar
+          </button>
         </div>
       </div>
     </div>
   );
 };
 
-export default EditReglaModal; 
+export default EditReglaModal;

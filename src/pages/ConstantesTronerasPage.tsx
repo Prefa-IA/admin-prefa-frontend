@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { PageHeader, Card, Input, Button } from '../components/ui';
-import { useAuth } from '../contexts/AuthContext';
 import { PencilSquareIcon } from '@heroicons/react/24/outline';
+import axios from 'axios';
+
+import { Button, Card, Input, PageHeader } from '../components/ui';
+import { useAuth } from '../contexts/AuthContext';
 
 interface Setting {
   _id: string;
@@ -20,7 +21,7 @@ const ConstantesTronerasPage: React.FC = () => {
   const [saved, setSaved] = useState<null | 'ok' | 'err'>(null);
   const [values, setValues] = useState<{ [key: string]: number }>({});
 
-  const isSuperAdmin = user?.email === 'prefaia@admin.com';
+  const isSuperAdmin = user?.isSuperAdmin === true;
 
   const fetchConstants = async () => {
     setLoading(true);
@@ -28,35 +29,36 @@ const ConstantesTronerasPage: React.FC = () => {
       let constants: Setting[] = [];
       try {
         const { data } = await axios.get<Setting[]>('/api/admin/settings', {
-          params: { category: 'troneras' }
+          params: { category: 'troneras' },
         });
         constants = data || [];
       } catch (e) {
         console.warn('Error buscando con categoría, intentando sin categoría:', e);
       }
-      
+
       if (!constants || constants.length === 0) {
         const { data: allSettings } = await axios.get<Setting[]>('/api/admin/settings');
-        constants = (allSettings || []).filter(s => 
-          s.key === 'TRONERA_DEPTH' || 
-          s.key === 'MIN_ANGLE_FOR_TRONERA' || 
-          s.key === 'MAX_ANGLE_FOR_TRONERA'
+        constants = (allSettings || []).filter(
+          (s) =>
+            s.key === 'TRONERA_DEPTH' ||
+            s.key === 'MIN_ANGLE_FOR_TRONERA' ||
+            s.key === 'MAX_ANGLE_FOR_TRONERA'
         );
       }
-      
+
       setSettings(constants);
       const initialValues: { [key: string]: number } = {};
-      constants.forEach(s => {
+      constants.forEach((s) => {
         const numValue = typeof s.value === 'number' ? s.value : Number(s.value);
         initialValues[s.key] = isNaN(numValue) ? 0 : numValue;
       });
-      
+
       if (!initialValues['TRONERA_DEPTH']) initialValues['TRONERA_DEPTH'] = 0;
       if (!initialValues['MIN_ANGLE_FOR_TRONERA']) initialValues['MIN_ANGLE_FOR_TRONERA'] = 0;
       if (!initialValues['MAX_ANGLE_FOR_TRONERA']) initialValues['MAX_ANGLE_FOR_TRONERA'] = 0;
-      
+
       setValues(initialValues);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error al cargar constantes:', err);
       setSaved('err');
     } finally {
@@ -65,29 +67,31 @@ const ConstantesTronerasPage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchConstants();
+    void fetchConstants();
   }, []);
 
   const save = async () => {
     setSaving(true);
     setSaved(null);
     try {
-      const updates = Object.keys(values).map(key => {
-        const setting = settings.find(s => s.key === key);
-        if (!setting) return null;
-        return axios.put(`/api/admin/settings/${setting._id}`, {
-          value: values[key],
-          key: setting.key,
-          category: setting.category || 'troneras'
-        });
-      }).filter(Boolean);
+      const updates = Object.keys(values)
+        .map((key) => {
+          const setting = settings.find((s) => s.key === key);
+          if (!setting) return null;
+          return axios.put(`/api/admin/settings/${setting._id}`, {
+            value: values[key],
+            key: setting.key,
+            category: setting.category || 'troneras',
+          });
+        })
+        .filter(Boolean);
 
       await Promise.all(updates);
       setSaved('ok');
       setEditing(false);
       setTimeout(() => {
         setSaved(null);
-        fetchConstants();
+        void fetchConstants();
       }, 2500);
     } catch (e) {
       console.error('Error guardando constantes:', e);
@@ -99,14 +103,15 @@ const ConstantesTronerasPage: React.FC = () => {
   };
 
   const setNum = (k: string, v: string) => {
-    setValues((prev: any) => ({ ...prev, [k]: Number(v) || 0 }));
+    setValues((prev: Record<string, number>) => ({ ...prev, [k]: Number(v) || 0 }));
   };
 
   const getValue = (key: string): number => {
-    if (values[key] !== undefined) {
-      return values[key];
+    const value = values[key];
+    if (value !== undefined) {
+      return value;
     }
-    const setting = settings.find(s => s.key === key);
+    const setting = settings.find((s) => s.key === key);
     if (setting) {
       const numValue = typeof setting.value === 'number' ? setting.value : Number(setting.value);
       return isNaN(numValue) ? 0 : numValue;
@@ -175,7 +180,9 @@ const ConstantesTronerasPage: React.FC = () => {
 
           {saved === 'ok' && (
             <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-              <p className="text-sm text-green-700 dark:text-green-400">Constantes guardadas correctamente</p>
+              <p className="text-sm text-green-700 dark:text-green-400">
+                Constantes guardadas correctamente
+              </p>
             </div>
           )}
           {saved === 'err' && (
@@ -190,13 +197,20 @@ const ConstantesTronerasPage: React.FC = () => {
                 variant="secondary"
                 onClick={() => {
                   setEditing(false);
-                  fetchConstants();
+                  void fetchConstants();
                 }}
                 disabled={saving}
               >
                 Cancelar
               </Button>
-              <Button variant="primary" onClick={save} disabled={saving} isLoading={saving}>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  void save();
+                }}
+                disabled={saving}
+                isLoading={saving}
+              >
                 Guardar
               </Button>
             </div>
@@ -208,5 +222,3 @@ const ConstantesTronerasPage: React.FC = () => {
 };
 
 export default ConstantesTronerasPage;
-
-

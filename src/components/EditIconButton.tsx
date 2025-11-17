@@ -16,4 +16,4 @@ const EditIconButton: React.FC<Props> = ({ onClick, title = 'Editar' }) => (
   </button>
 );
 
-export default EditIconButton; 
+export default EditIconButton;

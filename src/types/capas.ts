@@ -6,4 +6,3 @@ export interface Capa {
   status: string;
   createdAt: string;
 }
-

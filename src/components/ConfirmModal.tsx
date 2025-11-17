@@ -1,5 +1,6 @@
 import React from 'react';
-import { Modal, Button } from './ui';
+
+import { Button, Modal } from './ui';
 
 interface Props {
   open: boolean;
@@ -18,7 +19,7 @@ const ConfirmModal: React.FC<Props> = ({
   confirmText = 'Aceptar',
   cancelText = 'Cancelar',
   onConfirm,
-  onCancel
+  onCancel,
 }) => {
   return (
     <Modal
@@ -42,4 +43,4 @@ const ConfirmModal: React.FC<Props> = ({
   );
 };
 
-export default ConfirmModal; 
+export default ConfirmModal;

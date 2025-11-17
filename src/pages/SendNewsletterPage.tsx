@@ -1,61 +1,128 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
-import { PageHeader, Card, Input, Select, Button, Table, TableHeader, TableRow, TableHead, TableCell, TableBody, Modal, Checkbox } from '../components/ui';
+import axios from 'axios';
+
 import ConfirmModal from '../components/ConfirmModal';
+import {
+  Button,
+  Card,
+  Checkbox,
+  Input,
+  Modal,
+  PageHeader,
+  Select,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../components/ui';
+import { TemplateKey } from '../types/emails';
 import { Plan } from '../types/planes';
 import { Usuario } from '../types/usuarios';
-import { TemplateKey } from '../types/emails';
 
 const TEMPLATES = {
   'info-prefas': {
     label: 'Informativo',
-    variables: ['announcement_title','main_message','effective_date','details_summary','cta_url','cta_text'],
+    variables: [
+      'announcement_title',
+      'main_message',
+      'effective_date',
+      'details_summary',
+      'cta_url',
+      'cta_text',
+    ],
   },
   'marketing-newsletter': {
     label: 'Marketing',
-    variables: ['campaign_title','main_message','main_feature_title','main_feature_description','cta_url','cta_text'],
+    variables: [
+      'campaign_title',
+      'main_message',
+      'main_feature_title',
+      'main_feature_description',
+      'cta_url',
+      'cta_text',
+    ],
   },
 };
 
 const SendNewsletterPage: React.FC = () => {
   const [template, setTemplate] = useState<TemplateKey>('info-prefas');
-  const [variables, setVariables] = useState<Record<string,string>>({});
-  const [recipientMode, setRecipientMode] = useState<'all'|'plan'|'emails'>('all');
-  const [plans,setPlans]=useState<Plan[]>([]);
-  const [selectedPlan,setSelectedPlan]=useState<string>('');
-  const [users,setUsers]=useState<Usuario[]>([]);
-  const [searchUser,setSearchUser]=useState('');
-  const [selectedUserIds,setSelectedUserIds]=useState<string[]>([]);
-  const [previewHtml,setPreviewHtml]=useState('');
-  const [sendAt,setSendAt]=useState('');
-  const [confirmOpen,setConfirmOpen]=useState(false);
+  const [variables, setVariables] = useState<Record<string, string>>({});
+  const [recipientMode, setRecipientMode] = useState<'all' | 'plan' | 'emails'>('all');
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [selectedPlan, setSelectedPlan] = useState<string>('');
+  const [users, setUsers] = useState<Usuario[]>([]);
+  const [searchUser, setSearchUser] = useState('');
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [previewHtml, setPreviewHtml] = useState('');
+  const [sendAt, setSendAt] = useState('');
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
-  useEffect(()=>{
-    if(recipientMode==='plan' && plans.length===0){
-      axios.get('/planes').then(res=>setPlans(res.data||[])).catch(()=>{});
-    }
-    if(recipientMode==='emails' && users.length===0){
-      axios.get('/usuarios').then(res=>setUsers(res.data||[])).catch(()=>{});
-    }
-  },[recipientMode]);
+  useEffect(() => {
+    const loadPlans = async () => {
+      try {
+        const res = await axios.get<Plan[]>('/planes');
+        setPlans(res.data || []);
+      } catch {
+        // Silently handle error
+      }
+    };
 
-  const handleVarChange=(key:string,val:string)=>{setVariables(v=>({...v,[key]:val}));};
-  const buildPayload=()=>{
-    const recipients: any = { mode: recipientMode };
-    if(recipientMode==='plan' && selectedPlan) recipients.plan=[selectedPlan];
-    if(recipientMode==='emails') recipients.emails=users.filter(u=>selectedUserIds.includes(u._id)).map(u=>u.email);
-    const payload:any={ template, variables, recipients };
-    if(sendAt) payload.sendAt = sendAt;
+    const loadUsers = async () => {
+      try {
+        const res = await axios.get<Usuario[]>('/usuarios');
+        setUsers(res.data || []);
+      } catch {
+        // Silently handle error
+      }
+    };
+
+    if (recipientMode === 'plan' && plans.length === 0) {
+      void loadPlans();
+    }
+    if (recipientMode === 'emails' && users.length === 0) {
+      void loadUsers();
+    }
+  }, [recipientMode, plans.length, users.length]);
+
+  const handleVarChange = (key: string, val: string) => {
+    setVariables((v) => ({ ...v, [key]: val }));
+  };
+
+  interface Recipients {
+    mode: string;
+    plan?: string[];
+    emails?: string[];
+  }
+
+  interface NewsletterPayload {
+    template: string;
+    variables: Record<string, string>;
+    recipients: Recipients;
+    sendAt?: string;
+  }
+
+  const buildPayload = (): NewsletterPayload => {
+    const recipients: Recipients = { mode: recipientMode };
+    if (recipientMode === 'plan' && selectedPlan) recipients.plan = [selectedPlan];
+    if (recipientMode === 'emails')
+      recipients.emails = users.filter((u) => selectedUserIds.includes(u._id)).map((u) => u.email);
+    const payload: NewsletterPayload = { template, variables, recipients };
+    if (sendAt) payload.sendAt = sendAt;
     return payload;
   };
-  const handlePreview=async()=>{
-    try{
+  const handlePreview = async () => {
+    try {
       const { data } = await axios.post('/emails/render-preview', { template, variables });
       setPreviewHtml(data.html);
-    }catch(e){console.error(e);toast.error('Error generando preview');}
+    } catch (e) {
+      console.error(e);
+      toast.error('Error generando preview');
+    }
   };
-  const handleSend=async()=>{
+  const handleSend = async () => {
     setConfirmOpen(true);
   };
   return (
@@ -66,7 +133,7 @@ const SendNewsletterPage: React.FC = () => {
       />
 
       <Card title="Configuración del email" className="mb-6">
-      <div className="space-y-6">
+        <div className="space-y-6">
           <Select
             label="Plantilla"
             value={template}
@@ -75,31 +142,37 @@ const SendNewsletterPage: React.FC = () => {
           />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {TEMPLATES[template].variables.map(k => (
+            {TEMPLATES[template].variables.map((k) => (
               <Input
                 key={k}
-                label={k.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                label={k.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
                 value={variables[k] || ''}
                 onChange={(e) => handleVarChange(k, e.target.value)}
               />
             ))}
-        </div>
+          </div>
 
-        <div>
-            <label className="block text-sm font-medium mb-3">Destinatarios</label>
-            <div className="flex flex-wrap gap-4 mb-4">
-              {[['all', 'Todos'], ['plan', 'Plan'], ['emails', 'Email']].map(([opt, label]) => (
+          <div>
+            <label htmlFor="recipient-mode" className="block text-sm font-medium mb-3">
+              Destinatarios
+            </label>
+            <div id="recipient-mode" className="flex flex-wrap gap-4 mb-4">
+              {[
+                ['all', 'Todos'],
+                ['plan', 'Plan'],
+                ['emails', 'Email'],
+              ].map(([opt, label]) => (
                 <label key={opt} className="flex items-center space-x-2 cursor-pointer">
                   <input
                     type="radio"
                     value={opt}
                     checked={recipientMode === opt}
-                    onChange={() => setRecipientMode(opt as any)}
+                    onChange={() => setRecipientMode(opt as 'all' | 'plan' | 'emails')}
                     className="text-primary-600 focus:ring-primary-500"
                   />
                   <span>{label}</span>
-            </label>
-          ))}
+                </label>
+              ))}
             </div>
 
             {recipientMode === 'plan' && (
@@ -109,10 +182,10 @@ const SendNewsletterPage: React.FC = () => {
                 onChange={(e) => setSelectedPlan(e.target.value)}
                 options={[
                   { value: '', label: '-- seleccionar plan --' },
-                  ...plans.map(p => ({ value: p.name, label: p.name }))
+                  ...plans.map((p) => ({ value: p.name, label: p.name })),
                 ]}
               />
-          )}
+            )}
 
             {recipientMode === 'emails' && (
               <Card className="mt-4">
@@ -131,28 +204,32 @@ const SendNewsletterPage: React.FC = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {users.filter(u => u.email.toLowerCase().includes(searchUser.toLowerCase())).map(u => {
-                        const checked = selectedUserIds.includes(u._id);
-                    return (
-                          <TableRow key={u._id}>
-                            <TableCell>
-                              <Checkbox
-                                checked={checked}
-                                onChange={() => {
-                                  setSelectedUserIds(prev => checked ? prev.filter(id => id !== u._id) : [...prev, u._id]);
-                                }}
-                              />
-                            </TableCell>
-                            <TableCell>{u.email}</TableCell>
-                          </TableRow>
-                    );
-                  })}
+                      {users
+                        .filter((u) => u.email.toLowerCase().includes(searchUser.toLowerCase()))
+                        .map((u) => {
+                          const checked = selectedUserIds.includes(u._id);
+                          return (
+                            <TableRow key={u._id}>
+                              <TableCell>
+                                <Checkbox
+                                  checked={checked}
+                                  onChange={() => {
+                                    setSelectedUserIds((prev) =>
+                                      checked ? prev.filter((id) => id !== u._id) : [...prev, u._id]
+                                    );
+                                  }}
+                                />
+                              </TableCell>
+                              <TableCell>{u.email}</TableCell>
+                            </TableRow>
+                          );
+                        })}
                     </TableBody>
                   </Table>
-            </div>
+                </div>
               </Card>
-          )}
-        </div>
+            )}
+          </div>
 
           <Input
             label="Programar envío (opcional)"
@@ -162,37 +239,53 @@ const SendNewsletterPage: React.FC = () => {
           />
 
           <div className="flex gap-3">
-            <Button variant="secondary" onClick={handlePreview}>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                void handlePreview();
+              }}
+            >
               Preview
             </Button>
-            <Button variant="primary" onClick={handleSend}>
+            <Button
+              variant="primary"
+              onClick={() => {
+                void handleSend();
+              }}
+            >
               Enviar
             </Button>
-        </div>
+          </div>
         </div>
       </Card>
 
-        {/* Modal Preview */}
-        {previewHtml && (
+      {/* Modal Preview */}
+      {previewHtml && (
         <Modal
           show={true}
           title="Vista previa del email"
           onClose={() => setPreviewHtml('')}
           size="xl"
         >
-              <iframe title="preview" className="w-full h-[70vh] border rounded" srcDoc={previewHtml} />
+          <iframe title="preview" className="w-full h-[70vh] border rounded" srcDoc={previewHtml} />
         </Modal>
-        )}
+      )}
       <ConfirmModal
         open={confirmOpen}
         message="¿Enviar este email?"
-        onCancel={()=>setConfirmOpen(false)}
-        onConfirm={async()=>{
-          setConfirmOpen(false);
-          try{
-            await axios.post('/emails/send-newsletter', buildPayload());
-            toast.success('Envío encolado');
-          }catch(e){console.error(e);toast.error('Error enviando email');}
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={() => {
+          const handleConfirm = async () => {
+            setConfirmOpen(false);
+            try {
+              await axios.post('/emails/send-newsletter', buildPayload());
+              toast.success('Envío encolado');
+            } catch (e) {
+              console.error(e);
+              toast.error('Error enviando email');
+            }
+          };
+          void handleConfirm();
         }}
       />
     </div>

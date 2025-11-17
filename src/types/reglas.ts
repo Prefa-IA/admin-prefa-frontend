@@ -14,8 +14,8 @@ export interface ReglaLogica {
   _id?: string;
   id_paso?: string;
   distrito_cpu: string;
-  condicion_json: any;
-  formula_json: any;
+  condicion_json: unknown;
+  formula_json: unknown;
   id_cu_referencia?: string | string[];
   descripcion?: string;
   activo?: boolean;
@@ -25,4 +25,3 @@ export interface ReglasPageProps {
   mode: 'admin' | 'view';
   categoria?: string;
 }
-

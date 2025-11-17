@@ -1,11 +1,12 @@
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import axios from 'axios';
+import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
+import axios from 'axios';
 
 interface User {
   _id: string;
   email: string;
   role: string;
+  isSuperAdmin?: boolean;
   token: string;
 }
 
@@ -27,13 +28,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const logout = () => {
+    setUser(null);
+    delete axios.defaults.headers.common['Authorization'];
+    localStorage.removeItem('adminUser');
+  };
+
   useEffect(() => {
     const stored = localStorage.getItem('adminUser');
     if (stored) {
       const parsed: User = JSON.parse(stored);
       const isTokenExpired = (token: string): boolean => {
         try {
-          const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+          const parts = token.split('.');
+          if (parts.length < 2) return true;
+          const payload = JSON.parse(atob(parts[1]?.replace(/-/g, '+').replace(/_/g, '/') || ''));
           const exp = typeof payload.exp === 'number' ? payload.exp : 0;
           return !exp || Date.now() >= exp * 1000;
         } catch {
@@ -43,11 +52,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (!parsed.token || isTokenExpired(parsed.token)) {
         localStorage.removeItem('adminUser');
+        setLoading(false);
       } else {
         axios.defaults.headers.common['Authorization'] = `Bearer ${parsed.token}`;
         axios
-          .get('/auth/perfil')
-          .then(() => setUser(parsed))
+          .get<{
+            _id: string;
+            email: string;
+            role: string;
+            isSuperAdmin?: boolean;
+            [key: string]: unknown;
+          }>('/auth/perfil')
+          .then((response) => {
+            const updatedUser = {
+              ...parsed,
+              ...response.data,
+              token: parsed.token,
+            } as User;
+            setUser(updatedUser);
+            localStorage.setItem('adminUser', JSON.stringify(updatedUser));
+          })
           .catch(() => {
             delete axios.defaults.headers.common['Authorization'];
             localStorage.removeItem('adminUser');
@@ -60,10 +84,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const resInterceptor = axios.interceptors.response.use(
-      res => res,
-      err => {
+      (res) => res,
+      (err) => {
         if (err.response?.status === 401) {
-          // Desloguear solo si es un endpoint crítico de auth
           const url = err.config?.url || '';
           if (url.includes('/auth/')) logout();
         }
@@ -81,7 +104,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true);
       const enc = new TextEncoder().encode(password);
       const buf = await crypto.subtle.digest('SHA-256', enc);
-      const hashHex = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+      const hashHex = Array.from(new Uint8Array(buf))
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
 
       const res = await axios.post('/admin/auth/login', { email, password: hashHex });
       const { token, usuario } = res.data;
@@ -90,8 +115,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       localStorage.setItem('adminUser', JSON.stringify(fullUser));
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       toast.success('¡Bienvenido de nuevo!');
-    } catch (error: any) {
-      const mensaje = error.response?.data?.error || 'Error al iniciar sesión';
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { error?: string } } };
+      const mensaje = err.response?.data?.error || 'Error al iniciar sesión';
       toast.error(mensaje);
       throw error;
     } finally {
@@ -99,17 +125,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    delete axios.defaults.headers.common['Authorization'];
-    localStorage.removeItem('adminUser');
-  };
-
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={{ user, loading, login, logout }}>{children}</AuthContext.Provider>
   );
 };
 
-export const useAuth = () => useContext(AuthContext); 
+export const useAuth = () => useContext(AuthContext);

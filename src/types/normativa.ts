@@ -11,4 +11,3 @@ export interface Zonificacion {
   nombre: string;
   alturaMax: number;
 }
-

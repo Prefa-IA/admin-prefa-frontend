@@ -1,11 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { PageHeader, Card, Table, TableHeader, TableRow, TableHead, TableCell, TableBody } from '../components/ui';
-import NewItemButton from '../components/NewItemButton';
-import EditIconButton from '../components/EditIconButton';
-import DeleteIconButton from '../components/DeleteIconButton';
+
 import ConfirmModal from '../components/ConfirmModal';
+import DeleteIconButton from '../components/DeleteIconButton';
+import EditIconButton from '../components/EditIconButton';
 import EditCalculoPasoModal from '../components/modals/EditCalculoPasoModal';
+import NewItemButton from '../components/NewItemButton';
+import {
+  Card,
+  PageHeader,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../components/ui';
 import { Paso } from '../types/pasos';
 
 const CalculoPasosPage: React.FC = () => {
@@ -26,7 +36,9 @@ const CalculoPasosPage: React.FC = () => {
     setLoading(false);
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    void fetchData();
+  }, []);
 
   const handleSave = async (p: Paso) => {
     try {
@@ -37,7 +49,7 @@ const CalculoPasosPage: React.FC = () => {
       }
       setShowModal(false);
       setEditing(null);
-      fetchData();
+      void fetchData();
     } catch (err) {
       console.error(err);
       alert('Error guardando paso');
@@ -49,8 +61,10 @@ const CalculoPasosPage: React.FC = () => {
     try {
       await axios.delete(`/admin/calculo-pasos/${toDelete._id}`);
       setToDelete(null);
-      fetchData();
-    } catch (err) { console.error(err); }
+      void fetchData();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   if (loading) {
@@ -69,9 +83,7 @@ const CalculoPasosPage: React.FC = () => {
       <PageHeader
         title="Secuencia de Cálculo"
         description="Gestiona los pasos del proceso de cálculo"
-        actions={
-          <NewItemButton label="Nuevo paso" onClick={()=>setShowModal(true)} />
-        }
+        actions={<NewItemButton label="Nuevo paso" onClick={() => setShowModal(true)} />}
       />
 
       <Card>
@@ -88,29 +100,39 @@ const CalculoPasosPage: React.FC = () => {
           <TableBody>
             {pasos.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-gray-500 dark:text-gray-400">
+                <TableCell
+                  colSpan={5}
+                  className="text-center py-8 text-gray-500 dark:text-gray-400"
+                >
                   No hay pasos de cálculo registrados
                 </TableCell>
               </TableRow>
             ) : (
-              pasos.map(p=> (
+              pasos.map((p) => (
                 <TableRow key={p._id}>
                   <TableCell className="text-center">{p.orden}</TableCell>
                   <TableCell className="font-medium">{p.nombre_paso}</TableCell>
                   <TableCell>{p.metodo_interno}</TableCell>
                   <TableCell>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      p.activo
-                        ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                        : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                    }`}>
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        p.activo
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                          : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                      }`}
+                    >
                       {p.activo ? 'Sí' : 'No'}
                     </span>
                   </TableCell>
                   <TableCell align="right">
                     <div className="flex items-center justify-end gap-1">
-                      <EditIconButton onClick={()=>{setEditing(p); setShowModal(true);}}/>
-                      <DeleteIconButton onClick={()=>setToDelete(p)}/>
+                      <EditIconButton
+                        onClick={() => {
+                          setEditing(p);
+                          setShowModal(true);
+                        }}
+                      />
+                      <DeleteIconButton onClick={() => setToDelete(p)} />
                     </div>
                   </TableCell>
                 </TableRow>
@@ -121,13 +143,25 @@ const CalculoPasosPage: React.FC = () => {
       </Card>
 
       {showModal && (
-        <EditCalculoPasoModal show={showModal} onClose={()=>{setShowModal(false); setEditing(null);}} onSave={handleSave} editing={editing} />
+        <EditCalculoPasoModal
+          show={showModal}
+          onClose={() => {
+            setShowModal(false);
+            setEditing(null);
+          }}
+          onSave={(p) => {
+            void handleSave(p);
+          }}
+          editing={editing}
+        />
       )}
       {toDelete && (
         <ConfirmModal
           open={true}
-          onCancel={()=>setToDelete(null)}
-          onConfirm={handleDelete}
+          onCancel={() => setToDelete(null)}
+          onConfirm={() => {
+            void handleDelete();
+          }}
           title="Eliminar paso"
           message="¿Estás seguro de que deseas eliminar este paso?"
         />

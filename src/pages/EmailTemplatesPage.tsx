@@ -1,17 +1,34 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import axios from 'axios';
-import { EyeIcon } from '@heroicons/react/24/outline';
-import { PageHeader, Card, Table, TableHeader, TableRow, TableHead, TableCell, TableBody, Modal, Input, Button, Checkbox, FilterBar } from '../components/ui';
-import EditIconButton from '../components/EditIconButton';
-import DeleteIconButton from '../components/DeleteIconButton';
-import NewItemButton from '../components/NewItemButton';
-import ConfirmModal from '../components/ConfirmModal';
 import Editor from 'react-simple-code-editor';
+import { EyeIcon } from '@heroicons/react/24/outline';
+import axios from 'axios';
 import Prism from 'prismjs';
+
 import 'prismjs/components/prism-markup';
 import 'prismjs/components/prism-css';
-import 'prismjs/themes/prism-tomorrow.css';
+
+import ConfirmModal from '../components/ConfirmModal';
+import DeleteIconButton from '../components/DeleteIconButton';
+import EditIconButton from '../components/EditIconButton';
+import NewItemButton from '../components/NewItemButton';
+import {
+  Button,
+  Card,
+  Checkbox,
+  FilterBar,
+  Input,
+  Modal,
+  PageHeader,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../components/ui';
 import { Template } from '../types/emails';
+
+import 'prismjs/themes/prism-tomorrow.css';
 
 const defaultTemplate: Template = {
   slug: '',
@@ -22,7 +39,6 @@ const defaultTemplate: Template = {
   description: '',
   isActive: true,
 };
-
 
 const EmailTemplatesPage: React.FC = () => {
   const [items, setItems] = useState<Template[]>([]);
@@ -38,10 +54,11 @@ const EmailTemplatesPage: React.FC = () => {
   const filtered = useMemo(() => {
     if (!q) return items;
     const needle = q.toLowerCase();
-    return items.filter(t =>
-      t.slug.toLowerCase().includes(needle) ||
-      (t.nombre || '').toLowerCase().includes(needle) ||
-      (t.subject || '').toLowerCase().includes(needle)
+    return items.filter(
+      (t) =>
+        t.slug.toLowerCase().includes(needle) ||
+        (t.nombre || '').toLowerCase().includes(needle) ||
+        (t.subject || '').toLowerCase().includes(needle)
     );
   }, [q, items]);
 
@@ -57,18 +74,25 @@ const EmailTemplatesPage: React.FC = () => {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    void load();
+  }, []);
 
   const openModal = (tpl?: Template) => {
     setSelected(tpl ? { ...tpl } : { ...defaultTemplate });
     setShowModal(true);
   };
-  const closeModal = () => { setShowModal(false); setSelected(null); };
+  const closeModal = () => {
+    setShowModal(false);
+    setSelected(null);
+  };
   const startNew = () => openModal();
   const edit = (t: Template) => openModal(t);
   const preview = async (t: Template) => {
     try {
-      const res = await axios.get(`/email-templates/slug/${t.slug}`, { params: { preview: true } }).catch(()=>({ data: t }));
+      const res = await axios
+        .get(`/email-templates/slug/${t.slug}`, { params: { preview: true } })
+        .catch(() => ({ data: t }));
       setPreviewHtml(res.data.html || t.html);
     } catch {
       setPreviewHtml(t.html);
@@ -80,7 +104,7 @@ const EmailTemplatesPage: React.FC = () => {
     setSelected(null);
     setConfirmOpen(false);
     setPendingDelete(undefined);
-    load();
+    void load();
   };
 
   const askDelete = (id?: string) => {
@@ -101,7 +125,7 @@ const EmailTemplatesPage: React.FC = () => {
         const { data } = await axios.post('/admin/email-templates', payload);
         setSelected(data);
       }
-      await load();
+      void load();
       closeModal();
     } finally {
       setSaving(false);
@@ -124,9 +148,7 @@ const EmailTemplatesPage: React.FC = () => {
       <PageHeader
         title="Templates de Email"
         description="Gestiona las plantillas de correo electrónico"
-        actions={
-          <NewItemButton label="Nueva plantilla" onClick={startNew} />
-        }
+        actions={<NewItemButton label="Nueva plantilla" onClick={startNew} />}
       />
 
       <FilterBar
@@ -148,12 +170,15 @@ const EmailTemplatesPage: React.FC = () => {
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-8 text-gray-500 dark:text-gray-400">
+                <TableCell
+                  colSpan={4}
+                  className="text-center py-8 text-gray-500 dark:text-gray-400"
+                >
                   No hay plantillas registradas
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map(t => (
+              filtered.map((t) => (
                 <TableRow key={t._id}>
                   <TableCell className="font-medium font-mono text-sm">{t.slug}</TableCell>
                   <TableCell>{t.description || '—'}</TableCell>
@@ -170,7 +195,9 @@ const EmailTemplatesPage: React.FC = () => {
                     <div className="flex items-center justify-end gap-1">
                       <button
                         title="Preview"
-                        onClick={() => preview(t)}
+                        onClick={() => {
+                          void preview(t);
+                        }}
                         className="text-gray-600 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
                       >
                         <EyeIcon className="h-5 w-5" />
@@ -195,8 +222,17 @@ const EmailTemplatesPage: React.FC = () => {
           size="xl"
           footer={
             <>
-              <Button variant="secondary" onClick={closeModal}>Cancelar</Button>
-              <Button variant="primary" onClick={save} disabled={saving} isLoading={saving}>
+              <Button variant="secondary" onClick={closeModal}>
+                Cancelar
+              </Button>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  void save();
+                }}
+                disabled={saving}
+                isLoading={saving}
+              >
                 Guardar
               </Button>
             </>
@@ -206,46 +242,71 @@ const EmailTemplatesPage: React.FC = () => {
             <Input
               label="Slug"
               value={selected.slug}
-              onChange={(e) => setSelected(s => ({ ...(s as Template), slug: e.target.value }))}
+              onChange={(e) => setSelected((s) => ({ ...(s as Template), slug: e.target.value }))}
               placeholder="ej: bienvenida-usuario"
             />
             <Input
               label="Subject"
               value={selected.subject}
-              onChange={(e) => setSelected(s => ({ ...(s as Template), subject: e.target.value }))}
+              onChange={(e) =>
+                setSelected((s) => ({ ...(s as Template), subject: e.target.value }))
+              }
               placeholder="Asunto del email"
             />
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              <label
+                htmlFor="html-editor"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
+              >
                 HTML / CSS
               </label>
-              <div className="border rounded-lg overflow-hidden dark:border-gray-600">
+              <div
+                id="html-editor"
+                className="border rounded-lg overflow-hidden dark:border-gray-600"
+              >
                 <Editor
                   value={selected.html}
-                  onValueChange={code => setSelected(s => ({ ...(s as Template), html: code }))}
-                  highlight={code => Prism.highlight(code, Prism.languages.markup, 'markup')}
+                  onValueChange={(code) => setSelected((s) => ({ ...(s as Template), html: code }))}
+                  highlight={(code) => Prism.highlight(code, Prism.languages.markup, 'markup')}
                   padding={12}
                   className="w-full font-mono text-sm dark:bg-gray-900"
-                  style={{ minHeight: '300px', background: '#1e293b', color: '#e2e8f0', overflow: 'auto' }}
+                  style={{
+                    minHeight: '300px',
+                    background: '#1e293b',
+                    color: '#e2e8f0',
+                    overflow: 'auto',
+                  }}
                 />
               </div>
             </div>
             <Input
               label="Variables (coma separadas)"
               value={(selected.variables || []).join(', ')}
-              onChange={(e) => setSelected(s => ({ ...(s as Template), variables: e.target.value.split(',').map(v => v.trim()).filter(Boolean) }))}
+              onChange={(e) =>
+                setSelected((s) => ({
+                  ...(s as Template),
+                  variables: e.target.value
+                    .split(',')
+                    .map((v) => v.trim())
+                    .filter(Boolean),
+                }))
+              }
               placeholder="nombre, email, fecha"
             />
             <Input
               label="Descripción"
               value={selected.description || ''}
-              onChange={(e) => setSelected(s => ({ ...(s as Template), description: e.target.value }))}
+              onChange={(e) =>
+                setSelected((s) => ({ ...(s as Template), description: e.target.value }))
+              }
               placeholder="Descripción del template"
             />
             <Checkbox
               label="Activo"
               checked={!!selected.isActive}
-              onChange={(e) => setSelected(s => ({ ...(s as Template), isActive: e.target.checked }))}
+              onChange={(e) =>
+                setSelected((s) => ({ ...(s as Template), isActive: e.target.checked }))
+              }
             />
           </div>
         </Modal>
@@ -268,7 +329,9 @@ const EmailTemplatesPage: React.FC = () => {
         message="¿Seguro que deseas eliminar este template?"
         confirmText="Eliminar"
         cancelText="Cancelar"
-        onConfirm={doDelete}
+        onConfirm={() => {
+          void doDelete();
+        }}
         onCancel={() => setConfirmOpen(false)}
       />
     </div>
@@ -276,6 +339,3 @@ const EmailTemplatesPage: React.FC = () => {
 };
 
 export default EmailTemplatesPage;
-
-
-

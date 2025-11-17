@@ -4,4 +4,3 @@ export function qualityColor(count?: number): string {
   if (count < 50) return 'bg-yellow-500';
   return 'bg-green-500';
 }
-

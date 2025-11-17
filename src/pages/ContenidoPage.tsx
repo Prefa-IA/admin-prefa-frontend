@@ -1,9 +1,19 @@
-import React, { useEffect, useState } from 'react';
-import { Card, PageHeader, Table, TableHeader, TableRow, TableHead, TableCell, TableBody } from '../components/ui';
-import NewItemButton from '../components/NewItemButton';
+import React, { useCallback, useEffect, useState } from 'react';
+import axios from 'axios';
+
 import NewCodigoModal from '../components/modals/NewCodigoModal';
 import NewPrecioModal from '../components/modals/NewPrecioModal';
-import axios from 'axios';
+import NewItemButton from '../components/NewItemButton';
+import {
+  Card,
+  PageHeader,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../components/ui';
 import { Codigo, Precio } from '../types/contenido';
 
 const ContenidoPage: React.FC = () => {
@@ -13,7 +23,7 @@ const ContenidoPage: React.FC = () => {
   const [showCodigoModal, setShowCodigoModal] = useState(false);
   const [showPrecioModal, setShowPrecioModal] = useState(false);
 
-  const reload = async () => {
+  const reload = useCallback(async () => {
     if (tab === 'codigos') {
       const res = await axios.get('/api/admin/content/codigos');
       setCodigos(res.data);
@@ -21,23 +31,20 @@ const ContenidoPage: React.FC = () => {
       const res = await axios.get('/api/admin/content/precios');
       setPrecios(res.data);
     }
-  };
+  }, [tab]);
 
   useEffect(() => {
-    reload();
-  }, [tab]);
+    void reload();
+  }, [reload]);
 
   const tabs = [
     { id: 'codigos' as const, label: 'Códigos Urbanísticos' },
-    { id: 'precios' as const, label: 'Precios m²' }
+    { id: 'precios' as const, label: 'Precios m²' },
   ];
 
   return (
     <div>
-      <PageHeader
-        title="Contenido"
-        description="Gestiona códigos urbanísticos y precios por m²"
-      />
+      <PageHeader title="Contenido" description="Gestiona códigos urbanísticos y precios por m²" />
 
       <div className="mb-6 flex space-x-2 border-b border-gray-200 dark:border-gray-700">
         {tabs.map((t) => (
@@ -72,12 +79,15 @@ const ContenidoPage: React.FC = () => {
             <TableBody>
               {codigos.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={2} className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  <TableCell
+                    colSpan={2}
+                    className="text-center py-8 text-gray-500 dark:text-gray-400"
+                  >
                     No hay códigos registrados
                   </TableCell>
                 </TableRow>
               ) : (
-                codigos.map(c => (
+                codigos.map((c) => (
                   <TableRow key={c._id}>
                     <TableCell className="font-medium">{c.codigo}</TableCell>
                     <TableCell>{c.descripcion}</TableCell>
@@ -106,12 +116,15 @@ const ContenidoPage: React.FC = () => {
             <TableBody>
               {precios.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={2} className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  <TableCell
+                    colSpan={2}
+                    className="text-center py-8 text-gray-500 dark:text-gray-400"
+                  >
                     No hay precios registrados
                   </TableCell>
                 </TableRow>
               ) : (
-                precios.map(p => (
+                precios.map((p) => (
                   <TableRow key={p._id}>
                     <TableCell className="font-medium">{p.barrio}</TableCell>
                     <TableCell>${p.valor}</TableCell>
@@ -126,10 +139,13 @@ const ContenidoPage: React.FC = () => {
       {showCodigoModal && (
         <NewCodigoModal
           onClose={() => setShowCodigoModal(false)}
-          onSave={async (payload: any) => {
-            await axios.post('/api/admin/content/codigos', payload);
-            setShowCodigoModal(false);
-            reload();
+          onSave={(payload: Record<string, unknown>) => {
+            const handleSave = async () => {
+              await axios.post('/api/admin/content/codigos', payload);
+              setShowCodigoModal(false);
+              void reload();
+            };
+            void handleSave();
           }}
         />
       )}
@@ -137,10 +153,13 @@ const ContenidoPage: React.FC = () => {
       {showPrecioModal && (
         <NewPrecioModal
           onClose={() => setShowPrecioModal(false)}
-          onSave={async (payload: any) => {
-            await axios.post('/api/admin/content/precios', payload);
-            setShowPrecioModal(false);
-            reload();
+          onSave={(payload: Record<string, unknown>) => {
+            const handleSave = async () => {
+              await axios.post('/api/admin/content/precios', payload);
+              setShowPrecioModal(false);
+              void reload();
+            };
+            void handleSave();
           }}
         />
       )}
@@ -148,4 +167,4 @@ const ContenidoPage: React.FC = () => {
   );
 };
 
-export default ContenidoPage; 
+export default ContenidoPage;

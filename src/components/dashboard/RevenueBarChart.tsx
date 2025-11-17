@@ -1,7 +1,8 @@
 import React from 'react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import Card from '../Card';
+import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+
 import { RevenueItem } from '../../types/components';
+import Card from '../Card';
 
 const COLORS: Record<string, string> = {
   bronze: '#cd7f32',
@@ -19,7 +20,7 @@ const RevenueBarChart: React.FC<{ data: RevenueItem[] }> = ({ data }) => (
         <BarChart data={data}>
           <XAxis dataKey="plan" />
           <YAxis />
-          <Tooltip formatter={(v: any) => `$${v}`} />
+          <Tooltip formatter={(v: number | string) => `$${v}`} />
           <Bar dataKey="revenue">
             {data.map((entry) => (
               <Cell key={`cell-${entry.plan}`} fill={COLORS[entry.plan] || '#1976d2'} />
@@ -31,4 +32,4 @@ const RevenueBarChart: React.FC<{ data: RevenueItem[] }> = ({ data }) => (
   </Card>
 );
 
-export default RevenueBarChart; 
+export default RevenueBarChart;

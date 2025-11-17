@@ -1,19 +1,35 @@
 import React from 'react';
 import axios from 'axios';
-import { PieChart, Pie, Cell, Legend, Tooltip, ResponsiveContainer, XAxis, YAxis, LineChart, Line, CartesianGrid } from 'recharts';
-import { PageHeader, Card } from '../components/ui';
-import MetricTile from '../components/dashboard/MetricTile';
+import {
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
+
 import HeatMapCard from '../components/dashboard/HeatMapCard';
+import MetricTile from '../components/dashboard/MetricTile';
+import { Card, PageHeader } from '../components/ui';
 import { AnalyticsResponse } from '../types/dashboard';
 
 const Dashboard: React.FC = () => {
   const [data, setData] = React.useState<AnalyticsResponse | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [range, setRange] = React.useState<'day' | 'week' | 'month'>('month');
-  const [series, setSeries] = React.useState<{ label: string; busquedas: number; reportes: number; prefa1: number; prefa2: number }[]>([]);
-  const [topDirecciones, setTopDirecciones] = React.useState<{ direccion: string; count: number }[]>([]);
-  const [zonificaciones, setZonificaciones] = React.useState<{ zonificacion: string; count: number }[]>([]);
-  const [heatPoints, setHeatPoints] = React.useState<any[]>([]);
+  const [series, setSeries] = React.useState<
+    { label: string; busquedas: number; reportes: number; prefa1: number; prefa2: number }[]
+  >([]);
+  const [topDirecciones, setTopDirecciones] = React.useState<
+    { direccion: string; count: number }[]
+  >([]);
+  const [barrios, setBarrios] = React.useState<{ barrio: string; count: number }[]>([]);
+  const [heatPoints, setHeatPoints] = React.useState<
+    Array<{ lat: number; lon: number; count: number }>
+  >([]);
 
   React.useEffect(() => {
     const load = async () => {
@@ -27,7 +43,7 @@ const Dashboard: React.FC = () => {
         setLoading(false);
       }
     };
-    load();
+    void load();
   }, []);
 
   React.useEffect(() => {
@@ -40,7 +56,7 @@ const Dashboard: React.FC = () => {
         setSeries([]);
       }
     };
-    fetchSeries();
+    void fetchSeries();
 
     const fetchTop = async () => {
       try {
@@ -50,25 +66,30 @@ const Dashboard: React.FC = () => {
         setTopDirecciones([]);
       }
       try {
-        const zonRes = await axios.get('/admin/analytics/zonificaciones');
-        setZonificaciones(zonRes.data);
+        const barriosRes = await axios.get<Array<{ barrio: string; count: number }>>(
+          '/admin/analytics/barrios'
+        );
+        setBarrios(Array.isArray(barriosRes.data) ? barriosRes.data : []);
       } catch (e) {
-        setZonificaciones([]);
+        console.warn('Error cargando barrios:', e);
+        setBarrios([]);
       }
     };
-    fetchTop();
+    void fetchTop();
   }, [range]);
 
   React.useEffect(() => {
     const loadExtra = async () => {
       try {
-        const heatRes = await axios.get('/admin/analytics/heatmap').catch(() => ({ data: [] }));
+        const heatRes = await axios
+          .get<Array<{ lat: number; lon: number; count: number }>>('/admin/analytics/heatmap')
+          .catch(() => ({ data: [] }));
         setHeatPoints(heatRes.data);
       } catch (e) {
         console.error('Error analíticas extra', e);
       }
     };
-    loadExtra();
+    void loadExtra();
   }, []);
 
   if (loading || !data) {
@@ -81,13 +102,6 @@ const Dashboard: React.FC = () => {
       </div>
     );
   }
-
-  const pieData = [
-    { name: 'Activos', value: data.activeUsers },
-    { name: 'Suspendidos', value: data.suspendedUsers },
-  ];
-
-  const COLORS = ['#34d399', '#f87171'];
 
   const RANGE_LABELS: Record<'day' | 'week' | 'month', string> = {
     day: 'día',
@@ -109,43 +123,23 @@ const Dashboard: React.FC = () => {
       </div>
 
       {/* Gráficos principales */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-stretch mt-8">
-        {/* Gráfico de torta usuarios */}
-        <Card className="lg:col-span-2 flex items-center justify-center">
-          <ResponsiveContainer width="100%" height={250}>
-            <PieChart>
-              <Pie
-                data={pieData}
-                dataKey="value"
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                outerRadius={100}
-                label
+      <div className="mt-8">
+        <Card
+          title={`Consultas por ${RANGE_LABELS[range]}`}
+          headerActions={
+            <div className="min-w-[150px]">
+              <select
+                value={range}
+                onChange={(e) => setRange(e.target.value as 'day' | 'week' | 'month')}
+                className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
-                {pieData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-              <Legend verticalAlign="bottom" height={36} />
-            </PieChart>
-          </ResponsiveContainer>
-        </Card>
-
-        <Card className="lg:col-span-3" title={`Consultas por ${RANGE_LABELS[range]}`} headerActions={
-          <div className="min-w-[150px]">
-            <select
-              value={range}
-              onChange={(e) => setRange(e.target.value as any)}
-              className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-            >
-              <option value="day">Día</option>
-              <option value="week">Semana</option>
-              <option value="month">Mes</option>
-            </select>
-          </div>
-        }>
+                <option value="day">Día</option>
+                <option value="week">Semana</option>
+                <option value="month">Mes</option>
+              </select>
+            </div>
+          }
+        >
           <div className="mt-4">
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={series} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
@@ -154,10 +148,34 @@ const Dashboard: React.FC = () => {
                 <YAxis stroke="#6b7280" />
                 <Tooltip />
                 <Legend />
-                <Line type="monotone" dataKey="busquedas" stroke="#f59e0b" strokeWidth={2} name="Búsquedas básicas" />
-                <Line type="monotone" dataKey="reportes" stroke="#0284c7" strokeWidth={2} name="Reportes generados" />
-                <Line type="monotone" dataKey="prefa1" stroke="#10b981" strokeWidth={2} name="PreFa1" />
-                <Line type="monotone" dataKey="prefa2" stroke="#8b5cf6" strokeWidth={2} name="PreFa2" />
+                <Line
+                  type="monotone"
+                  dataKey="busquedas"
+                  stroke="#f59e0b"
+                  strokeWidth={2}
+                  name="Búsquedas básicas"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="reportes"
+                  stroke="#0284c7"
+                  strokeWidth={2}
+                  name="Reportes generados"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="prefa1"
+                  stroke="#10b981"
+                  strokeWidth={2}
+                  name="PreFa1"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="prefa2"
+                  stroke="#8b5cf6"
+                  strokeWidth={2}
+                  name="PreFa2"
+                />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -169,26 +187,42 @@ const Dashboard: React.FC = () => {
         <Card title="Direcciones más consultadas">
           <ul className="space-y-2 text-sm">
             {topDirecciones.length === 0 ? (
-              <li className="text-gray-500 dark:text-gray-400 text-center py-4">No hay datos disponibles</li>
+              <li className="text-gray-500 dark:text-gray-400 text-center py-4">
+                No hay datos disponibles
+              </li>
             ) : (
               topDirecciones.map((d, idx) => (
-                <li key={idx} className="flex justify-between items-center py-1 border-b border-gray-100 dark:border-gray-700 last:border-0">
+                <li
+                  key={idx}
+                  className="flex justify-between items-center py-1 border-b border-gray-100 dark:border-gray-700 last:border-0"
+                >
                   <span className="text-gray-700 dark:text-gray-300">{d.direccion}</span>
-                  <span className="font-semibold text-primary-600 dark:text-primary-400">{d.count}</span>
+                  <span className="font-semibold text-primary-600 dark:text-primary-400">
+                    {d.count}
+                  </span>
                 </li>
               ))
             )}
           </ul>
         </Card>
-        <Card title="Zonificaciones populares">
+        <Card title="Barrios populares">
           <ul className="space-y-2 text-sm">
-            {zonificaciones.length === 0 ? (
-              <li className="text-gray-500 dark:text-gray-400 text-center py-4">No hay datos disponibles</li>
+            {barrios.length === 0 ? (
+              <li className="text-gray-500 dark:text-gray-400 text-center py-4">
+                No hay datos disponibles
+              </li>
             ) : (
-              zonificaciones.map((z, idx) => (
-                <li key={idx} className="flex justify-between items-center py-1 border-b border-gray-100 dark:border-gray-700 last:border-0">
-                  <span className="text-gray-700 dark:text-gray-300">{z.zonificacion || '—'}</span>
-                  <span className="font-semibold text-primary-600 dark:text-primary-400">{z.count}</span>
+              barrios.map((b, idx) => (
+                <li
+                  key={idx}
+                  className="flex justify-between items-center py-1 border-b border-gray-100 dark:border-gray-700 last:border-0"
+                >
+                  <span className="text-gray-700 dark:text-gray-300 capitalize">
+                    {b.barrio || '—'}
+                  </span>
+                  <span className="font-semibold text-primary-600 dark:text-primary-400">
+                    {b.count}
+                  </span>
                 </li>
               ))
             )}
@@ -200,14 +234,24 @@ const Dashboard: React.FC = () => {
       <Card title="Top 10 usuarios del mes (por créditos consumidos)">
         <ul className="space-y-2 text-sm">
           {data.topMonth.length === 0 ? (
-            <li className="text-gray-500 dark:text-gray-400 text-center py-4">No hay datos disponibles</li>
+            <li className="text-gray-500 dark:text-gray-400 text-center py-4">
+              No hay datos disponibles
+            </li>
           ) : (
             data.topMonth.map((u, idx) => (
-              <li key={u.usuarioId} className="flex justify-between items-center py-1 border-b border-gray-100 dark:border-gray-700 last:border-0">
+              <li
+                key={u.usuarioId}
+                className="flex justify-between items-center py-1 border-b border-gray-100 dark:border-gray-700 last:border-0"
+              >
                 <span className="text-gray-700 dark:text-gray-300">
-                  <span className="font-medium text-primary-600 dark:text-primary-400">{idx + 1}.</span> {u.nombre} <span className="text-gray-500 dark:text-gray-400">({u.email})</span>
+                  <span className="font-medium text-primary-600 dark:text-primary-400">
+                    {idx + 1}.
+                  </span>{' '}
+                  {u.nombre} <span className="text-gray-500 dark:text-gray-400">({u.email})</span>
                 </span>
-                <span className="font-semibold text-primary-600 dark:text-primary-400">{u.count.toLocaleString('es-AR')} créditos</span>
+                <span className="font-semibold text-primary-600 dark:text-primary-400">
+                  {u.count.toLocaleString('es-AR')} créditos
+                </span>
               </li>
             ))
           )}
@@ -222,4 +266,4 @@ const Dashboard: React.FC = () => {
   );
 };
 
-export default Dashboard; 
+export default Dashboard;

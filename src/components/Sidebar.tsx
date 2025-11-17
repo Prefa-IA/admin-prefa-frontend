@@ -1,8 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import {
+  ArrowRightOnRectangleIcon,
+  ChevronRightIcon,
+  Cog6ToothIcon,
+  CurrencyDollarIcon,
+  DocumentTextIcon,
+  HomeIcon,
+  Square3Stack3DIcon,
+  UsersIcon,
+} from '@heroicons/react/24/outline';
 import axios from 'axios';
-import { NavLink } from 'react-router-dom';
-import { HomeIcon, UsersIcon, DocumentTextIcon, Cog6ToothIcon, Square3Stack3DIcon, CurrencyDollarIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+
+import { useAuth } from '../contexts/AuthContext';
 import { slugify } from '../utils/slugify';
+
+const ACTIVE_LINK_CLASS = 'bg-blue-700';
 
 interface LinkItem {
   to?: string;
@@ -11,9 +24,11 @@ interface LinkItem {
 }
 interface Group {
   label: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   links: LinkItem[];
 }
+
+const REGLAS_PATH = '/reglas';
 
 const baseGroups: Group[] = [
   {
@@ -32,27 +47,26 @@ const baseGroups: Group[] = [
   {
     label: 'Consultas',
     icon: DocumentTextIcon,
-    links: [
-      { to: '/informes', label: 'Consultas' },
-    ],
+    links: [{ to: '/informes', label: 'Consultas' }],
   },
   {
     label: 'Normativa',
     icon: Square3Stack3DIcon,
     links: [
       { to: '/codigo-urbanistico', label: 'Código Urb.' },
-      { label: 'Reglas', children: [
-        { to: '/reglas', label: 'Administrar Reglas' },
-        { to: '/reglas/ver-todas', label: 'Ver todas' },
-      ] },
+      {
+        label: 'Reglas',
+        children: [
+          { to: '/reglas', label: 'Administrar Reglas' },
+          { to: '/reglas/ver-todas', label: 'Ver todas' },
+        ],
+      },
     ],
   },
   {
     label: 'Facturación',
     icon: CurrencyDollarIcon,
-    links: [
-      { to: '/facturacion', label: 'Facturación' },
-    ],
+    links: [{ to: '/facturacion', label: 'Facturación' }],
   },
   {
     label: 'Configuración',
@@ -73,6 +87,8 @@ const baseGroups: Group[] = [
 const Sidebar: React.FC = () => {
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [dynGroups, setDynGroups] = useState<Group[]>(baseGroups);
+  const { logout } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchCats = async () => {
@@ -80,53 +96,70 @@ const Sidebar: React.FC = () => {
         const { data } = await axios.get<string[]>('/api/reglas/categorias');
         if (Array.isArray(data)) {
           const links = data.map((cat: string) => ({
-            to: `/reglas/${slugify(cat)}`,
+            to: `${REGLAS_PATH}/${slugify(cat)}`,
             label: cat,
           }));
-          setDynGroups(prev => prev.map(g => {
-            if (g.label !== 'Normativa') return g;
-            return {
-              ...g,
-              links: g.links.map(link => {
-                if (link.label !== 'Reglas' || !link.children) return link;
-                const baseChildren = link.children!.filter(ch => ch.to === '/reglas' || ch.to === '/reglas/ver-todas');
-                const merged = [...baseChildren, ...links].reduce<LinkItem[]>((arr,item)=>{
-                  if (!arr.find(i=>i.to===item.to)) arr.push(item);
-                  return arr;
-                },[]);
-                return { ...link, children: merged };
-              })
-            };
-          }));
+          setDynGroups((prev) =>
+            prev.map((g) => {
+              if (g.label !== 'Normativa') return g;
+              return {
+                ...g,
+                links: g.links.map((link) => {
+                  if (link.label !== 'Reglas' || !link.children) return link;
+                  const baseChildren = link.children.filter(
+                    (ch) => ch.to === REGLAS_PATH || ch.to === `${REGLAS_PATH}/ver-todas`
+                  );
+                  const merged = [...baseChildren, ...links].reduce<LinkItem[]>((arr, item) => {
+                    if (!arr.find((i) => i.to === item.to)) arr.push(item);
+                    return arr;
+                  }, []);
+                  return { ...link, children: merged };
+                }),
+              };
+            })
+          );
         }
-      } catch {}
+      } catch {
+        // Silently handle errors
+      }
     };
 
-    fetchCats();
-    const handler = () => fetchCats();
+    void fetchCats();
+    const handler = () => {
+      void fetchCats();
+    };
     window.addEventListener('reglas-actualizadas', handler);
     return () => window.removeEventListener('reglas-actualizadas', handler);
   }, []);
 
   const groups = dynGroups;
 
-  const toggle = (label: string) => setOpen(prev => ({ ...prev, [label]: !prev[label] }));
+  const toggle = (label: string) => setOpen((prev) => ({ ...prev, [label]: !prev[label] }));
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  const BASE_LINK_CLASSES =
+    'flex items-center px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-600';
 
   return (
     <aside className="bg-[#1976d2] text-white w-64 h-screen fixed inset-y-0 left-0 flex flex-col z-40 overflow-y-auto">
       <div className="p-6 text-xl font-bold">PreFactibilidadYa</div>
       <nav className="flex-1 px-2 space-y-1">
-        {groups.map(group => {
+        {groups.map((group) => {
           const Icon = group.icon;
-          const singleLink = group.links.length === 1 && !group.links[0].children;
+          const singleLink = group.links.length === 1 && !group.links[0]?.children;
           if (singleLink) {
             const link = group.links[0];
+            if (!link) return null;
             return (
               <NavLink
                 key={link.to}
-                to={link.to!}
+                to={link.to ?? '/'}
                 className={({ isActive }) =>
-                  `flex items-center px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-600 ${isActive ? 'bg-blue-700' : ''}`
+                  `${BASE_LINK_CLASSES} ${isActive ? ACTIVE_LINK_CLASS : ''}`
                 }
               >
                 <Icon className="h-5 w-5 mr-3" /> {link.label}
@@ -137,14 +170,16 @@ const Sidebar: React.FC = () => {
             <div key={group.label} className="space-y-1">
               <button
                 onClick={() => toggle(group.label)}
-                className="flex items-center w-full px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-600 focus:outline-none"
+                className={`${BASE_LINK_CLASSES} w-full focus:outline-none`}
               >
                 <Icon className="h-5 w-5 mr-3" /> {group.label}
-                <ChevronRightIcon className={`h-4 w-4 ml-auto transition-transform ${open[group.label] ? 'rotate-90' : ''}`} />
+                <ChevronRightIcon
+                  className={`h-4 w-4 ml-auto transition-transform ${open[group.label] ? 'rotate-90' : ''}`}
+                />
               </button>
               {open[group.label] && (
                 <div className="ml-8 space-y-1">
-                  {group.links.map(link => (
+                  {group.links.map((link) => (
                     <NavItem link={link} key={link.label} />
                   ))}
                 </div>
@@ -153,6 +188,15 @@ const Sidebar: React.FC = () => {
           );
         })}
       </nav>
+      <div className="px-2 pb-4 border-t border-blue-600 pt-4">
+        <button
+          onClick={handleLogout}
+          className="flex items-center w-full px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-600 focus:outline-none text-white"
+        >
+          <ArrowRightOnRectangleIcon className="h-5 w-5 mr-3" />
+          Cerrar sesión
+        </button>
+      </div>
     </aside>
   );
 };
@@ -164,14 +208,27 @@ function NavItem({ link }: { link: LinkItem }) {
   if (link.children) {
     return (
       <div>
-        <button onClick={() => setOpenLocal(o=>!o)} className="flex items-center w-full px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-600 focus:outline-none">
+        <button
+          onClick={() => setOpenLocal((o) => !o)}
+          className="flex items-center w-full px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-600 focus:outline-none"
+        >
           {link.label}
-          <ChevronRightIcon className={`h-4 w-4 ml-auto transition-transform ${openLocal ? 'rotate-90' : ''}`} />
+          <ChevronRightIcon
+            className={`h-4 w-4 ml-auto transition-transform ${openLocal ? 'rotate-90' : ''}`}
+          />
         </button>
         {openLocal && (
           <div className="ml-6 space-y-1">
-            {link.children.map(ch => (
-              <NavLink key={ch.to||ch.label} to={ch.to!} className={({isActive})=>`block px-3 py-2 rounded-md text-sm hover:bg-blue-600 ${isActive?'bg-blue-700':''}`}>{ch.label}</NavLink>
+            {link.children.map((ch) => (
+              <NavLink
+                key={ch.to || ch.label}
+                to={ch.to!}
+                className={({ isActive }) =>
+                  `block px-3 py-2 rounded-md text-sm hover:bg-blue-600 ${isActive ? ACTIVE_LINK_CLASS : ''}`
+                }
+              >
+                {ch.label}
+              </NavLink>
             ))}
           </div>
         )}
@@ -182,9 +239,10 @@ function NavItem({ link }: { link: LinkItem }) {
     <NavLink
       to={link.to!}
       className={({ isActive }) =>
-        `block px-3 py-2 rounded-md text-sm hover:bg-blue-600 ${isActive ? 'bg-blue-700' : ''}`}
+        `block px-3 py-2 rounded-md text-sm hover:bg-blue-600 ${isActive ? ACTIVE_LINK_CLASS : ''}`
+      }
     >
       {link.label}
     </NavLink>
   );
-} 
+}

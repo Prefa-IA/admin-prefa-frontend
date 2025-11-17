@@ -1,7 +1,9 @@
 import React from 'react';
 import { useParams } from 'react-router-dom';
-import ReglasPage from './ReglasPage';
+
 import { deslugify } from '../utils/deslugify';
+
+import ReglasPage from './ReglasPage';
 
 const ReglasCategoriaPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -10,4 +12,4 @@ const ReglasCategoriaPage: React.FC = () => {
   return <ReglasPage mode="view" categoria={categoria} />;
 };
 
-export default ReglasCategoriaPage; 
+export default ReglasCategoriaPage;

@@ -1,11 +1,27 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import React, { useCallback, useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
-import { PageHeader, FilterBar, Card, Table, TableHeader, TableRow, TableHead, TableCell, TableBody, Button, Modal, Input } from '../components/ui';
-import NewItemButton from '../components/NewItemButton';
-import EditIconButton from '../components/EditIconButton';
-import DeleteIconButton from '../components/DeleteIconButton';
+import axios from 'axios';
+
 import ConfirmModal from '../components/ConfirmModal';
+import DeleteIconButton from '../components/DeleteIconButton';
+import EditIconButton from '../components/EditIconButton';
+import NewItemButton from '../components/NewItemButton';
+import {
+  Button,
+  Card,
+  Checkbox,
+  FilterBar,
+  Input,
+  Modal,
+  PageHeader,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../components/ui';
+import { useAuth } from '../contexts/AuthContext';
 
 interface AdminUser {
   _id: string;
@@ -13,51 +29,65 @@ interface AdminUser {
   nombre: string;
   role: string;
   isActive: boolean;
+  isSuperAdmin?: boolean;
   createdAt?: string;
 }
 
 const AdminUsersPage: React.FC = () => {
+  const { user } = useAuth();
+  const isSuperAdmin = user?.isSuperAdmin === true;
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedAdmin, setSelectedAdmin] = useState<AdminUser | null>(null);
-  const [formData, setFormData] = useState({ nombre: '', email: '', password: '' });
+  const [formData, setFormData] = useState({
+    nombre: '',
+    email: '',
+    password: '',
+    isSuperAdmin: false,
+  });
   const [saving, setSaving] = useState(false);
   const [hasFetched, setHasFetched] = useState(false);
 
-  const fetchAdmins = async () => {
+  const fetchAdmins = useCallback(async () => {
     if (loading) return;
     setLoading(true);
     try {
       const res = await axios.get<AdminUser[]>('/api/admin/admins');
       setAdmins(res.data);
       setHasFetched(true);
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (!hasFetched) {
-        toast.error(err.response?.data?.error || 'Error al cargar administradores');
+        const error = err as { response?: { data?: { error?: string } } };
+        toast.error(error.response?.data?.error || 'Error al cargar administradores');
       }
     } finally {
       setLoading(false);
     }
-  };
+  }, [loading, hasFetched]);
 
   useEffect(() => {
     if (!hasFetched) {
-      fetchAdmins();
+      void fetchAdmins();
     }
-  }, []);
+  }, [hasFetched, fetchAdmins]);
 
   const handleCreate = () => {
     setSelectedAdmin(null);
-    setFormData({ nombre: '', email: '', password: '' });
+    setFormData({ nombre: '', email: '', password: '', isSuperAdmin: false });
     setShowModal(true);
   };
 
   const handleEdit = (admin: AdminUser) => {
     setSelectedAdmin(admin);
-    setFormData({ nombre: admin.nombre, email: admin.email, password: '' });
+    setFormData({
+      nombre: admin.nombre,
+      email: admin.email,
+      password: '',
+      isSuperAdmin: admin.isSuperAdmin || false,
+    });
     setShowModal(true);
   };
 
@@ -81,12 +111,23 @@ const AdminUsersPage: React.FC = () => {
     try {
       if (selectedAdmin) {
         // Actualizar admin existente
-        const payload: any = { nombre: formData.nombre, email: formData.email };
+        interface UpdatePayload {
+          nombre: string;
+          email: string;
+          password?: string;
+          isSuperAdmin?: boolean;
+        }
+        const payload: UpdatePayload = { nombre: formData.nombre, email: formData.email };
         if (formData.password) {
           // Hash de la contraseña
           const enc = new TextEncoder().encode(formData.password);
           const buf = await crypto.subtle.digest('SHA-256', enc);
-          payload.password = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+          payload.password = Array.from(new Uint8Array(buf))
+            .map((b) => b.toString(16).padStart(2, '0'))
+            .join('');
+        }
+        if (isSuperAdmin) {
+          payload.isSuperAdmin = formData.isSuperAdmin;
         }
         await axios.put(`/api/admin/admins/${selectedAdmin._id}`, payload);
         toast.success('Administrador actualizado correctamente');
@@ -94,22 +135,26 @@ const AdminUsersPage: React.FC = () => {
         // Crear nuevo admin
         const enc = new TextEncoder().encode(formData.password);
         const buf = await crypto.subtle.digest('SHA-256', enc);
-        const hashHex = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-        
+        const hashHex = Array.from(new Uint8Array(buf))
+          .map((b) => b.toString(16).padStart(2, '0'))
+          .join('');
+
         await axios.post('/api/admin/admins', {
           nombre: formData.nombre,
           email: formData.email,
           password: hashHex,
           role: 'admin',
           isActive: true,
+          isSuperAdmin: isSuperAdmin ? formData.isSuperAdmin : false,
         });
         toast.success('Administrador creado correctamente');
       }
       setShowModal(false);
-      setFormData({ nombre: '', email: '', password: '' });
-      fetchAdmins();
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Error al guardar administrador');
+      setFormData({ nombre: '', email: '', password: '', isSuperAdmin: false });
+      void fetchAdmins();
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      toast.error(error.response?.data?.error || 'Error al guardar administrador');
     } finally {
       setSaving(false);
     }
@@ -122,15 +167,17 @@ const AdminUsersPage: React.FC = () => {
       toast.success('Administrador eliminado correctamente');
       setShowDeleteModal(false);
       setSelectedAdmin(null);
-      fetchAdmins();
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Error al eliminar administrador');
+      void fetchAdmins();
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      toast.error(error.response?.data?.error || 'Error al eliminar administrador');
     }
   };
 
-  const filtered = admins.filter(a =>
-    a.nombre.toLowerCase().includes(query.toLowerCase()) ||
-    a.email.toLowerCase().includes(query.toLowerCase())
+  const filtered = admins.filter(
+    (a) =>
+      a.nombre.toLowerCase().includes(query.toLowerCase()) ||
+      a.email.toLowerCase().includes(query.toLowerCase())
   );
 
   if (loading) {
@@ -149,9 +196,7 @@ const AdminUsersPage: React.FC = () => {
       <PageHeader
         title="Administradores"
         description="Gestiona los administradores del sistema"
-        actions={
-          <NewItemButton label="Nuevo administrador" onClick={handleCreate} />
-        }
+        actions={<NewItemButton label="Nuevo administrador" onClick={handleCreate} />}
       />
 
       <FilterBar
@@ -167,6 +212,7 @@ const AdminUsersPage: React.FC = () => {
               <TableHead>Nombre</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Rol</TableHead>
+              <TableHead>Super Admin</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead>Fecha creación</TableHead>
               <TableHead align="right">Acciones</TableHead>
@@ -175,12 +221,15 @@ const AdminUsersPage: React.FC = () => {
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-gray-500 dark:text-gray-400">
+                <TableCell
+                  colSpan={7}
+                  className="text-center py-8 text-gray-500 dark:text-gray-400"
+                >
                   No se encontraron administradores
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map(admin => (
+              filtered.map((admin) => (
                 <TableRow key={admin._id}>
                   <TableCell className="font-medium">{admin.nombre}</TableCell>
                   <TableCell>{admin.email}</TableCell>
@@ -190,11 +239,22 @@ const AdminUsersPage: React.FC = () => {
                     </span>
                   </TableCell>
                   <TableCell>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      admin.isActive
-                        ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                        : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                    }`}>
+                    {admin.isSuperAdmin ? (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">
+                        Sí
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">No</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <span
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        admin.isActive
+                          ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                          : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                      }`}
+                    >
                       {admin.isActive ? 'Activo' : 'Inactivo'}
                     </span>
                   </TableCell>
@@ -204,7 +264,7 @@ const AdminUsersPage: React.FC = () => {
                   <TableCell align="right">
                     <div className="flex items-center justify-end gap-1">
                       <EditIconButton onClick={() => handleEdit(admin)} />
-                      {admin.email === 'prefaia@admin.com' ? null : (
+                      {admin.isSuperAdmin ? null : (
                         <DeleteIconButton onClick={() => handleDelete(admin)} />
                       )}
                     </div>
@@ -223,7 +283,7 @@ const AdminUsersPage: React.FC = () => {
           title={selectedAdmin ? 'Editar administrador' : 'Nuevo administrador'}
           onClose={() => {
             setShowModal(false);
-            setFormData({ nombre: '', email: '', password: '' });
+            setFormData({ nombre: '', email: '', password: '', isSuperAdmin: false });
           }}
           footer={
             <>
@@ -231,12 +291,19 @@ const AdminUsersPage: React.FC = () => {
                 variant="secondary"
                 onClick={() => {
                   setShowModal(false);
-                  setFormData({ nombre: '', email: '', password: '' });
+                  setFormData({ nombre: '', email: '', password: '', isSuperAdmin: false });
                 }}
               >
                 Cancelar
               </Button>
-              <Button variant="primary" onClick={handleSave} disabled={saving} isLoading={saving}>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  void handleSave();
+                }}
+                disabled={saving}
+                isLoading={saving}
+              >
                 {selectedAdmin ? 'Actualizar' : 'Crear'}
               </Button>
             </>
@@ -259,13 +326,24 @@ const AdminUsersPage: React.FC = () => {
               placeholder="admin@ejemplo.com"
             />
             <Input
-              label={selectedAdmin ? 'Nueva contraseña (dejar vacío para mantener la actual)' : 'Contraseña'}
+              label={
+                selectedAdmin
+                  ? 'Nueva contraseña (dejar vacío para mantener la actual)'
+                  : 'Contraseña'
+              }
               type="password"
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               required={!selectedAdmin}
               placeholder="••••••••"
             />
+            {isSuperAdmin && (
+              <Checkbox
+                label="Super Administrador"
+                checked={formData.isSuperAdmin}
+                onChange={(e) => setFormData({ ...formData, isSuperAdmin: e.target.checked })}
+              />
+            )}
           </div>
         </Modal>
       )}
@@ -277,7 +355,9 @@ const AdminUsersPage: React.FC = () => {
         message={`¿Estás seguro de que deseas eliminar al administrador "${selectedAdmin?.nombre}"?`}
         confirmText="Eliminar"
         cancelText="Cancelar"
-        onConfirm={handleConfirmDelete}
+        onConfirm={() => {
+          void handleConfirmDelete();
+        }}
         onCancel={() => {
           setShowDeleteModal(false);
           setSelectedAdmin(null);
@@ -288,4 +368,3 @@ const AdminUsersPage: React.FC = () => {
 };
 
 export default AdminUsersPage;
-

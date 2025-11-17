@@ -1,35 +1,30 @@
 import React from 'react';
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from 'react-router-dom';
+import { BrowserRouter as Router, Navigate, Route, Routes } from 'react-router-dom';
 
-import Dashboard from './pages/Dashboard';
-import UsersPage from './pages/UsersPage';
-import ReportsPage from './pages/ReportsPage';
-import LoginPage from './pages/LoginPage';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout';
-import FacturacionPage from './pages/FacturacionPage';
-import CapasPage from './pages/CapasPage';
-import NormativaPage from './pages/NormativaPage';
-import CodigoUrbanisticoPage from './pages/CodigoUrbanisticoPage';
-import ParametrosEdificabilidadPage from './pages/ParametrosEdificabilidadPage';
-import AfectacionesPage from './pages/AfectacionesPage';
-import ReglasAdminPage from './pages/ReglasAdminPage';
-import ReglasCategoriaPage from './pages/ReglasCategoriaPage';
-import PromptTemplatesPage from './pages/PromptTemplatesPage';
-import EmailTemplatesPage from './pages/EmailTemplatesPage';
-import PlanTagsPage from './pages/PlanTagsPage';
-import ConstantesTronerasPage from './pages/ConstantesTronerasPage';
-import ReglasAllPage from './pages/ReglasAllPage';
-import SendNewsletterPage from './pages/SendNewsletterPage';
-import NewsletterHistoryPage from './pages/NewsletterHistoryPage';
-import CalculoPasosPage from './pages/CalculoPasosPage';
-import ReglasLogicasPage from './pages/ReglasLogicasPage';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import AdminUsersPage from './pages/AdminUsersPage';
+import AfectacionesPage from './pages/AfectacionesPage';
+import CalculoPasosPage from './pages/CalculoPasosPage';
+import CapasPage from './pages/CapasPage';
+import CodigoUrbanisticoPage from './pages/CodigoUrbanisticoPage';
+import ConstantesTronerasPage from './pages/ConstantesTronerasPage';
+import Dashboard from './pages/Dashboard';
+import EmailTemplatesPage from './pages/EmailTemplatesPage';
+import FacturacionPage from './pages/FacturacionPage';
+import LoginPage from './pages/LoginPage';
+import NewsletterHistoryPage from './pages/NewsletterHistoryPage';
+import NormativaPage from './pages/NormativaPage';
+import ParametrosEdificabilidadPage from './pages/ParametrosEdificabilidadPage';
+import PlanTagsPage from './pages/PlanTagsPage';
+import PromptTemplatesPage from './pages/PromptTemplatesPage';
+import ReglasAdminPage from './pages/ReglasAdminPage';
+import ReglasAllPage from './pages/ReglasAllPage';
+import ReglasCategoriaPage from './pages/ReglasCategoriaPage';
+import ReglasLogicasPage from './pages/ReglasLogicasPage';
+import ReportsPage from './pages/ReportsPage';
+import SendNewsletterPage from './pages/SendNewsletterPage';
+import UsersPage from './pages/UsersPage';
 
 const PrivateRoute: React.FC<{ children: JSX.Element }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -230,8 +225,26 @@ const App: React.FC = () => {
               </PrivateRoute>
             }
           />
-          <Route path="/calculo-pasos" element={<PrivateRoute><Layout><CalculoPasosPage/></Layout></PrivateRoute>} />
-          <Route path="/reglas-logicas" element={<PrivateRoute><Layout><ReglasLogicasPage/></Layout></PrivateRoute>} />
+          <Route
+            path="/calculo-pasos"
+            element={
+              <PrivateRoute>
+                <Layout>
+                  <CalculoPasosPage />
+                </Layout>
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/reglas-logicas"
+            element={
+              <PrivateRoute>
+                <Layout>
+                  <ReglasLogicasPage />
+                </Layout>
+              </PrivateRoute>
+            }
+          />
           <Route
             path="/admin-users"
             element={
@@ -248,4 +261,4 @@ const App: React.FC = () => {
   );
 };
 
-export default App; 
+export default App;

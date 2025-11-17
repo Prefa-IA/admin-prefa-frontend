@@ -1,7 +1,8 @@
 import React from 'react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import Card from '../Card';
+import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+
 import { DashboardItem } from '../../types/components';
+import Card from '../Card';
 
 const COLORS: Record<string, string> = {
   gratuito: '#90caf9',
@@ -32,4 +33,4 @@ const FunnelChart: React.FC<{ data: DashboardItem[] }> = ({ data }) => (
   </Card>
 );
 
-export default FunnelChart; 
+export default FunnelChart;

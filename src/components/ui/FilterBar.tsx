@@ -1,4 +1,5 @@
 import React from 'react';
+
 import SearchInput from './SearchInput';
 import Select from './Select';
 
@@ -22,10 +23,12 @@ const FilterBar: React.FC<FilterBarProps> = ({
   searchPlaceholder = 'Buscar...',
   filters = [],
   actions,
-  className = ''
+  className = '',
 }) => {
   return (
-    <div className={`mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center ${className}`}>
+    <div
+      className={`mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center ${className}`}
+    >
       <div className="flex-1 w-full sm:w-auto">
         <SearchInput
           value={searchValue}
@@ -34,7 +37,7 @@ const FilterBar: React.FC<FilterBarProps> = ({
           className="w-full"
         />
       </div>
-      
+
       {filters.length > 0 && (
         <div className="flex flex-wrap gap-3">
           {filters.map((filter, idx) => (
@@ -49,15 +52,10 @@ const FilterBar: React.FC<FilterBarProps> = ({
           ))}
         </div>
       )}
-      
-      {actions && (
-        <div className="flex items-center gap-2">
-          {actions}
-        </div>
-      )}
+
+      {actions && <div className="flex items-center gap-2">{actions}</div>}
     </div>
   );
 };
 
 export default FilterBar;
-

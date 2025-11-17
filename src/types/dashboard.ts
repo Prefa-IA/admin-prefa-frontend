@@ -11,4 +11,3 @@ export interface RevenueHistoryItem {
   year: number;
   revenue: number;
 }
-

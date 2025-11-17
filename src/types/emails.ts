@@ -12,4 +12,3 @@ export interface Template {
 }
 
 export type TemplateKey = 'info-prefas' | 'marketing-newsletter';
-

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+
 import { RuleSelectorRule } from '../../types/components';
 
 interface Props {
@@ -17,7 +18,9 @@ const RuleSelectorModal: React.FC<Props> = ({ onClose, onSelect }) => {
     setLoading(true);
     setError('');
     try {
-      const { data } = await axios.get<RuleSelectorRule[]>(`/api/reglas?search=${encodeURIComponent(search)}`);
+      const { data } = await axios.get<RuleSelectorRule[]>(
+        `/api/reglas?search=${encodeURIComponent(search)}`
+      );
       setRules(data);
     } catch (err) {
       console.error(err);
@@ -27,7 +30,7 @@ const RuleSelectorModal: React.FC<Props> = ({ onClose, onSelect }) => {
   };
 
   useEffect(() => {
-    fetchRules();
+    void fetchRules();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
 
@@ -39,7 +42,7 @@ const RuleSelectorModal: React.FC<Props> = ({ onClose, onSelect }) => {
           className="input-field w-full"
           placeholder="Buscar por título o ID..."
           value={search}
-          onChange={e => setSearch(e.target.value)}
+          onChange={(e) => setSearch(e.target.value)}
         />
 
         {loading ? (
@@ -57,11 +60,13 @@ const RuleSelectorModal: React.FC<Props> = ({ onClose, onSelect }) => {
                 </tr>
               </thead>
               <tbody>
-                {rules.map(rule => (
+                {rules.map((rule) => (
                   <tr
                     key={rule._id}
                     className="border-t hover:bg-gray-50 cursor-pointer"
-                    onClick={() => { onSelect(rule); }}
+                    onClick={() => {
+                      onSelect(rule);
+                    }}
                   >
                     <td className="px-4 py-2 font-mono text-blue-700">{rule.id_regla}</td>
                     <td className="px-4 py-2">{rule.titulo_regla}</td>
@@ -74,11 +79,13 @@ const RuleSelectorModal: React.FC<Props> = ({ onClose, onSelect }) => {
         )}
 
         <div className="flex justify-end space-x-3 pt-2">
-          <button className="btn-secondary" onClick={onClose}>Cerrar</button>
+          <button className="btn-secondary" onClick={onClose}>
+            Cerrar
+          </button>
         </div>
       </div>
     </div>
   );
 };
 
-export default RuleSelectorModal; 
+export default RuleSelectorModal;

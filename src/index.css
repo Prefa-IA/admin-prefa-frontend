@@ -26,41 +26,50 @@
 }
 
 /* Scrollbar personalizada */
-html, body {
+html,
+body {
   scrollbar-width: thin;
   scrollbar-color: #0284c7 #f0f9ff;
 }
 
-html.dark, body.dark {
+html.dark,
+body.dark {
   scrollbar-color: #0284c7 #1f2937;
 }
 
-html::-webkit-scrollbar, body::-webkit-scrollbar {
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
   width: 6px;
 }
 
-html::-webkit-scrollbar-track, body::-webkit-scrollbar-track {
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track {
   background: #f0f9ff;
   border-radius: 3px;
 }
 
-html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb {
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb {
   background: linear-gradient(180deg, #0284c7 0%, #0369a1 100%);
   border-radius: 3px;
 }
 
-html::-webkit-scrollbar-thumb:hover, body::-webkit-scrollbar-thumb:hover {
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(180deg, #0369a1 0%, #075985 100%);
 }
 
-.dark html::-webkit-scrollbar-track, .dark body::-webkit-scrollbar-track {
+.dark html::-webkit-scrollbar-track,
+.dark body::-webkit-scrollbar-track {
   background: #1f2937;
 }
 
-.dark html::-webkit-scrollbar-thumb, .dark body::-webkit-scrollbar-thumb {
+.dark html::-webkit-scrollbar-thumb,
+.dark body::-webkit-scrollbar-thumb {
   background: linear-gradient(180deg, #0284c7 0%, #0369a1 100%);
 }
 
-.dark html::-webkit-scrollbar-thumb:hover, .dark body::-webkit-scrollbar-thumb:hover {
+.dark html::-webkit-scrollbar-thumb:hover,
+.dark body::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(180deg, #0369a1 0%, #075985 100%);
-} 
+}

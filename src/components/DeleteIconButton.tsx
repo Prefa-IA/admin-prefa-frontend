@@ -16,4 +16,4 @@ const DeleteIconButton: React.FC<Props> = ({ onClick, title = 'Eliminar' }) => (
   </button>
 );
 
-export default DeleteIconButton; 
+export default DeleteIconButton;

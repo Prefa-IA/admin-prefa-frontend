@@ -10,4 +10,3 @@ export interface PromptTemplate {
   isActive?: boolean;
   fecha_creacion?: string;
 }
-

@@ -1,15 +1,26 @@
 import React, { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
+
 import { formatDate } from '../../utils/formatDate';
 
 interface Props {
   onClose: () => void;
-  onSubmit: (payload: { startPage: number; endPage: number; version?: string; file?: File }) => void;
+  onSubmit: (payload: {
+    startPage: number;
+    endPage: number;
+    version?: string;
+    file?: File;
+  }) => void;
   defaultStart?: number;
   defaultEnd?: number;
 }
 
-const OcrExtractModal: React.FC<Props> = ({ onClose, onSubmit, defaultStart = 136, defaultEnd = 186 }) => {
+const OcrExtractModal: React.FC<Props> = ({
+  onClose,
+  onSubmit,
+  defaultStart = 136,
+  defaultEnd = 186,
+}) => {
   const [startPage, setStartPage] = useState<number>(defaultStart);
   const [endPage, setEndPage] = useState<number>(defaultEnd);
   const [versionIso, setVersionIso] = useState<string>('');
@@ -21,11 +32,21 @@ const OcrExtractModal: React.FC<Props> = ({ onClose, onSubmit, defaultStart = 13
     noClick: true,
     noDrag: !!file,
     onDrop: (accepted) => {
-      if (accepted.length) setFile(accepted[0]);
+      if (accepted.length) {
+        const file = accepted[0];
+        if (file) {
+          setFile(file);
+        }
+      }
     },
   });
 
-  const isValidRange = () => Number.isFinite(startPage) && Number.isFinite(endPage) && startPage > 0 && endPage >= startPage && versionIso.trim() !== '';
+  const isValidRange = () =>
+    Number.isFinite(startPage) &&
+    Number.isFinite(endPage) &&
+    startPage > 0 &&
+    endPage >= startPage &&
+    versionIso.trim() !== '';
 
   const handleSubmit = () => {
     if (!isValidRange() || !file) return;
@@ -58,7 +79,8 @@ const OcrExtractModal: React.FC<Props> = ({ onClose, onSubmit, defaultStart = 13
               onChange={(e) => setEndPage(Number(e.target.value))}
             />
           </label>
-          <label className="block text-sm font-medium">Versión del documento (requerida)
+          <label className="block text-sm font-medium">
+            Versión del documento (requerida)
             <input
               type="date"
               className="input-field w-full"
@@ -66,11 +88,21 @@ const OcrExtractModal: React.FC<Props> = ({ onClose, onSubmit, defaultStart = 13
               onChange={(e) => setVersionIso(e.target.value)}
             />
           </label>
-          <label className="block text-sm font-medium">Archivo PDF
+          <label className="block text-sm font-medium">
+            Archivo PDF
             {file ? (
               <div className="border p-4 rounded-md mt-1 flex items-center justify-between">
                 <span className="text-sm">{file.name}</span>
-                <button type="button" className="btn-secondary ml-4" onClick={() => { setFile(null); setTimeout(open, 0); }}>Cambiar PDF</button>
+                <button
+                  type="button"
+                  className="btn-secondary ml-4"
+                  onClick={() => {
+                    setFile(null);
+                    setTimeout(open, 0);
+                  }}
+                >
+                  Cambiar PDF
+                </button>
               </div>
             ) : (
               <div
@@ -88,7 +120,7 @@ const OcrExtractModal: React.FC<Props> = ({ onClose, onSubmit, defaultStart = 13
             Cancelar
           </button>
           <button
-            className={`btn-primary ${(!isValidRange() || !file) ? 'opacity-50 pointer-events-none' : ''}`}
+            className={`btn-primary ${!isValidRange() || !file ? 'opacity-50 pointer-events-none' : ''}`}
             onClick={handleSubmit}
           >
             Procesar
@@ -99,4 +131,4 @@ const OcrExtractModal: React.FC<Props> = ({ onClose, onSubmit, defaultStart = 13
   );
 };
 
-export default OcrExtractModal; 
+export default OcrExtractModal;

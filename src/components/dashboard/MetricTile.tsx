@@ -23,4 +23,4 @@ const MetricTile: React.FC<Props> = ({ title, value, delta, variant = 'default' 
   );
 };
 
-export default MetricTile; 
+export default MetricTile;

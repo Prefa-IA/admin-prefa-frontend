@@ -1,5 +1,4 @@
 import React from 'react';
-import Button from './Button';
 
 interface PageHeaderProps {
   title: string;
@@ -16,14 +15,9 @@ const PageHeader: React.FC<PageHeaderProps> = ({ title, description, actions }) 
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{description}</p>
         )}
       </div>
-      {actions && (
-        <div className="flex items-center gap-2">
-          {actions}
-        </div>
-      )}
+      {actions && <div className="flex items-center gap-2">{actions}</div>}
     </div>
   );
 };
 
 export default PageHeader;
-

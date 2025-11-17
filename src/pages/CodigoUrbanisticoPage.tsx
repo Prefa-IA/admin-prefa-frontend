@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { PageHeader, Card, Button } from '../components/ui';
-import OcrExtractModal from '../components/modals/OcrExtractModal';
-import axios from 'axios';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
+
+import OcrExtractModal from '../components/modals/OcrExtractModal';
+import { Button, Card, PageHeader } from '../components/ui';
 
 const CodigoUrbanisticoPage: React.FC = () => {
   const navigate = useNavigate();
@@ -12,7 +13,17 @@ const CodigoUrbanisticoPage: React.FC = () => {
   const [jobId, setJobId] = useState<string | null>(null);
   const [jobStatus, setJobStatus] = useState<string | null>(null);
 
-  const handleSubmit = async ({ startPage, endPage, version, file }: { startPage: number; endPage: number; version?: string; file?: File }) => {
+  const handleSubmit = async ({
+    startPage,
+    endPage,
+    version,
+    file,
+  }: {
+    startPage: number;
+    endPage: number;
+    version?: string;
+    file?: File;
+  }) => {
     setIsProcessing(true);
     setMessage(null);
     try {
@@ -29,9 +40,10 @@ const CodigoUrbanisticoPage: React.FC = () => {
       setJobStatus('queued');
       localStorage.setItem('lastJobId', data.jobId);
       setMessage(`Proceso iniciado. ID de tarea: ${data.jobId}`);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setMessage(err.message || 'Ocurrió un error');
+      const error = err as { message?: string };
+      setMessage(error.message || 'Ocurrió un error');
     } finally {
       setIsProcessing(false);
       setShowModal(false);
@@ -41,7 +53,7 @@ const CodigoUrbanisticoPage: React.FC = () => {
   useEffect(() => {
     const last = localStorage.getItem('lastJobId');
     if (last && !jobId) {
-      (async () => {
+      const loadJob = async () => {
         try {
           const axios = (await import('axios')).default;
           const { data } = await axios.get(`/api/admin/codigo-urbanistico/job/${last}`);
@@ -54,18 +66,23 @@ const CodigoUrbanisticoPage: React.FC = () => {
         } catch {
           localStorage.removeItem('lastJobId');
         }
-      })();
+      };
+      void loadJob();
     }
-  }, []);
+  }, [jobId]);
 
   useEffect(() => {
     if (!jobId) return;
-    let interval: any;
+    let interval: NodeJS.Timeout;
     const fetchStatus = async () => {
       try {
         const { data } = await axios.get(`/api/admin/codigo-urbanistico/job/${jobId}`);
         setJobStatus(data.status);
-        setChunkProgress({p:data.processedChunks||0,t:data.totalChunks||0,i:data.insertedRules||0});
+        setChunkProgress({
+          p: data.processedChunks || 0,
+          t: data.totalChunks || 0,
+          i: data.insertedRules || 0,
+        });
         if (data.status === 'completed') {
           localStorage.removeItem('lastJobId');
           setMessage(`Proceso finalizado. Reglas nuevas: ${data.insertedRules}`);
@@ -77,14 +94,16 @@ const CodigoUrbanisticoPage: React.FC = () => {
         console.error(err);
       }
     };
-    fetchStatus();
-    interval = setInterval(fetchStatus, 5000);
+    void fetchStatus();
+    interval = setInterval(() => {
+      void fetchStatus();
+    }, 5000);
     return () => clearInterval(interval);
   }, [jobId]);
 
   useEffect(() => {
     if (jobStatus === 'completed') {
-      (async () => {
+      const loadRules = async () => {
         try {
           const { data } = await axios.get('/api/reglas', { params: { job: jobId } });
           const count = Array.isArray(data) ? data.length : 0;
@@ -93,11 +112,16 @@ const CodigoUrbanisticoPage: React.FC = () => {
         } catch {
           navigate('/reglas');
         }
-      })();
+      };
+      void loadRules();
     }
-  }, [jobStatus, navigate]);
+  }, [jobStatus, navigate, jobId]);
 
-  const [chunkProgress, setChunkProgress] = useState<{p:number;t:number;i:number}>({p:0,t:0,i:0});
+  const [chunkProgress, setChunkProgress] = useState<{ p: number; t: number; i: number }>({
+    p: 0,
+    t: 0,
+    i: 0,
+  });
 
   return (
     <div>
@@ -114,38 +138,46 @@ const CodigoUrbanisticoPage: React.FC = () => {
             disabled={isProcessing || jobStatus === 'processing' || jobStatus === 'queued'}
             isLoading={isProcessing}
           >
-        {isProcessing ? 'Procesando…' : 'Iniciar extracción de reglas'}
+            {isProcessing ? 'Procesando…' : 'Iniciar extracción de reglas'}
           </Button>
 
           {message && (
-            <div className={`p-3 rounded-lg ${
-              message.includes('error') || message.includes('Error')
-                ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
-                : 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800'
-            }`}>
-              <p className={`text-sm ${
+            <div
+              className={`p-3 rounded-lg ${
                 message.includes('error') || message.includes('Error')
-                  ? 'text-red-600 dark:text-red-400'
-                  : 'text-blue-600 dark:text-blue-400'
-              }`}>{message}</p>
+                  ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
+                  : 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800'
+              }`}
+            >
+              <p
+                className={`text-sm ${
+                  message.includes('error') || message.includes('Error')
+                    ? 'text-red-600 dark:text-red-400'
+                    : 'text-blue-600 dark:text-blue-400'
+                }`}
+              >
+                {message}
+              </p>
             </div>
           )}
 
-      {jobStatus && (
-        <div className="space-y-2 max-w-md">
+          {jobStatus && (
+            <div className="space-y-2 max-w-md">
               {jobStatus === 'processing' || jobStatus === 'queued' ? (
-            <>
+                <>
                   <p className="text-sm text-gray-700 dark:text-gray-300">
                     Procesando reglas mediante IA… ({chunkProgress.p}/{chunkProgress.t} bloques)
                   </p>
                   <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
                     <div
                       className="bg-primary-600 h-2.5 rounded-full transition-all duration-300"
-                      style={{ width: `${chunkProgress.t ? Math.floor((chunkProgress.p / chunkProgress.t) * 100) : 0}%` }}
+                      style={{
+                        width: `${chunkProgress.t ? Math.floor((chunkProgress.p / chunkProgress.t) * 100) : 0}%`,
+                      }}
                     ></div>
-              </div>
-            </>
-          ) : (
+                  </div>
+                </>
+              ) : (
                 <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
                   <p className="text-sm text-green-700 dark:text-green-400">
                     Proceso completado. Reglas nuevas: {chunkProgress.i}
@@ -157,9 +189,16 @@ const CodigoUrbanisticoPage: React.FC = () => {
         </div>
       </Card>
 
-      {showModal && <OcrExtractModal onClose={() => setShowModal(false)} onSubmit={handleSubmit} />}
+      {showModal && (
+        <OcrExtractModal
+          onClose={() => setShowModal(false)}
+          onSubmit={(data) => {
+            void handleSubmit(data);
+          }}
+        />
+      )}
     </div>
   );
 };
 
-export default CodigoUrbanisticoPage; 
+export default CodigoUrbanisticoPage;

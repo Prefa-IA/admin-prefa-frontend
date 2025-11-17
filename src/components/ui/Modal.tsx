@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
-import Button from './Button';
 
 interface ModalProps {
   show: boolean;
@@ -19,7 +18,7 @@ const Modal: React.FC<ModalProps> = ({
   children,
   footer,
   size = 'md',
-  closeOnOverlayClick = true
+  closeOnOverlayClick = true,
 }) => {
   useEffect(() => {
     if (show) {
@@ -38,29 +37,48 @@ const Modal: React.FC<ModalProps> = ({
     sm: 'max-w-md',
     md: 'max-w-lg',
     lg: 'max-w-2xl',
-    xl: 'max-w-4xl'
+    xl: 'max-w-4xl',
+  };
+
+  const handleOverlayClick = (e: React.MouseEvent<HTMLElement>) => {
+    if (closeOnOverlayClick && e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLElement>) => {
+    if (closeOnOverlayClick && e.key === 'Escape') {
+      onClose();
+    }
   };
 
   return (
     <div
       className="fixed inset-0 z-50 overflow-y-auto"
-      onClick={closeOnOverlayClick ? onClose : undefined}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+      tabIndex={-1}
     >
       <div className="flex min-h-screen items-center justify-center p-4">
-        <div
+        <button
+          type="button"
           className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
-          onClick={closeOnOverlayClick ? onClose : undefined}
+          onClick={handleOverlayClick}
+          onKeyDown={handleKeyDown}
+          aria-label="Cerrar modal"
         />
+        {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
         <div
           className={`
             relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full ${sizes[size]}
             transform transition-all
           `}
-          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
         >
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+            <h3 id="modal-title" className="text-xl font-semibold text-gray-900 dark:text-gray-100">
               {title}
             </h3>
             <button
@@ -72,9 +90,7 @@ const Modal: React.FC<ModalProps> = ({
           </div>
 
           {/* Body */}
-          <div className="p-6">
-            {children}
-          </div>
+          <div className="p-6">{children}</div>
 
           {/* Footer */}
           {footer && (
@@ -89,4 +105,3 @@ const Modal: React.FC<ModalProps> = ({
 };
 
 export default Modal;
-

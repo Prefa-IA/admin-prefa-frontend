@@ -5,4 +5,3 @@ export interface PlanTag {
   bgClass: string;
   icon?: string;
 }
-

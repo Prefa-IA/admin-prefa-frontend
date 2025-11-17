@@ -4,6 +4,7 @@ export interface Informe {
   pdfUrl?: string;
   estado: string;
   createdAt: string;
-  usuario?: { nombre: string; email: string };
+  tipoPrefa?: string;
+  fueDescargado?: boolean;
+  usuario?: { nombre: string; email: string; _id?: string };
 }
-

@@ -1,11 +1,21 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import { PageHeader, Card, Table, TableHeader, TableRow, TableHead, TableCell, TableBody, Button } from '../components/ui';
-import NewItemButton from '../components/NewItemButton';
-import EditIconButton from '../components/EditIconButton';
-import DeleteIconButton from '../components/DeleteIconButton';
+
 import ConfirmModal from '../components/ConfirmModal';
+import DeleteIconButton from '../components/DeleteIconButton';
+import EditIconButton from '../components/EditIconButton';
 import SettingModal from '../components/modals/SettingModal';
+import NewItemButton from '../components/NewItemButton';
+import {
+  Card,
+  PageHeader,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../components/ui';
 import { Setting } from '../types/settings';
 
 const CATEGORY = 'edificabilidad';
@@ -25,7 +35,7 @@ const ParametrosEdificabilidadPage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchSettings();
+    void fetchSettings();
   }, []);
 
   const handleSave = async (data: Setting) => {
@@ -36,14 +46,14 @@ const ParametrosEdificabilidadPage: React.FC = () => {
     }
     setShowModal(false);
     setEditing(undefined);
-    fetchSettings();
+    void fetchSettings();
   };
 
   const handleDelete = async () => {
     if (!toDelete?._id) return;
     await axios.delete(`/api/admin/settings/${toDelete._id}`);
     setToDelete(null);
-    fetchSettings();
+    void fetchSettings();
   };
 
   if (loading) {
@@ -63,7 +73,13 @@ const ParametrosEdificabilidadPage: React.FC = () => {
         title="Parámetros de Edificabilidad"
         description="Gestiona los parámetros de edificabilidad del sistema"
         actions={
-          <NewItemButton label="Nuevo parámetro" onClick={() => { setEditing(undefined); setShowModal(true); }} />
+          <NewItemButton
+            label="Nuevo parámetro"
+            onClick={() => {
+              setEditing(undefined);
+              setShowModal(true);
+            }}
+          />
         }
       />
 
@@ -80,7 +96,10 @@ const ParametrosEdificabilidadPage: React.FC = () => {
           <TableBody>
             {settings.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-8 text-gray-500 dark:text-gray-400">
+                <TableCell
+                  colSpan={4}
+                  className="text-center py-8 text-gray-500 dark:text-gray-400"
+                >
                   No hay parámetros registrados
                 </TableCell>
               </TableRow>
@@ -92,7 +111,12 @@ const ParametrosEdificabilidadPage: React.FC = () => {
                   <TableCell>{s.description}</TableCell>
                   <TableCell align="right">
                     <div className="flex items-center justify-end gap-1">
-                      <EditIconButton onClick={() => { setEditing(s); setShowModal(true); }} />
+                      <EditIconButton
+                        onClick={() => {
+                          setEditing(s);
+                          setShowModal(true);
+                        }}
+                      />
                       <DeleteIconButton onClick={() => setToDelete(s)} />
                     </div>
                   </TableCell>
@@ -103,12 +127,14 @@ const ParametrosEdificabilidadPage: React.FC = () => {
         </Table>
       </Card>
 
-      {showModal && (
+      {showModal && editing && (
         <SettingModal
           initial={editing}
           category={CATEGORY}
           onClose={() => setShowModal(false)}
-          onSave={handleSave}
+          onSave={(data) => {
+            void handleSave(data);
+          }}
         />
       )}
 
@@ -118,11 +144,13 @@ const ParametrosEdificabilidadPage: React.FC = () => {
           title="Eliminar parámetro"
           message={`¿Estás seguro de que deseas eliminar el parámetro "${toDelete.key}"?`}
           onCancel={() => setToDelete(null)}
-          onConfirm={handleDelete}
+          onConfirm={() => {
+            void handleDelete();
+          }}
         />
       )}
     </div>
   );
 };
 
-export default ParametrosEdificabilidadPage; 
+export default ParametrosEdificabilidadPage;

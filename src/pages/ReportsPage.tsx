@@ -1,8 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-import { Pagination, PageHeader, FilterBar, Card, Table, TableHeader, TableRow, TableHead, TableCell, TableBody, Button } from '../components/ui';
-import { Informe } from '../types/reports';
 import { ArrowDownTrayIcon } from '@heroicons/react/24/outline';
+import axios from 'axios';
+
+import {
+  Button,
+  Card,
+  FilterBar,
+  PageHeader,
+  Pagination,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../components/ui';
+import { Informe } from '../types/reports';
 
 const ReportsPage: React.FC = () => {
   const [informes, setInformes] = useState<Informe[]>([]);
@@ -17,20 +30,22 @@ const ReportsPage: React.FC = () => {
     try {
       const res = await axios.get<Informe[]>('/api/admin/informes');
       setInformes(res.data);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Error al cargar informes');
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'Error al cargar informes');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchInformes();
+    void fetchInformes();
   }, []);
 
-  const filtered = informes.filter(i =>
-    (i.direccionCompleta || '').toLowerCase().includes(query.toLowerCase()) ||
-    (i.usuario?.email || '').toLowerCase().includes(query.toLowerCase())
+  const filtered = informes.filter(
+    (i) =>
+      (i.direccionCompleta || '').toLowerCase().includes(query.toLowerCase()) ||
+      (i.usuario?.email || '').toLowerCase().includes(query.toLowerCase())
   );
 
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -58,10 +73,7 @@ const ReportsPage: React.FC = () => {
 
   return (
     <div>
-      <PageHeader
-        title="Informes"
-        description="Visualiza y gestiona los informes generados"
-      />
+      <PageHeader title="Informes" description="Visualiza y gestiona los informes generados" />
 
       <FilterBar
         searchValue={query}
@@ -75,56 +87,105 @@ const ReportsPage: React.FC = () => {
             <TableRow>
               <TableHead>Dirección</TableHead>
               <TableHead>Usuario</TableHead>
+              <TableHead>Tipo Prefa</TableHead>
               <TableHead>Estado</TableHead>
-              <TableHead>Fecha</TableHead>
+              <TableHead>Fecha y Hora</TableHead>
+              <TableHead>Descargado</TableHead>
               <TableHead align="right">Acciones</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginated.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-gray-500 dark:text-gray-400">
+                <TableCell
+                  colSpan={7}
+                  className="text-center py-8 text-gray-500 dark:text-gray-400"
+                >
                   No se encontraron informes
                 </TableCell>
               </TableRow>
             ) : (
-              paginated.map(inf => (
-                <TableRow key={inf._id}>
-                  <TableCell>{inf.direccionCompleta || '—'}</TableCell>
-                  <TableCell>
-                    {inf.usuario ? (
-                      <div>
-                        <div className="font-medium">{inf.usuario.nombre}</div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">{inf.usuario.email}</div>
-                      </div>
-                    ) : '—'}
-                  </TableCell>
-                  <TableCell>
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      inf.estado === 'completado' 
-                        ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                        : inf.estado === 'procesando'
-                        ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
-                        : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                    }`}>
-                      {inf.estado}
-                    </span>
-                  </TableCell>
-                  <TableCell>{new Date(inf.createdAt).toLocaleDateString('es-AR')}</TableCell>
-                  <TableCell align="right">
-                    {inf.pdfUrl && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => window.open(inf.pdfUrl, '_blank')}
+              paginated.map((inf) => {
+                const fechaHora = new Date(inf.createdAt);
+                const fechaFormateada = fechaHora.toLocaleDateString('es-AR');
+                const horaFormateada = fechaHora.toLocaleTimeString('es-AR', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                });
+                const tipoPrefaLabel =
+                  inf.tipoPrefa === 'prefa1'
+                    ? 'Simple'
+                    : inf.tipoPrefa === 'prefa2'
+                      ? 'Completa'
+                      : inf.tipoPrefa || '—';
+
+                return (
+                  <TableRow key={inf._id}>
+                    <TableCell>{inf.direccionCompleta || '—'}</TableCell>
+                    <TableCell>
+                      {inf.usuario ? (
+                        <div>
+                          <div className="font-medium">{inf.usuario.nombre}</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                            {inf.usuario.email}
+                          </div>
+                        </div>
+                      ) : (
+                        '—'
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                        {tipoPrefaLabel}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          inf.estado === 'completado'
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                            : inf.estado === 'procesando'
+                              ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400'
+                              : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                        }`}
                       >
-                        <ArrowDownTrayIcon className="h-4 w-4 mr-1.5" />
-                        Ver PDF
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))
+                        {inf.estado}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <div>
+                        <div>{fechaFormateada}</div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                          {horaFormateada}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          inf.fueDescargado
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                            : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                        }`}
+                      >
+                        {inf.fueDescargado ? 'Sí' : 'No'}
+                      </span>
+                    </TableCell>
+                    <TableCell align="right">
+                      {inf.pdfUrl && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => window.open(inf.pdfUrl, '_blank')}
+                        >
+                          <ArrowDownTrayIcon className="h-4 w-4 mr-1.5" />
+                          Ver PDF
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>
@@ -144,4 +205,4 @@ const ReportsPage: React.FC = () => {
   );
 };
 
-export default ReportsPage; 
+export default ReportsPage;

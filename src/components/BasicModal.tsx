@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { Modal } from './ui';
 
 interface Props {
@@ -12,13 +13,7 @@ interface Props {
 
 const BasicModal: React.FC<Props> = ({ show, title, onClose, children, size = 'md', footer }) => {
   return (
-    <Modal
-      show={show}
-      title={title}
-      onClose={onClose}
-      size={size}
-      footer={footer}
-    >
+    <Modal show={show} title={title} onClose={onClose} size={size} footer={footer}>
       {children}
     </Modal>
   );

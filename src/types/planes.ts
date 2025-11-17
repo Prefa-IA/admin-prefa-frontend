@@ -16,4 +16,3 @@ export interface Plan {
   tag?: string | { _id: string; name: string; slug: string };
   showDiscountSticker?: boolean;
 }
-
