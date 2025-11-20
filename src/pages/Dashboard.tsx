@@ -38,9 +38,15 @@ const useDashboardData = () => {
   return { data, loading };
 };
 
-const useDashboardSeries = (range: 'day' | 'week' | 'month') => {
+const useDashboardSeries = (range: 'day' | 'week' | 'month' | 'year' | 'historic') => {
   const [series, setSeries] = React.useState<
-    { label: string; busquedas: number; reportes: number; prefa1: number; prefa2: number }[]
+    {
+      label: string;
+      busquedasDirecciones: number;
+      prefaSimple: number;
+      prefaCompleta: number;
+      prefaCompuesta: number;
+    }[]
   >([]);
   const [topDirecciones, setTopDirecciones] = React.useState<
     { direccion: string; count: number }[]
@@ -105,14 +111,22 @@ const useHeatMapData = () => {
 };
 
 const ConsultasChart: React.FC<{
-  series: { label: string; busquedas: number; reportes: number; prefa1: number; prefa2: number }[];
-  range: 'day' | 'week' | 'month';
-  onRangeChange: (r: 'day' | 'week' | 'month') => void;
+  series: {
+    label: string;
+    busquedasDirecciones: number;
+    prefaSimple: number;
+    prefaCompleta: number;
+    prefaCompuesta: number;
+  }[];
+  range: 'day' | 'week' | 'month' | 'year' | 'historic';
+  onRangeChange: (r: 'day' | 'week' | 'month' | 'year' | 'historic') => void;
 }> = ({ series, range, onRangeChange }) => {
-  const RANGE_LABELS: Record<'day' | 'week' | 'month', string> = {
+  const RANGE_LABELS: Record<'day' | 'week' | 'month' | 'year' | 'historic', string> = {
     day: 'día',
     week: 'semana',
     month: 'mes',
+    year: 'año',
+    historic: 'histórico',
   };
   const rangeLabel = Reflect.get(RANGE_LABELS, range) || RANGE_LABELS.month;
 
@@ -123,12 +137,16 @@ const ConsultasChart: React.FC<{
         <div className="min-w-[150px]">
           <select
             value={range}
-            onChange={(e) => onRangeChange(e.target.value as 'day' | 'week' | 'month')}
+            onChange={(e) =>
+              onRangeChange(e.target.value as 'day' | 'week' | 'month' | 'year' | 'historic')
+            }
             className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           >
             <option value="day">Día</option>
             <option value="week">Semana</option>
             <option value="month">Mes</option>
+            <option value="year">Año</option>
+            <option value="historic">Histórico</option>
           </select>
         </div>
       }
@@ -137,26 +155,42 @@ const ConsultasChart: React.FC<{
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={series} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
             <CartesianGrid stroke="#e5e7eb" strokeDasharray="5 5" />
-            <XAxis dataKey="label" hide={range === 'day'} stroke="#6b7280" />
+            <XAxis
+              dataKey="label"
+              hide={range === 'day' || range === 'historic'}
+              stroke="#6b7280"
+            />
             <YAxis stroke="#6b7280" />
             <Tooltip />
             <Legend />
             <Line
               type="monotone"
-              dataKey="busquedas"
+              dataKey="busquedasDirecciones"
               stroke="#f59e0b"
               strokeWidth={2}
-              name="Búsquedas básicas"
+              name="Búsqueda de direcciones"
             />
             <Line
               type="monotone"
-              dataKey="reportes"
+              dataKey="prefaSimple"
+              stroke="#10b981"
+              strokeWidth={2}
+              name="Prefactibilidades simples"
+            />
+            <Line
+              type="monotone"
+              dataKey="prefaCompleta"
               stroke="#0284c7"
               strokeWidth={2}
-              name="Reportes generados"
+              name="Prefactibilidades completas"
             />
-            <Line type="monotone" dataKey="prefa1" stroke="#10b981" strokeWidth={2} name="PreFa1" />
-            <Line type="monotone" dataKey="prefa2" stroke="#8b5cf6" strokeWidth={2} name="PreFa2" />
+            <Line
+              type="monotone"
+              dataKey="prefaCompuesta"
+              stroke="#8b5cf6"
+              strokeWidth={2}
+              name="Prefactibilidades compuestas"
+            />
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -240,7 +274,7 @@ const TopUsersCard: React.FC<{
 );
 
 const Dashboard: React.FC = () => {
-  const [range, setRange] = React.useState<'day' | 'week' | 'month'>('month');
+  const [range, setRange] = React.useState<'day' | 'week' | 'month' | 'year' | 'historic'>('month');
   const { data, loading } = useDashboardData();
   const { series, topDirecciones, barrios } = useDashboardSeries(range);
   const heatPoints = useHeatMapData();

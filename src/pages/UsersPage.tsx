@@ -415,7 +415,7 @@ const useUserState = () => {
 
 const useUserSaveHandlers = (
   editingUsuario: Usuario | null,
-  refetch: () => void,
+  refetch: () => Promise<void>,
   setEditingUsuario: (usuario: Usuario | null) => void,
   setSaving: (saving: boolean) => void
 ) => {
@@ -467,7 +467,7 @@ const useUserSaveHandlers = (
 
 const useUserPlanHandlers = (
   editingUsuario: Usuario | null,
-  refetch: () => void,
+  refetch: () => Promise<void>,
   setEditingUsuario: (usuario: Usuario | null) => void,
   setSaving: (saving: boolean) => void
 ) => {
@@ -622,7 +622,7 @@ const useUserHandlers = (
   return { handleEdit, handleDelete, handleEditPlan, handleEditCredits };
 };
 
-const useUserActions = (refetch: () => void) => {
+const useUserActions = (refetch: () => Promise<void>) => {
   const { editingUsuario, setEditingUsuario, saving, setSaving } = useUserState();
   const { handleSaveEdit, handleConfirmDelete } = useUserSaveHandlers(
     editingUsuario,
@@ -1005,7 +1005,7 @@ const UsersPageErrorState: React.FC<{ error: string }> = ({ error }) => (
   </Card>
 );
 
-const useUsersPageHandlersAndState = (refetch: () => void) => {
+const useUsersPageHandlersAndState = (refetch: () => Promise<void>) => {
   const modalState = useUserModalState();
   const {
     editingUsuario,
