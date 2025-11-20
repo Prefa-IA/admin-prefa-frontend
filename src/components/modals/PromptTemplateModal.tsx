@@ -50,10 +50,10 @@ const FormHeader: React.FC<{
   onInsertRule: () => void;
 }> = ({ isActive, onActiveChange, onInsertRule }) => (
   <div className="flex justify-between items-center">
-    <label className="flex items-center gap-2 text-sm select-none">
+    <label className="flex items-center gap-2 text-sm select-none text-gray-700 dark:text-gray-300">
       <input
         type="checkbox"
-        className="accent-blue-600"
+        className="accent-blue-600 rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 dark:bg-gray-700"
         checked={isActive}
         onChange={(e) => onActiveChange(e.target.checked)}
       />
@@ -94,7 +94,7 @@ const FormBody: React.FC<{
 }) => (
   <div className="space-y-4 max-h-[70vh] overflow-y-auto">
     <FormHeader isActive={isActive} onActiveChange={onActiveChange} onInsertRule={onInsertRule} />
-    <label className="block text-sm font-medium">
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
       Nombre
       <input
         className="input-field w-full"
@@ -102,7 +102,7 @@ const FormBody: React.FC<{
         onChange={(e) => onNombreChange(e.target.value)}
       />
     </label>
-    <label className="block text-sm font-medium">
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
       Versión
       <input
         className="input-field w-full"
@@ -110,7 +110,7 @@ const FormBody: React.FC<{
         onChange={(e) => onVersionChange(e.target.value)}
       />
     </label>
-    <label className="block text-sm font-medium">
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
       Contenido del Prompt
       <textarea
         ref={textareaRef}
@@ -155,8 +155,10 @@ const PromptTemplateModal: React.FC<Props> = ({ initialData, onClose, onSave }) 
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-4xl space-y-4 shadow-xl">
-        <h3 className="text-xl font-semibold">{initialData ? 'Editar' : 'Nueva'} Plantilla</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-4xl space-y-4 shadow-xl">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+          {initialData ? 'Editar' : 'Nueva'} Plantilla
+        </h3>
         <FormBody
           nombre={nombre}
           version={version}

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
 import axios from 'axios';
 
+import ConfirmModal from '../components/ConfirmModal';
 import DeleteIconButton from '../components/DeleteIconButton';
 import EditIconButton from '../components/EditIconButton';
 import EditReglaModal from '../components/modals/EditReglaModal';
@@ -393,12 +394,152 @@ const ReglasTableSection: React.FC<{
   );
 };
 
-const ReglasPage: React.FC<ReglasPageProps> = ({ mode, categoria }) => {
+const useReglasPageState = (mode: 'admin' | 'view') => {
   const initialEstado = mode === 'admin' ? 'propuesta' : 'aprobada';
   const [filterEstado] = useState<string>(initialEstado);
   const [selected, setSelected] = useState<Regla | null>(null);
+  const [toDelete, setToDelete] = useState<Regla | null>(null);
   const [search, setSearch] = useState('');
   const [modified, setModified] = useState<Record<string, Regla>>({});
+
+  return {
+    filterEstado,
+    selected,
+    setSelected,
+    toDelete,
+    setToDelete,
+    search,
+    setSearch,
+    modified,
+    setModified,
+  };
+};
+
+const ReglasModals: React.FC<{
+  selected: Regla | null;
+  toDelete: Regla | null;
+  updateRule: (id: string, payload: UpdatePayload) => Promise<void>;
+  handleDelete: (id: string) => Promise<void>;
+  setSelected: (regla: Regla | null) => void;
+  setToDelete: (regla: Regla | null) => void;
+}> = ({ selected, toDelete, updateRule, handleDelete, setSelected, setToDelete }) => {
+  const confirmDelete = useCallback(async () => {
+    if (toDelete) {
+      await handleDelete(toDelete.id_regla);
+      setToDelete(null);
+    }
+  }, [toDelete, handleDelete, setToDelete]);
+
+  return (
+    <>
+      {selected && (
+        <EditReglaModal
+          regla={selected}
+          onClose={() => setSelected(null)}
+          onSave={(payload) => {
+            const executeSave = async () => {
+              await updateRule(selected.id_regla, { ...payload, estado: 'modificada' });
+              setSelected(null);
+            };
+            void executeSave();
+          }}
+        />
+      )}
+
+      {toDelete && (
+        <ConfirmModal
+          open={true}
+          title="Eliminar Regla"
+          message={`¿Estás seguro de que deseas eliminar la regla "${toDelete.titulo_regla}" (${toDelete.id_regla})? Esta acción no se puede deshacer.`}
+          confirmText="Eliminar"
+          cancelText="Cancelar"
+          onConfirm={() => {
+            void confirmDelete();
+          }}
+          onCancel={() => setToDelete(null)}
+        />
+      )}
+    </>
+  );
+};
+
+const ReglasPageContent: React.FC<{
+  mode: 'admin' | 'view';
+  categoria?: string | undefined;
+  reglas: Regla[];
+  reglasByCategory: Record<string, Regla[]>;
+  search: string;
+  modified: Record<string, Regla>;
+  onSearchChange: (value: string) => void;
+  onEdit: (regla: Regla) => void;
+  onApprove: (regla: Regla) => void;
+  onReject: (regla: Regla) => void;
+  onDelete: (id: string) => void;
+  approveAll: () => void;
+  rejectAll: () => void;
+  handlePersistChanges: () => void;
+}> = ({
+  mode,
+  categoria,
+  reglas,
+  reglasByCategory,
+  search,
+  modified,
+  onSearchChange,
+  onEdit,
+  onApprove,
+  onReject,
+  onDelete,
+  approveAll,
+  rejectAll,
+  handlePersistChanges,
+}) => (
+  <div>
+    <ReglasPageHeader
+      mode={mode}
+      categoria={categoria}
+      reglasCount={reglas.length}
+      approveAll={approveAll}
+      rejectAll={rejectAll}
+    />
+
+    <FilterBar
+      searchValue={search}
+      onSearchChange={onSearchChange}
+      searchPlaceholder="Buscar por ID o título..."
+    />
+
+    <ReglasTableSection
+      reglasByCategory={reglasByCategory}
+      mode={mode}
+      onEdit={onEdit}
+      onApprove={onApprove}
+      onReject={onReject}
+      onDelete={onDelete}
+    />
+
+    {mode === 'admin' && Object.keys(modified).length > 0 && (
+      <div className="fixed bottom-6 right-6 z-50">
+        <Button variant="primary" size="lg" onClick={handlePersistChanges} className="shadow-lg">
+          Finalizar revisión ({Object.keys(modified).length})
+        </Button>
+      </div>
+    )}
+  </div>
+);
+
+const ReglasPage: React.FC<ReglasPageProps> = ({ mode, categoria }) => {
+  const {
+    filterEstado,
+    selected,
+    setSelected,
+    toDelete,
+    setToDelete,
+    search,
+    setSearch,
+    modified,
+    setModified,
+  } = useReglasPageState(mode);
 
   const { reglas, setReglas, loading } = useReglasData(filterEstado, categoria);
 
@@ -420,54 +561,36 @@ const ReglasPage: React.FC<ReglasPageProps> = ({ mode, categoria }) => {
   }
 
   return (
-    <div>
-      <ReglasPageHeader
+    <>
+      <ReglasPageContent
         mode={mode}
         categoria={categoria}
-        reglasCount={reglas.length}
-        approveAll={approveAll}
-        rejectAll={rejectAll}
-      />
-
-      <FilterBar
-        searchValue={search}
-        onSearchChange={setSearch}
-        searchPlaceholder="Buscar por ID o título..."
-      />
-
-      <ReglasTableSection
+        reglas={reglas}
         reglasByCategory={reglasByCategory}
-        mode={mode}
+        search={search}
+        modified={modified}
+        onSearchChange={setSearch}
         onEdit={setSelected}
         onApprove={handleApprove}
         onReject={handleReject}
         onDelete={(id) => {
-          void handleDelete(id);
+          const regla = reglas.find((r) => r.id_regla === id);
+          if (regla) setToDelete(regla);
         }}
+        approveAll={approveAll}
+        rejectAll={rejectAll}
+        handlePersistChanges={handlePersistChanges}
       />
 
-      {selected && (
-        <EditReglaModal
-          regla={selected}
-          onClose={() => setSelected(null)}
-          onSave={(payload) => {
-            const executeSave = async () => {
-              await updateRule(selected.id_regla, { ...payload, estado: 'modificada' });
-              setSelected(null);
-            };
-            void executeSave();
-          }}
-        />
-      )}
-
-      {mode === 'admin' && Object.keys(modified).length > 0 && (
-        <div className="fixed bottom-6 right-6 z-50">
-          <Button variant="primary" size="lg" onClick={handlePersistChanges} className="shadow-lg">
-            Finalizar revisión ({Object.keys(modified).length})
-          </Button>
-        </div>
-      )}
-    </div>
+      <ReglasModals
+        selected={selected}
+        toDelete={toDelete}
+        updateRule={updateRule}
+        handleDelete={handleDelete}
+        setSelected={setSelected}
+        setToDelete={setToDelete}
+      />
+    </>
   );
 };
 

@@ -43,7 +43,7 @@ const ReglaForm: React.FC<FormProps> = ({ fields, onChange }) => {
 
   return (
     <div className="space-y-2">
-      <label className="block text-sm font-medium">
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
         Título
         <input
           className="input-field w-full"
@@ -51,7 +51,7 @@ const ReglaForm: React.FC<FormProps> = ({ fields, onChange }) => {
           onChange={(e) => updateField('titulo', e.target.value)}
         />
       </label>
-      <label className="block text-sm font-medium">
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
         Descripción
         <textarea
           className="input-field w-full"
@@ -60,7 +60,7 @@ const ReglaForm: React.FC<FormProps> = ({ fields, onChange }) => {
           rows={4}
         />
       </label>
-      <label className="block text-sm font-medium">
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
         Categoría
         <input
           className="input-field w-full"
@@ -68,7 +68,7 @@ const ReglaForm: React.FC<FormProps> = ({ fields, onChange }) => {
           onChange={(e) => updateField('categoria', e.target.value)}
         />
       </label>
-      <label className="block text-sm font-medium">
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
         Parámetros clave (separados por coma)
         <input
           className="input-field w-full"
@@ -76,7 +76,7 @@ const ReglaForm: React.FC<FormProps> = ({ fields, onChange }) => {
           onChange={(e) => updateField('params', e.target.value)}
         />
       </label>
-      <label className="block text-sm font-medium">
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
         Condiciones
         <input
           className="input-field w-full"
@@ -84,7 +84,7 @@ const ReglaForm: React.FC<FormProps> = ({ fields, onChange }) => {
           onChange={(e) => updateField('condiciones', e.target.value)}
         />
       </label>
-      <label className="block text-sm font-medium">
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
         Estado
         <select
           className="input-field w-full"
@@ -119,8 +119,10 @@ const EditReglaModal: React.FC<Props> = ({ regla, onClose, onSave }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-lg space-y-4 shadow-xl max-h-[90vh] overflow-y-auto">
-        <h3 className="text-xl font-semibold">Editar regla {regla.id_regla}</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-lg space-y-4 shadow-xl max-h-[90vh] overflow-y-auto">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+          Editar regla {regla.id_regla}
+        </h3>
         <ReglaForm fields={fields} onChange={setFields} />
         <div className="flex justify-end space-x-3 pt-2">
           <button className="btn-secondary" onClick={onClose}>

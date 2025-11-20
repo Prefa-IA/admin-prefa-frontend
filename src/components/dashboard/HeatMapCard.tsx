@@ -57,7 +57,9 @@ const HeatMapCard: React.FC<{ points: HeatMapPoint[] }> = ({ points }) => {
 
   return (
     <Card>
-      <h3 className="text-lg font-semibold mb-2">Heatmap de barrios</h3>
+      <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">
+        Heatmap de barrios
+      </h3>
       {/* eslint-disable-next-line @typescript-eslint/no-unsafe-assignment */}
       <MapContainer
         // @ts-expect-error - react-leaflet types may be incomplete

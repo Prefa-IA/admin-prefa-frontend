@@ -186,7 +186,7 @@ const PlanBasicFields: React.FC<{
 }> = ({ plan, formState }) => (
   <>
     {!plan.id && (
-      <label className="block text-sm font-medium">
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
         ID único
         <input
           className="input-field w-full"
@@ -195,7 +195,7 @@ const PlanBasicFields: React.FC<{
         />
       </label>
     )}
-    <label className="block text-sm font-medium md:col-span-2">
+    <label className="block text-sm font-medium md:col-span-2 text-gray-700 dark:text-gray-300">
       Nombre
       <input
         className="input-field w-full"
@@ -203,7 +203,7 @@ const PlanBasicFields: React.FC<{
         onChange={(e) => formState.setName(e.target.value)}
       />
     </label>
-    <label className="block text-sm font-medium">
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
       Precio (ARS)
       <input
         type="number"
@@ -213,7 +213,7 @@ const PlanBasicFields: React.FC<{
         onChange={(e) => formState.setPrice(e.target.value)}
       />
     </label>
-    <label className="block text-sm font-medium md:col-span-2">
+    <label className="block text-sm font-medium md:col-span-2 text-gray-700 dark:text-gray-300">
       Créditos totales del plan
       <input
         type="number"
@@ -230,35 +230,39 @@ const PlanCheckboxes: React.FC<{ formState: ReturnType<typeof usePlanFormState> 
   formState,
 }) => (
   <div className="md:col-span-2 flex flex-col space-y-2">
-    <label className="flex items-center space-x-2 text-sm font-medium">
+    <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-300">
       <input
         type="checkbox"
         checked={formState.permiteCompuestas}
         onChange={(e) => formState.setPermiteCompuestas(e.target.checked)}
+        className="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 dark:bg-gray-700"
       />
       <span>Permite prefactibilidades compuestas</span>
     </label>
-    <label className="flex items-center space-x-2 text-sm font-medium">
+    <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-300">
       <input
         type="checkbox"
         checked={formState.wmOrg}
         onChange={(e) => formState.setWmOrg(e.target.checked)}
+        className="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 dark:bg-gray-700"
       />
       <span>Marca de agua organización</span>
     </label>
-    <label className="flex items-center space-x-2 text-sm font-medium">
+    <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-300">
       <input
         type="checkbox"
         checked={formState.wmPrefas}
         onChange={(e) => formState.setWmPrefas(e.target.checked)}
+        className="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 dark:bg-gray-700"
       />
       <span>Marca de agua PreFac</span>
     </label>
-    <label className="flex items-center space-x-2 text-sm font-medium">
+    <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-300">
       <input
         type="checkbox"
         checked={formState.showSticker}
         onChange={(e) => formState.setShowSticker(e.target.checked)}
+        className="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 dark:bg-gray-700"
       />
       <span>Mostrar etiqueta de descuento en esquina</span>
     </label>
@@ -269,7 +273,7 @@ const PlanDiscountFields: React.FC<{ formState: ReturnType<typeof usePlanFormSta
   formState,
 }) => (
   <>
-    <label className="block text-sm font-medium">
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
       Descuento %
       <input
         type="number"
@@ -279,7 +283,7 @@ const PlanDiscountFields: React.FC<{ formState: ReturnType<typeof usePlanFormSta
         onChange={(e) => formState.setDiscountPct(e.target.value)}
       />
     </label>
-    <label className="block text-sm font-medium">
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
       Descuento hasta (YYYY-MM-DD)
       <input
         type="date"
@@ -296,7 +300,7 @@ const PlanPriorityFields: React.FC<{
   tags: ReturnType<typeof usePlanTags>;
 }> = ({ formState, tags }) => (
   <>
-    <label className="block text-sm font-medium">
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
       Prioridad
       <select
         className="input-field w-full"
@@ -310,7 +314,7 @@ const PlanPriorityFields: React.FC<{
         <option value="4">4 (Básico)</option>
       </select>
     </label>
-    <label className="block text-sm font-medium">
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
       Etiqueta visual
       <select
         className="input-field w-full"
@@ -326,7 +330,7 @@ const PlanPriorityFields: React.FC<{
       </select>
     </label>
     {formState.prioridad === '2' && (
-      <label className="block text-sm font-medium">
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
         Créditos promocionales (solo prioridad 2)
         <input
           type="number"
@@ -370,10 +374,12 @@ const EditPlanModal: React.FC<Props> = ({ plan, onClose, onSave }) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-2xl space-y-4 shadow-xl">
-        <h3 className="text-xl font-semibold">{plan.id ? 'Editar plan' : 'Nuevo plan'}</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl space-y-4 shadow-xl">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+          {plan.id ? 'Editar plan' : 'Nuevo plan'}
+        </h3>
         <PlanFormFields plan={plan} formState={formState} tags={tags} />
-        {errorMsg && <p className="text-red-600 text-sm">{errorMsg}</p>}
+        {errorMsg && <p className="text-red-600 dark:text-red-400 text-sm">{errorMsg}</p>}
         <div className="flex justify-end space-x-3 pt-2">
           <button className="btn-secondary" onClick={onClose}>
             Cancelar

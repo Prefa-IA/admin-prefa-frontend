@@ -16,6 +16,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { usePermissions } from '../hooks/usePermissions';
 import { slugify } from '../utils/slugify';
 
+import ThemeButton from './ThemeButton';
+
 const ACTIVE_LINK_CLASS = 'bg-blue-700';
 
 interface LinkItem {
@@ -75,6 +77,7 @@ const baseGroups: Group[] = [
     links: [
       { to: '/plan-tags', label: 'Etiquetas de Planes' },
       { to: '/constantes-troneras', label: 'Constantes Troneras' },
+      { to: '/creditos', label: 'Créditos' },
       { to: '/prompts', label: 'Prompts' },
       { to: '/email-templates', label: 'Email Templates' },
       { to: '/newsletter', label: 'Newsletters' },
@@ -258,13 +261,16 @@ const Sidebar: React.FC = () => {
         })}
       </nav>
       <div className="px-2 pb-4 border-t border-blue-600 pt-4">
-        <button
-          onClick={handleLogout}
-          className="flex items-center w-full px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-600 focus:outline-none text-white"
-        >
-          <ArrowRightOnRectangleIcon className="h-5 w-5 mr-3" />
-          Cerrar sesión
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleLogout}
+            className="flex items-center flex-1 px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-600 focus:outline-none text-white"
+          >
+            <ArrowRightOnRectangleIcon className="h-5 w-5 mr-3" />
+            Cerrar sesión
+          </button>
+          <ThemeButton />
+        </div>
       </div>
     </aside>
   );

@@ -34,6 +34,7 @@ export const ROUTE_PERMISSIONS: Record<string, string[]> = {
   '/reglas/ver-todas': [PERMISSIONS.NORMATIVA_VIEW],
   '/plan-tags': [PERMISSIONS.PLANS_VIEW],
   '/constantes-troneras': [PERMISSIONS.CONFIG_VIEW],
+  '/creditos': [PERMISSIONS.CONFIG_VIEW],
   '/prompts': [PERMISSIONS.CONFIG_VIEW],
   '/email-templates': [PERMISSIONS.CONFIG_VIEW],
   '/newsletter': [PERMISSIONS.CONFIG_VIEW],

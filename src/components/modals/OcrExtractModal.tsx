@@ -32,8 +32,8 @@ const FileUploadArea: React.FC<{
 }> = ({ file, isDragActive, getRootProps, getInputProps, onRemove, onOpen }) => {
   if (file) {
     return (
-      <div className="border p-4 rounded-md mt-1 flex items-center justify-between">
-        <span className="text-sm">{file.name}</span>
+      <div className="border border-gray-300 dark:border-gray-600 p-4 rounded-md mt-1 flex items-center justify-between bg-white dark:bg-gray-800">
+        <span className="text-sm text-gray-900 dark:text-gray-100">{file.name}</span>
         <button
           type="button"
           className="btn-secondary ml-4"
@@ -50,7 +50,7 @@ const FileUploadArea: React.FC<{
   return (
     <div
       {...getRootProps()}
-      className={`border-2 border-dashed p-4 rounded-md text-center cursor-pointer mt-1 ${isDragActive ? 'bg-blue-50' : ''}`}
+      className={`border-2 border-dashed border-gray-300 dark:border-gray-600 p-4 rounded-md text-center cursor-pointer mt-1 text-gray-700 dark:text-gray-300 ${isDragActive ? 'bg-blue-50 dark:bg-blue-900/30' : 'bg-white dark:bg-gray-800'}`}
     >
       <input {...getInputProps()} />
       Arrastra un PDF o haz clic para seleccionar
@@ -86,7 +86,7 @@ const FormFields: React.FC<{
   onOpen,
 }) => (
   <div className="space-y-3">
-    <label className="block text-sm font-medium">
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
       Página inicial
       <input
         type="number"
@@ -96,7 +96,7 @@ const FormFields: React.FC<{
         onChange={(e) => onStartPageChange(Number(e.target.value))}
       />
     </label>
-    <label className="block text-sm font-medium">
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
       Página final
       <input
         type="number"
@@ -106,7 +106,7 @@ const FormFields: React.FC<{
         onChange={(e) => onEndPageChange(Number(e.target.value))}
       />
     </label>
-    <label className="block text-sm font-medium">
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
       Versión del documento (requerida)
       <input
         type="date"
@@ -115,7 +115,7 @@ const FormFields: React.FC<{
         onChange={(e) => onVersionChange(e.target.value)}
       />
     </label>
-    <div className="block text-sm font-medium">
+    <div className="block text-sm font-medium text-gray-700 dark:text-gray-300">
       <label htmlFor="pdf-upload" className="block mb-2">
         Archivo PDF
       </label>
@@ -165,8 +165,10 @@ const OcrExtractModal: React.FC<Props> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md space-y-4 shadow-xl">
-        <h3 className="text-xl font-semibold">Procesar PDF – Código Urbanístico</h3>
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md space-y-4 shadow-xl">
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+          Procesar PDF – Código Urbanístico
+        </h3>
         <FormFields
           startPage={startPage}
           endPage={endPage}

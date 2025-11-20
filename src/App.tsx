@@ -3,12 +3,14 @@ import { BrowserRouter as Router, Navigate, Route, Routes } from 'react-router-d
 
 import Layout from './components/Layout';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import AdminUsersPage from './pages/AdminUsersPage';
 import AfectacionesPage from './pages/AfectacionesPage';
 import CalculoPasosPage from './pages/CalculoPasosPage';
 import CapasPage from './pages/CapasPage';
 import CodigoUrbanisticoPage from './pages/CodigoUrbanisticoPage';
 import ConstantesTronerasPage from './pages/ConstantesTronerasPage';
+import CreditsConfigPage from './pages/CreditsConfigPage';
 import Dashboard from './pages/Dashboard';
 import EmailTemplatesPage from './pages/EmailTemplatesPage';
 import FacturacionPage from './pages/FacturacionPage';
@@ -165,7 +167,7 @@ const createRulesRoutes = (): React.ReactElement[] => [
   />,
 ];
 
-const createAdminRoutes = (): React.ReactElement[] => [
+const createAdminRoutesPart1 = (): React.ReactElement[] => [
   <Route
     key="email-templates"
     path="/email-templates"
@@ -202,6 +204,18 @@ const createAdminRoutes = (): React.ReactElement[] => [
       </RouteWrapper>
     }
   />,
+  <Route
+    key="creditos"
+    path="/creditos"
+    element={
+      <RouteWrapper>
+        <CreditsConfigPage />
+      </RouteWrapper>
+    }
+  />,
+];
+
+const createAdminRoutesPart2 = (): React.ReactElement[] => [
   <Route
     key="newsletter"
     path="/newsletter"
@@ -240,6 +254,11 @@ const createAdminRoutes = (): React.ReactElement[] => [
   />,
 ];
 
+const createAdminRoutes = (): React.ReactElement[] => [
+  ...createAdminRoutesPart1(),
+  ...createAdminRoutesPart2(),
+];
+
 const AppRoutes: React.FC = () => (
   <Routes>
     {createMainRoutes()}
@@ -250,11 +269,13 @@ const AppRoutes: React.FC = () => (
 );
 
 const App: React.FC = () => (
-  <AuthProvider>
-    <Router>
-      <AppRoutes />
-    </Router>
-  </AuthProvider>
+  <ThemeProvider>
+    <AuthProvider>
+      <Router>
+        <AppRoutes />
+      </Router>
+    </AuthProvider>
+  </ThemeProvider>
 );
 
 export default App;
