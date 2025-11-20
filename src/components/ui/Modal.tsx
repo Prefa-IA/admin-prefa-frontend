@@ -39,6 +39,7 @@ const Modal: React.FC<ModalProps> = ({
     lg: 'max-w-2xl',
     xl: 'max-w-4xl',
   };
+  const sizeClass = Reflect.get(sizes, size) || sizes.md;
 
   const handleOverlayClick = (e: React.MouseEvent<HTMLElement>) => {
     if (closeOnOverlayClick && e.target === e.currentTarget) {
@@ -71,7 +72,7 @@ const Modal: React.FC<ModalProps> = ({
         {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
         <div
           className={`
-            relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full ${sizes[size]}
+            relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full ${sizeClass}
             transform transition-all
           `}
           onMouseDown={(e) => e.stopPropagation()}

@@ -81,7 +81,7 @@ const ShpUploadAndGrid: React.FC<Props> = ({ onDataLoaded }) => {
             {features.slice(0, 50).map((feat, idx) => (
               <tr key={idx} className="hover:bg-gray-50">
                 {columns.map((col) => {
-                  const value = feat.properties[col];
+                  const value = Reflect.get(feat.properties, col);
                   return (
                     <td key={col} className="px-2 py-1 whitespace-nowrap">
                       {value != null ? String(value) : ''}

@@ -134,8 +134,8 @@ const ReglasPage: React.FC<ReglasPageProps> = ({ mode, categoria }) => {
 
   const reglasByCategory = filteredReglas.reduce((acc: Record<string, Regla[]>, r) => {
     const cat = r.categoria || 'Sin categoría';
-    const existing = acc[cat];
-    acc[cat] = existing ? [...existing, r] : [r];
+    const existing = Reflect.get(acc, cat);
+    Reflect.set(acc, cat, existing ? [...existing, r] : [r]);
     return acc;
   }, {});
 

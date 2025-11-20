@@ -13,6 +13,7 @@ import {
 import axios from 'axios';
 
 import { useAuth } from '../contexts/AuthContext';
+import { usePermissions } from '../hooks/usePermissions';
 import { slugify } from '../utils/slugify';
 
 const ACTIVE_LINK_CLASS = 'bg-blue-700';
@@ -88,6 +89,7 @@ const Sidebar: React.FC = () => {
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [dynGroups, setDynGroups] = useState<Group[]>(baseGroups);
   const { logout } = useAuth();
+  const { canAccessRoute } = usePermissions();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -132,9 +134,37 @@ const Sidebar: React.FC = () => {
     return () => window.removeEventListener('reglas-actualizadas', handler);
   }, []);
 
-  const groups = dynGroups;
+  const filteredGroups = React.useMemo(() => {
+    return dynGroups
+      .map((group) => {
+        const filteredLinks = group.links
+          .map((link) => {
+            if (link.children) {
+              const filteredChildren = link.children.filter((child) => {
+                if (!child.to) return true;
+                return canAccessRoute(child.to);
+              });
+              if (filteredChildren.length === 0) return null;
+              return { ...link, children: filteredChildren };
+            }
+            if (!link.to) return link;
+            return canAccessRoute(link.to) ? link : null;
+          })
+          .filter((link): link is LinkItem => link !== null);
 
-  const toggle = (label: string) => setOpen((prev) => ({ ...prev, [label]: !prev[label] }));
+        if (filteredLinks.length === 0) return null;
+        return { ...group, links: filteredLinks };
+      })
+      .filter((group): group is Group => group !== null);
+  }, [dynGroups, canAccessRoute]);
+
+  const groups = filteredGroups;
+
+  const toggle = (label: string) =>
+    setOpen((prev) => {
+      const currentValue = Reflect.get(prev, label);
+      return { ...prev, [label]: !currentValue };
+    });
 
   const handleLogout = () => {
     logout();
@@ -146,7 +176,9 @@ const Sidebar: React.FC = () => {
 
   return (
     <aside className="bg-[#1976d2] text-white w-64 h-screen fixed inset-y-0 left-0 flex flex-col z-40 overflow-y-auto">
-      <div className="p-6 text-xl font-bold">PreFactibilidadYa</div>
+      <div className="p-6 flex items-center justify-center">
+        <img src="/logo.png" alt="PreFactibilidadYa" className="w-auto" />
+      </div>
       <nav className="flex-1 px-2 space-y-1">
         {groups.map((group) => {
           const Icon = group.icon;
@@ -154,6 +186,7 @@ const Sidebar: React.FC = () => {
           if (singleLink) {
             const link = group.links[0];
             if (!link) return null;
+            if (link.to && !canAccessRoute(link.to)) return null;
             return (
               <NavLink
                 key={link.to}
@@ -205,6 +238,8 @@ export default Sidebar;
 
 function NavItem({ link }: { link: LinkItem }) {
   const [openLocal, setOpenLocal] = React.useState(false);
+  const { canAccessRoute } = usePermissions();
+
   if (link.children) {
     return (
       <div>
@@ -219,22 +254,28 @@ function NavItem({ link }: { link: LinkItem }) {
         </button>
         {openLocal && (
           <div className="ml-6 space-y-1">
-            {link.children.map((ch) => (
-              <NavLink
-                key={ch.to || ch.label}
-                to={ch.to!}
-                className={({ isActive }) =>
-                  `block px-3 py-2 rounded-md text-sm hover:bg-blue-600 ${isActive ? ACTIVE_LINK_CLASS : ''}`
-                }
-              >
-                {ch.label}
-              </NavLink>
-            ))}
+            {link.children
+              .filter((ch) => !ch.to || canAccessRoute(ch.to))
+              .map((ch) => (
+                <NavLink
+                  key={ch.to || ch.label}
+                  to={ch.to!}
+                  className={({ isActive }) =>
+                    `block px-3 py-2 rounded-md text-sm hover:bg-blue-600 ${isActive ? ACTIVE_LINK_CLASS : ''}`
+                  }
+                >
+                  {ch.label}
+                </NavLink>
+              ))}
           </div>
         )}
       </div>
     );
   }
+  if (link.to && !canAccessRoute(link.to)) {
+    return null;
+  }
+
   return (
     <NavLink
       to={link.to!}

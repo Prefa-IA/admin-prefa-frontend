@@ -14,8 +14,9 @@ const bgMap = {
 };
 
 const MetricTile: React.FC<Props> = ({ title, value, delta, variant = 'default' }) => {
+  const bgClass = Reflect.get(bgMap, variant) || bgMap.default;
   return (
-    <div className={`p-4 rounded-lg shadow ${bgMap[variant]}`}>
+    <div className={`p-4 rounded-lg shadow ${bgClass}`}>
       <p className="text-xs uppercase text-gray-500 font-semibold mb-1">{title}</p>
       <p className="text-3xl font-bold text-blue-700">{value}</p>
       {delta && <p className="text-xs text-green-600 mt-1">{delta}</p>}

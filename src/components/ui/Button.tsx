@@ -37,9 +37,11 @@ const Button: React.FC<ButtonProps> = ({
     lg: 'px-6 py-3 text-base',
   };
 
+  const variantClass = Reflect.get(variants, variant) || variants.primary;
+  const sizeClass = Reflect.get(sizes, size) || sizes.md;
   return (
     <button
-      className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
+      className={`${baseStyles} ${variantClass} ${sizeClass} ${className}`}
       disabled={disabled || isLoading}
       {...props}
     >

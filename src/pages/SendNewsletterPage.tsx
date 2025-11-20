@@ -142,14 +142,21 @@ const SendNewsletterPage: React.FC = () => {
           />
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {TEMPLATES[template].variables.map((k) => (
-              <Input
-                key={k}
-                label={k.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
-                value={variables[k] || ''}
-                onChange={(e) => handleVarChange(k, e.target.value)}
-              />
-            ))}
+            {(() => {
+              const templateData = Reflect.get(TEMPLATES, template);
+              if (!templateData) return null;
+              return templateData.variables.map((k) => {
+                const varValue = Reflect.get(variables, k);
+                return (
+                  <Input
+                    key={k}
+                    label={k.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+                    value={varValue || ''}
+                    onChange={(e) => handleVarChange(k, e.target.value)}
+                  />
+                );
+              });
+            })()}
           </div>
 
           <div>

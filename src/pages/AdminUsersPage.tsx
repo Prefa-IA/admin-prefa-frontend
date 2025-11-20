@@ -14,6 +14,7 @@ import {
   Input,
   Modal,
   PageHeader,
+  Select,
   Table,
   TableBody,
   TableCell,
@@ -30,7 +31,15 @@ interface AdminUser {
   role: string;
   isActive: boolean;
   isSuperAdmin?: boolean;
+  adminRole?: string | null;
+  permissions?: string[];
   createdAt?: string;
+}
+
+interface RoleInfo {
+  roles: string[];
+  permissions: string[];
+  rolePermissions: Record<string, string[]>;
 }
 
 const AdminUsersPage: React.FC = () => {
@@ -47,26 +56,26 @@ const AdminUsersPage: React.FC = () => {
     email: '',
     password: '',
     isSuperAdmin: false,
+    adminRole: null as string | null,
+    permissions: [] as string[],
   });
   const [saving, setSaving] = useState(false);
   const [hasFetched, setHasFetched] = useState(false);
+  const [roleInfo, setRoleInfo] = useState<RoleInfo | null>(null);
 
   const fetchAdmins = useCallback(async () => {
-    if (loading) return;
     setLoading(true);
     try {
       const res = await axios.get<AdminUser[]>('/api/admin/admins');
       setAdmins(res.data);
       setHasFetched(true);
     } catch (err: unknown) {
-      if (!hasFetched) {
-        const error = err as { response?: { data?: { error?: string } } };
-        toast.error(error.response?.data?.error || 'Error al cargar administradores');
-      }
+      const error = err as { response?: { data?: { error?: string } } };
+      toast.error(error.response?.data?.error || 'Error al cargar administradores');
     } finally {
       setLoading(false);
     }
-  }, [loading, hasFetched]);
+  }, []);
 
   useEffect(() => {
     if (!hasFetched) {
@@ -74,9 +83,30 @@ const AdminUsersPage: React.FC = () => {
     }
   }, [hasFetched, fetchAdmins]);
 
+  useEffect(() => {
+    const fetchRoles = async () => {
+      if (!isSuperAdmin) return;
+      try {
+        const res = await axios.get<RoleInfo>('/api/admin/admins/roles');
+        setRoleInfo(res.data);
+      } catch (err: unknown) {
+        const error = err as { response?: { data?: { error?: string } } };
+        console.error('Error al cargar roles:', error.response?.data?.error);
+      }
+    };
+    void fetchRoles();
+  }, [isSuperAdmin]);
+
   const handleCreate = () => {
     setSelectedAdmin(null);
-    setFormData({ nombre: '', email: '', password: '', isSuperAdmin: false });
+    setFormData({
+      nombre: '',
+      email: '',
+      password: '',
+      isSuperAdmin: false,
+      adminRole: null,
+      permissions: [],
+    });
     setShowModal(true);
   };
 
@@ -87,6 +117,8 @@ const AdminUsersPage: React.FC = () => {
       email: admin.email,
       password: '',
       isSuperAdmin: admin.isSuperAdmin || false,
+      adminRole: admin.adminRole || null,
+      permissions: admin.permissions || [],
     });
     setShowModal(true);
   };
@@ -110,16 +142,16 @@ const AdminUsersPage: React.FC = () => {
     setSaving(true);
     try {
       if (selectedAdmin) {
-        // Actualizar admin existente
         interface UpdatePayload {
           nombre: string;
           email: string;
           password?: string;
           isSuperAdmin?: boolean;
+          adminRole?: string | null;
+          permissions?: string[];
         }
         const payload: UpdatePayload = { nombre: formData.nombre, email: formData.email };
         if (formData.password) {
-          // Hash de la contraseña
           const enc = new TextEncoder().encode(formData.password);
           const buf = await crypto.subtle.digest('SHA-256', enc);
           payload.password = Array.from(new Uint8Array(buf))
@@ -128,6 +160,8 @@ const AdminUsersPage: React.FC = () => {
         }
         if (isSuperAdmin) {
           payload.isSuperAdmin = formData.isSuperAdmin;
+          payload.adminRole = formData.adminRole;
+          payload.permissions = formData.permissions;
         }
         await axios.put(`/api/admin/admins/${selectedAdmin._id}`, payload);
         toast.success('Administrador actualizado correctamente');
@@ -146,11 +180,20 @@ const AdminUsersPage: React.FC = () => {
           role: 'admin',
           isActive: true,
           isSuperAdmin: isSuperAdmin ? formData.isSuperAdmin : false,
+          adminRole: formData.adminRole,
+          permissions: formData.permissions,
         });
         toast.success('Administrador creado correctamente');
       }
       setShowModal(false);
-      setFormData({ nombre: '', email: '', password: '', isSuperAdmin: false });
+      setFormData({
+        nombre: '',
+        email: '',
+        password: '',
+        isSuperAdmin: false,
+        adminRole: null,
+        permissions: [],
+      });
       void fetchAdmins();
     } catch (err: unknown) {
       const error = err as { response?: { data?: { error?: string } } };
@@ -211,7 +254,7 @@ const AdminUsersPage: React.FC = () => {
             <TableRow>
               <TableHead>Nombre</TableHead>
               <TableHead>Email</TableHead>
-              <TableHead>Rol</TableHead>
+              <TableHead>Rol / Admin Role</TableHead>
               <TableHead>Super Admin</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead>Fecha creación</TableHead>
@@ -234,9 +277,16 @@ const AdminUsersPage: React.FC = () => {
                   <TableCell className="font-medium">{admin.nombre}</TableCell>
                   <TableCell>{admin.email}</TableCell>
                   <TableCell>
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                      {admin.role}
-                    </span>
+                    <div className="flex flex-row gap-1">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 w-fit">
+                        {admin.isSuperAdmin ? 'super admin' : admin.role}
+                      </span>
+                      {admin.adminRole && !admin.isSuperAdmin && (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400 w-fit">
+                          {admin.adminRole}
+                        </span>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     {admin.isSuperAdmin ? (
@@ -283,7 +333,14 @@ const AdminUsersPage: React.FC = () => {
           title={selectedAdmin ? 'Editar administrador' : 'Nuevo administrador'}
           onClose={() => {
             setShowModal(false);
-            setFormData({ nombre: '', email: '', password: '', isSuperAdmin: false });
+            setFormData({
+              nombre: '',
+              email: '',
+              password: '',
+              isSuperAdmin: false,
+              adminRole: null,
+              permissions: [],
+            });
           }}
           footer={
             <>
@@ -291,7 +348,14 @@ const AdminUsersPage: React.FC = () => {
                 variant="secondary"
                 onClick={() => {
                   setShowModal(false);
-                  setFormData({ nombre: '', email: '', password: '', isSuperAdmin: false });
+                  setFormData({
+                    nombre: '',
+                    email: '',
+                    password: '',
+                    isSuperAdmin: false,
+                    adminRole: null,
+                    permissions: [],
+                  });
                 }}
               >
                 Cancelar
@@ -338,11 +402,114 @@ const AdminUsersPage: React.FC = () => {
               placeholder="••••••••"
             />
             {isSuperAdmin && (
-              <Checkbox
-                label="Super Administrador"
-                checked={formData.isSuperAdmin}
-                onChange={(e) => setFormData({ ...formData, isSuperAdmin: e.target.checked })}
-              />
+              <>
+                <Checkbox
+                  label="Super Administrador"
+                  checked={formData.isSuperAdmin}
+                  onChange={(e) => {
+                    const isSuper = e.target.checked;
+                    setFormData({
+                      ...formData,
+                      isSuperAdmin: isSuper,
+                      adminRole: isSuper ? null : formData.adminRole,
+                      permissions: isSuper ? [] : formData.permissions,
+                    });
+                  }}
+                />
+                {!formData.isSuperAdmin && roleInfo && (
+                  <>
+                    <Select
+                      label="Rol del Administrador"
+                      value={formData.adminRole || ''}
+                      onChange={(e) => {
+                        const selectedRole = e.target.value || null;
+                        let newPermissions = formData.permissions;
+                        if (
+                          selectedRole &&
+                          roleInfo.rolePermissions &&
+                          Object.prototype.hasOwnProperty.call(
+                            roleInfo.rolePermissions,
+                            selectedRole
+                          )
+                        ) {
+                          const rolePerms = roleInfo.rolePermissions[selectedRole];
+                          if (rolePerms && Array.isArray(rolePerms)) {
+                            newPermissions = rolePerms;
+                          }
+                        }
+                        setFormData({
+                          ...formData,
+                          adminRole: selectedRole,
+                          permissions: newPermissions,
+                        });
+                      }}
+                      options={[
+                        { value: '', label: 'Sin rol predefinido (permisos personalizados)' },
+                        ...roleInfo.roles.map((role) => ({
+                          value: role,
+                          label: role.charAt(0).toUpperCase() + role.slice(1),
+                        })),
+                      ]}
+                    />
+                    <div className="space-y-2">
+                      <div className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        Permisos
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto p-2 border rounded-lg border-gray-300 dark:border-gray-600">
+                        {roleInfo.permissions.map((permission) => {
+                          const permissionLabels: Record<string, string> = {
+                            'dashboard.view': 'Ver Dashboard',
+                            'users.view': 'Ver Usuarios',
+                            'users.edit': 'Editar Usuarios',
+                            'users.delete': 'Eliminar Usuarios',
+                            'admins.view': 'Ver Administradores',
+                            'admins.create': 'Crear Administradores',
+                            'admins.edit': 'Editar Administradores',
+                            'admins.delete': 'Eliminar Administradores',
+                            'plans.view': 'Ver Planes',
+                            'plans.edit': 'Editar Planes',
+                            'billing.view': 'Ver Facturación',
+                            'billing.edit': 'Editar Facturación',
+                            'reports.view': 'Ver Informes',
+                            'normativa.view': 'Ver Normativa',
+                            'normativa.edit': 'Editar Normativa',
+                            'config.view': 'Ver Configuración',
+                            'config.edit': 'Editar Configuración',
+                          };
+                          const label: string = Object.prototype.hasOwnProperty.call(
+                            permissionLabels,
+                            permission
+                          )
+                            ? (permissionLabels[permission] ?? permission)
+                            : permission;
+                          return (
+                            <Checkbox
+                              key={permission}
+                              label={label}
+                              checked={formData.permissions.includes(permission)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setFormData({
+                                    ...formData,
+                                    permissions: [...formData.permissions, permission],
+                                  });
+                                } else {
+                                  setFormData({
+                                    ...formData,
+                                    permissions: formData.permissions.filter(
+                                      (p) => p !== permission
+                                    ),
+                                  });
+                                }
+                              }}
+                            />
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </>
             )}
           </div>
         </Modal>

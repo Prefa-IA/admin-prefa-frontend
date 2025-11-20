@@ -78,8 +78,9 @@ const ConstantesTronerasPage: React.FC = () => {
         .map((key) => {
           const setting = settings.find((s) => s.key === key);
           if (!setting) return null;
+          const settingValue = Reflect.get(values, key);
           return axios.put(`/api/admin/settings/${setting._id}`, {
-            value: values[key],
+            value: settingValue,
             key: setting.key,
             category: setting.category || 'troneras',
           });
@@ -107,7 +108,7 @@ const ConstantesTronerasPage: React.FC = () => {
   };
 
   const getValue = (key: string): number => {
-    const value = values[key];
+    const value = Reflect.get(values, key);
     if (value !== undefined) {
       return value;
     }

@@ -80,12 +80,13 @@ const TableHead: React.FC<TableCellProps> = ({
     center: 'text-center',
     right: 'text-right',
   };
+  const alignClass = Reflect.get(alignClasses, align) || alignClasses.left;
 
   return (
     <th
       className={`
         px-4 md:px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider
-        ${alignClasses[align]}
+        ${alignClass}
         ${className}
       `}
       colSpan={colSpan}
@@ -108,12 +109,13 @@ const TableCell: React.FC<TableCellProps> = ({
     center: 'text-center',
     right: 'text-right',
   };
+  const alignClass = Reflect.get(alignClasses, align) || alignClasses.left;
 
   return (
     <td
       className={`
         px-4 md:px-6 py-4 text-sm text-gray-900 dark:text-gray-100
-        ${alignClasses[align]}
+        ${alignClass}
         ${className}
       `}
       colSpan={colSpan}

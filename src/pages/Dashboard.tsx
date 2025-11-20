@@ -108,6 +108,7 @@ const Dashboard: React.FC = () => {
     week: 'semana',
     month: 'mes',
   };
+  const rangeLabel = Reflect.get(RANGE_LABELS, range) || RANGE_LABELS.month;
 
   return (
     <div className="space-y-8">
@@ -125,7 +126,7 @@ const Dashboard: React.FC = () => {
       {/* Gráficos principales */}
       <div className="mt-8">
         <Card
-          title={`Consultas por ${RANGE_LABELS[range]}`}
+          title={`Consultas por ${rangeLabel}`}
           headerActions={
             <div className="min-w-[150px]">
               <select

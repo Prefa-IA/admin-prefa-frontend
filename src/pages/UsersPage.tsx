@@ -55,7 +55,6 @@ const UsersPage: React.FC = () => {
   const [saving, setSaving] = useState(false);
 
   const fetchUsuarios = useCallback(async () => {
-    if (loading) return;
     setLoading(true);
     try {
       const res = await axios.get<Usuario[]>('/api/admin/usuarios');
@@ -63,14 +62,12 @@ const UsersPage: React.FC = () => {
       setHasFetched(true);
       setError(null);
     } catch (err: unknown) {
-      if (!hasFetched) {
-        const error = err as { response?: { data?: { error?: string } } };
-        setError(error.response?.data?.error || 'Error al cargar usuarios');
-      }
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'Error al cargar usuarios');
     } finally {
       setLoading(false);
     }
-  }, [loading, hasFetched]);
+  }, []);
 
   useEffect(() => {
     if (!hasFetched) {

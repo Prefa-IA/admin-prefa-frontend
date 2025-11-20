@@ -7,6 +7,8 @@ interface User {
   email: string;
   role: string;
   isSuperAdmin?: boolean;
+  adminRole?: string | null;
+  permissions?: string[];
   token: string;
 }
 
@@ -61,6 +63,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             email: string;
             role: string;
             isSuperAdmin?: boolean;
+            adminRole?: string | null;
+            permissions?: string[];
             [key: string]: unknown;
           }>('/auth/perfil')
           .then((response) => {
