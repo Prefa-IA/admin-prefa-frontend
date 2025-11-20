@@ -15,6 +15,122 @@ interface Props {
   defaultEnd?: number;
 }
 
+const isValidRange = (start: number, end: number, version: string): boolean =>
+  Number.isFinite(start) &&
+  Number.isFinite(end) &&
+  start > 0 &&
+  end >= start &&
+  version.trim() !== '';
+
+const FileUploadArea: React.FC<{
+  file: File | null;
+  isDragActive: boolean;
+  getRootProps: () => React.HTMLAttributes<HTMLDivElement>;
+  getInputProps: () => React.InputHTMLAttributes<HTMLInputElement>;
+  onRemove: () => void;
+  onOpen: () => void;
+}> = ({ file, isDragActive, getRootProps, getInputProps, onRemove, onOpen }) => {
+  if (file) {
+    return (
+      <div className="border p-4 rounded-md mt-1 flex items-center justify-between">
+        <span className="text-sm">{file.name}</span>
+        <button
+          type="button"
+          className="btn-secondary ml-4"
+          onClick={() => {
+            onRemove();
+            setTimeout(onOpen, 0);
+          }}
+        >
+          Cambiar PDF
+        </button>
+      </div>
+    );
+  }
+  return (
+    <div
+      {...getRootProps()}
+      className={`border-2 border-dashed p-4 rounded-md text-center cursor-pointer mt-1 ${isDragActive ? 'bg-blue-50' : ''}`}
+    >
+      <input {...getInputProps()} />
+      Arrastra un PDF o haz clic para seleccionar
+    </div>
+  );
+};
+
+const FormFields: React.FC<{
+  startPage: number;
+  endPage: number;
+  versionIso: string;
+  onStartPageChange: (value: number) => void;
+  onEndPageChange: (value: number) => void;
+  onVersionChange: (value: string) => void;
+  file: File | null;
+  isDragActive: boolean;
+  getRootProps: () => React.HTMLAttributes<HTMLDivElement>;
+  getInputProps: () => React.InputHTMLAttributes<HTMLInputElement>;
+  onRemove: () => void;
+  onOpen: () => void;
+}> = ({
+  startPage,
+  endPage,
+  versionIso,
+  onStartPageChange,
+  onEndPageChange,
+  onVersionChange,
+  file,
+  isDragActive,
+  getRootProps,
+  getInputProps,
+  onRemove,
+  onOpen,
+}) => (
+  <div className="space-y-3">
+    <label className="block text-sm font-medium">
+      Página inicial
+      <input
+        type="number"
+        className="input-field w-full"
+        value={startPage}
+        min={1}
+        onChange={(e) => onStartPageChange(Number(e.target.value))}
+      />
+    </label>
+    <label className="block text-sm font-medium">
+      Página final
+      <input
+        type="number"
+        className="input-field w-full"
+        value={endPage}
+        min={1}
+        onChange={(e) => onEndPageChange(Number(e.target.value))}
+      />
+    </label>
+    <label className="block text-sm font-medium">
+      Versión del documento (requerida)
+      <input
+        type="date"
+        className="input-field w-full"
+        value={versionIso}
+        onChange={(e) => onVersionChange(e.target.value)}
+      />
+    </label>
+    <div className="block text-sm font-medium">
+      <label htmlFor="pdf-upload" className="block mb-2">
+        Archivo PDF
+      </label>
+      <FileUploadArea
+        file={file}
+        isDragActive={isDragActive}
+        getRootProps={getRootProps}
+        getInputProps={getInputProps}
+        onRemove={onRemove}
+        onOpen={onOpen}
+      />
+    </div>
+  </div>
+);
+
 const OcrExtractModal: React.FC<Props> = ({
   onClose,
   onSubmit,
@@ -33,23 +149,16 @@ const OcrExtractModal: React.FC<Props> = ({
     noDrag: !!file,
     onDrop: (accepted) => {
       if (accepted.length) {
-        const file = accepted[0];
-        if (file) {
-          setFile(file);
+        const selectedFile = accepted[0];
+        if (selectedFile) {
+          setFile(selectedFile);
         }
       }
     },
   });
 
-  const isValidRange = () =>
-    Number.isFinite(startPage) &&
-    Number.isFinite(endPage) &&
-    startPage > 0 &&
-    endPage >= startPage &&
-    versionIso.trim() !== '';
-
   const handleSubmit = () => {
-    if (!isValidRange() || !file) return;
+    if (!isValidRange(startPage, endPage, versionIso) || !file) return;
     const formatted = formatDate(versionIso);
     onSubmit({ startPage, endPage, version: formatted, file });
   };
@@ -58,69 +167,26 @@ const OcrExtractModal: React.FC<Props> = ({
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-md space-y-4 shadow-xl">
         <h3 className="text-xl font-semibold">Procesar PDF – Código Urbanístico</h3>
-        <div className="space-y-3">
-          <label className="block text-sm font-medium">
-            Página inicial
-            <input
-              type="number"
-              className="input-field w-full"
-              value={startPage}
-              min={1}
-              onChange={(e) => setStartPage(Number(e.target.value))}
-            />
-          </label>
-          <label className="block text-sm font-medium">
-            Página final
-            <input
-              type="number"
-              className="input-field w-full"
-              value={endPage}
-              min={1}
-              onChange={(e) => setEndPage(Number(e.target.value))}
-            />
-          </label>
-          <label className="block text-sm font-medium">
-            Versión del documento (requerida)
-            <input
-              type="date"
-              className="input-field w-full"
-              value={versionIso}
-              onChange={(e) => setVersionIso(e.target.value)}
-            />
-          </label>
-          <label className="block text-sm font-medium">
-            Archivo PDF
-            {file ? (
-              <div className="border p-4 rounded-md mt-1 flex items-center justify-between">
-                <span className="text-sm">{file.name}</span>
-                <button
-                  type="button"
-                  className="btn-secondary ml-4"
-                  onClick={() => {
-                    setFile(null);
-                    setTimeout(open, 0);
-                  }}
-                >
-                  Cambiar PDF
-                </button>
-              </div>
-            ) : (
-              <div
-                {...getRootProps()}
-                className={`border-2 border-dashed p-4 rounded-md text-center cursor-pointer mt-1 ${isDragActive ? 'bg-blue-50' : ''}`}
-              >
-                <input {...getInputProps()} />
-                Arrastra un PDF o haz clic para seleccionar
-              </div>
-            )}
-          </label>
-        </div>
+        <FormFields
+          startPage={startPage}
+          endPage={endPage}
+          versionIso={versionIso}
+          onStartPageChange={setStartPage}
+          onEndPageChange={setEndPage}
+          onVersionChange={setVersionIso}
+          file={file}
+          isDragActive={isDragActive}
+          getRootProps={getRootProps}
+          getInputProps={getInputProps}
+          onRemove={() => setFile(null)}
+          onOpen={open}
+        />
         <div className="flex justify-end space-x-3 pt-2">
           <button className="btn-secondary" onClick={onClose}>
             Cancelar
           </button>
           <button
-            className={`btn-primary ${!isValidRange() || !file ? 'opacity-50 pointer-events-none' : ''}`}
+            className={`btn-primary ${!isValidRange(startPage, endPage, versionIso) || !file ? 'opacity-50 pointer-events-none' : ''}`}
             onClick={handleSubmit}
           >
             Procesar

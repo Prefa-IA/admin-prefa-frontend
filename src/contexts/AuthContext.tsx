@@ -26,6 +26,53 @@ const AuthContext = createContext<AuthContextProps>({
   logout: () => {},
 });
 
+const isTokenExpired = (token: string): boolean => {
+  try {
+    const parts = token.split('.');
+    if (parts.length < 2) return true;
+    const payload = JSON.parse(atob(parts[1]?.replace(/-/g, '+').replace(/_/g, '/') || ''));
+    const exp = typeof payload.exp === 'number' ? payload.exp : 0;
+    return !exp || Date.now() >= exp * 1000;
+  } catch {
+    return true;
+  }
+};
+
+const loadUserFromStorage = async (): Promise<User | null> => {
+  const stored = localStorage.getItem('adminUser');
+  if (!stored) return null;
+
+  const parsed: User = JSON.parse(stored);
+  if (!parsed.token || isTokenExpired(parsed.token)) {
+    localStorage.removeItem('adminUser');
+    return null;
+  }
+
+  axios.defaults.headers.common['Authorization'] = `Bearer ${parsed.token}`;
+  try {
+    const response = await axios.get<{
+      _id: string;
+      email: string;
+      role: string;
+      isSuperAdmin?: boolean;
+      adminRole?: string | null;
+      permissions?: string[];
+      [key: string]: unknown;
+    }>('/auth/perfil');
+    const updatedUser = {
+      ...parsed,
+      ...response.data,
+      token: parsed.token,
+    } as User;
+    localStorage.setItem('adminUser', JSON.stringify(updatedUser));
+    return updatedUser;
+  } catch {
+    delete axios.defaults.headers.common['Authorization'];
+    localStorage.removeItem('adminUser');
+    return null;
+  }
+};
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -37,55 +84,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    const stored = localStorage.getItem('adminUser');
-    if (stored) {
-      const parsed: User = JSON.parse(stored);
-      const isTokenExpired = (token: string): boolean => {
-        try {
-          const parts = token.split('.');
-          if (parts.length < 2) return true;
-          const payload = JSON.parse(atob(parts[1]?.replace(/-/g, '+').replace(/_/g, '/') || ''));
-          const exp = typeof payload.exp === 'number' ? payload.exp : 0;
-          return !exp || Date.now() >= exp * 1000;
-        } catch {
-          return true;
-        }
-      };
-
-      if (!parsed.token || isTokenExpired(parsed.token)) {
-        localStorage.removeItem('adminUser');
-        setLoading(false);
-      } else {
-        axios.defaults.headers.common['Authorization'] = `Bearer ${parsed.token}`;
-        axios
-          .get<{
-            _id: string;
-            email: string;
-            role: string;
-            isSuperAdmin?: boolean;
-            adminRole?: string | null;
-            permissions?: string[];
-            [key: string]: unknown;
-          }>('/auth/perfil')
-          .then((response) => {
-            const updatedUser = {
-              ...parsed,
-              ...response.data,
-              token: parsed.token,
-            } as User;
-            setUser(updatedUser);
-            localStorage.setItem('adminUser', JSON.stringify(updatedUser));
-          })
-          .catch(() => {
-            delete axios.defaults.headers.common['Authorization'];
-            localStorage.removeItem('adminUser');
-            setUser(null);
-          })
-          .finally(() => setLoading(false));
-      }
-    } else {
+    void loadUserFromStorage().then((loadedUser) => {
+      setUser(loadedUser);
       setLoading(false);
-    }
+    });
 
     const resInterceptor = axios.interceptors.response.use(
       (res) => res,

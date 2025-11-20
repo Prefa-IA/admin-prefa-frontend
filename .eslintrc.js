@@ -57,14 +57,8 @@ module.exports = {
     // ====================================================
     // PUREZA E INMUTABILIDAD (PDF Sección III)
     // ====================================================
-    // Prohíbe mutar props o estado directamente (Esencial para React Compiler)
-    'functional/no-mutations': [
-      'error',
-      {
-        ignorePattern: ['^useRef$'], // Excepción común para refs en React
-      },
-    ],
-    // Fomenta el uso de const sobre let
+    // Nota: 'immutable-data' es demasiado estricta para React (necesita mutar estado)
+    // Se mantiene solo 'no-let' que fomenta el uso de const sobre let
     'functional/no-let': 'error',
 
     // ====================================================

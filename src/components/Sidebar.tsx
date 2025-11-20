@@ -85,6 +85,111 @@ const baseGroups: Group[] = [
   },
 ];
 
+const mergeCategoryLinks = (categories: string[]): LinkItem[] =>
+  categories.map((cat) => ({
+    to: `${REGLAS_PATH}/${slugify(cat)}`,
+    label: cat,
+  }));
+
+const updateGroupsWithCategories = (groups: Group[], categoryLinks: LinkItem[]): Group[] =>
+  groups.map((g) => {
+    if (g.label !== 'Normativa') return g;
+    return {
+      ...g,
+      links: g.links.map((link) => {
+        if (link.label !== 'Reglas' || !link.children) return link;
+        const baseChildren = link.children.filter(
+          (ch) => ch.to === REGLAS_PATH || ch.to === `${REGLAS_PATH}/ver-todas`
+        );
+        const merged = [...baseChildren, ...categoryLinks].reduce<LinkItem[]>((arr, item) => {
+          if (!arr.find((i) => i.to === item.to)) arr.push(item);
+          return arr;
+        }, []);
+        return { ...link, children: merged };
+      }),
+    };
+  });
+
+const filterLinksByPermission = (
+  links: LinkItem[],
+  canAccessRoute: (route: string) => boolean
+): LinkItem[] =>
+  links
+    .map((link) => {
+      if (link.children) {
+        const filteredChildren = link.children.filter((child) => {
+          if (!child.to) return true;
+          return canAccessRoute(child.to);
+        });
+        if (filteredChildren.length === 0) return null;
+        return { ...link, children: filteredChildren };
+      }
+      if (!link.to) return link;
+      return canAccessRoute(link.to) ? link : null;
+    })
+    .filter((link): link is LinkItem => link !== null);
+
+const filterGroupsByPermission = (
+  groups: Group[],
+  canAccessRoute: (route: string) => boolean
+): Group[] =>
+  groups
+    .map((group) => {
+      const filteredLinks = filterLinksByPermission(group.links, canAccessRoute);
+      if (filteredLinks.length === 0) return null;
+      return { ...group, links: filteredLinks };
+    })
+    .filter((group): group is Group => group !== null);
+
+const SingleLinkGroup: React.FC<{ group: Group; canAccessRoute: (route: string) => boolean }> = ({
+  group,
+  canAccessRoute,
+}) => {
+  const link = group.links[0];
+  if (!link) return null;
+  if (link.to && !canAccessRoute(link.to)) return null;
+  const Icon = group.icon;
+  return (
+    <NavLink
+      key={link.to}
+      to={link.to ?? '/'}
+      className={({ isActive }) =>
+        `flex items-center px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-600 ${isActive ? ACTIVE_LINK_CLASS : ''}`
+      }
+    >
+      <Icon className="h-5 w-5 mr-3" /> {link.label}
+    </NavLink>
+  );
+};
+
+const MultiLinkGroup: React.FC<{
+  group: Group;
+  isOpen: boolean;
+  onToggle: () => void;
+}> = ({ group, isOpen, onToggle }) => {
+  const Icon = group.icon;
+  return (
+    <div className="space-y-1">
+      <button
+        onClick={onToggle}
+        className="flex items-center px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-600 w-full focus:outline-none"
+      >
+        <Icon className="h-5 w-5 mr-3" /> {group.label}
+        <ChevronRightIcon
+          className={`h-4 w-4 ml-auto transition-transform ${isOpen ? 'rotate-90' : ''}`}
+        />
+      </button>
+      {isOpen && (
+        <div className="ml-8 space-y-1">
+          {group.links.map((link) => (
+            <NavItem link={link} key={link.label} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const Sidebar: React.FC = () => {
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [dynGroups, setDynGroups] = useState<Group[]>(baseGroups);
@@ -97,29 +202,8 @@ const Sidebar: React.FC = () => {
       try {
         const { data } = await axios.get<string[]>('/api/reglas/categorias');
         if (Array.isArray(data)) {
-          const links = data.map((cat: string) => ({
-            to: `${REGLAS_PATH}/${slugify(cat)}`,
-            label: cat,
-          }));
-          setDynGroups((prev) =>
-            prev.map((g) => {
-              if (g.label !== 'Normativa') return g;
-              return {
-                ...g,
-                links: g.links.map((link) => {
-                  if (link.label !== 'Reglas' || !link.children) return link;
-                  const baseChildren = link.children.filter(
-                    (ch) => ch.to === REGLAS_PATH || ch.to === `${REGLAS_PATH}/ver-todas`
-                  );
-                  const merged = [...baseChildren, ...links].reduce<LinkItem[]>((arr, item) => {
-                    if (!arr.find((i) => i.to === item.to)) arr.push(item);
-                    return arr;
-                  }, []);
-                  return { ...link, children: merged };
-                }),
-              };
-            })
-          );
+          const categoryLinks = mergeCategoryLinks(data);
+          setDynGroups((prev) => updateGroupsWithCategories(prev, categoryLinks));
         }
       } catch {
         // Silently handle errors
@@ -134,31 +218,10 @@ const Sidebar: React.FC = () => {
     return () => window.removeEventListener('reglas-actualizadas', handler);
   }, []);
 
-  const filteredGroups = React.useMemo(() => {
-    return dynGroups
-      .map((group) => {
-        const filteredLinks = group.links
-          .map((link) => {
-            if (link.children) {
-              const filteredChildren = link.children.filter((child) => {
-                if (!child.to) return true;
-                return canAccessRoute(child.to);
-              });
-              if (filteredChildren.length === 0) return null;
-              return { ...link, children: filteredChildren };
-            }
-            if (!link.to) return link;
-            return canAccessRoute(link.to) ? link : null;
-          })
-          .filter((link): link is LinkItem => link !== null);
-
-        if (filteredLinks.length === 0) return null;
-        return { ...group, links: filteredLinks };
-      })
-      .filter((group): group is Group => group !== null);
-  }, [dynGroups, canAccessRoute]);
-
-  const groups = filteredGroups;
+  const groups = React.useMemo(
+    () => filterGroupsByPermission(dynGroups, canAccessRoute),
+    [dynGroups, canAccessRoute]
+  );
 
   const toggle = (label: string) =>
     setOpen((prev) => {
@@ -171,9 +234,6 @@ const Sidebar: React.FC = () => {
     navigate('/login');
   };
 
-  const BASE_LINK_CLASSES =
-    'flex items-center px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-600';
-
   return (
     <aside className="bg-[#1976d2] text-white w-64 h-screen fixed inset-y-0 left-0 flex flex-col z-40 overflow-y-auto">
       <div className="p-6 flex items-center justify-center">
@@ -181,43 +241,19 @@ const Sidebar: React.FC = () => {
       </div>
       <nav className="flex-1 px-2 space-y-1">
         {groups.map((group) => {
-          const Icon = group.icon;
           const singleLink = group.links.length === 1 && !group.links[0]?.children;
           if (singleLink) {
-            const link = group.links[0];
-            if (!link) return null;
-            if (link.to && !canAccessRoute(link.to)) return null;
             return (
-              <NavLink
-                key={link.to}
-                to={link.to ?? '/'}
-                className={({ isActive }) =>
-                  `${BASE_LINK_CLASSES} ${isActive ? ACTIVE_LINK_CLASS : ''}`
-                }
-              >
-                <Icon className="h-5 w-5 mr-3" /> {link.label}
-              </NavLink>
+              <SingleLinkGroup key={group.label} group={group} canAccessRoute={canAccessRoute} />
             );
           }
           return (
-            <div key={group.label} className="space-y-1">
-              <button
-                onClick={() => toggle(group.label)}
-                className={`${BASE_LINK_CLASSES} w-full focus:outline-none`}
-              >
-                <Icon className="h-5 w-5 mr-3" /> {group.label}
-                <ChevronRightIcon
-                  className={`h-4 w-4 ml-auto transition-transform ${open[group.label] ? 'rotate-90' : ''}`}
-                />
-              </button>
-              {open[group.label] && (
-                <div className="ml-8 space-y-1">
-                  {group.links.map((link) => (
-                    <NavItem link={link} key={link.label} />
-                  ))}
-                </div>
-              )}
-            </div>
+            <MultiLinkGroup
+              key={group.label}
+              group={group}
+              isOpen={open[group.label] ?? false}
+              onToggle={() => toggle(group.label)}
+            />
           );
         })}
       </nav>

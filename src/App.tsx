@@ -32,233 +32,229 @@ const PrivateRoute: React.FC<{ children: JSX.Element }> = ({ children }) => {
   return user && user.role === 'admin' ? children : <Navigate to="/login" />;
 };
 
-const App: React.FC = () => {
-  return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route
-            path="/email-templates"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <EmailTemplatesPage />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/"
-            element={
-              <PrivateRoute>
-                <>
-                  <Layout>
-                    <Dashboard />
-                  </Layout>
-                </>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/usuarios"
-            element={
-              <PrivateRoute>
-                <>
-                  <Layout>
-                    <UsersPage />
-                  </Layout>
-                </>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/informes"
-            element={
-              <PrivateRoute>
-                <>
-                  <Layout>
-                    <ReportsPage />
-                  </Layout>
-                </>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/facturacion"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <FacturacionPage />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/capas"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <CapasPage />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/normativa"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <NormativaPage />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/codigo-urbanistico"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <CodigoUrbanisticoPage />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/parametros-edificabilidad"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <ParametrosEdificabilidadPage />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/afectaciones"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <AfectacionesPage />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
+const RouteWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <PrivateRoute>
+    <Layout>{children}</Layout>
+  </PrivateRoute>
+);
 
-          <Route
-            path="/prompts"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <PromptTemplatesPage />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/reglas"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <ReglasAdminPage />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/reglas/:slug"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <ReglasCategoriaPage />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/reglas/ver-todas"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <ReglasAllPage />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/plan-tags"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <PlanTagsPage />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/constantes-troneras"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <ConstantesTronerasPage />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/newsletter"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <SendNewsletterPage />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/newsletter-history"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <NewsletterHistoryPage />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/calculo-pasos"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <CalculoPasosPage />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/reglas-logicas"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <ReglasLogicasPage />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/admin-users"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <AdminUsersPage />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-        </Routes>
-      </Router>
-    </AuthProvider>
-  );
-};
+const createMainRoutes = (): React.ReactElement[] => [
+  <Route key="login" path="/login" element={<LoginPage />} />,
+  <Route
+    key="dashboard"
+    path="/"
+    element={
+      <RouteWrapper>
+        <Dashboard />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="usuarios"
+    path="/usuarios"
+    element={
+      <RouteWrapper>
+        <UsersPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="informes"
+    path="/informes"
+    element={
+      <RouteWrapper>
+        <ReportsPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="facturacion"
+    path="/facturacion"
+    element={
+      <RouteWrapper>
+        <FacturacionPage />
+      </RouteWrapper>
+    }
+  />,
+];
+
+const createContentRoutes = (): React.ReactElement[] => [
+  <Route
+    key="capas"
+    path="/capas"
+    element={
+      <RouteWrapper>
+        <CapasPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="normativa"
+    path="/normativa"
+    element={
+      <RouteWrapper>
+        <NormativaPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="codigo-urbanistico"
+    path="/codigo-urbanistico"
+    element={
+      <RouteWrapper>
+        <CodigoUrbanisticoPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="parametros-edificabilidad"
+    path="/parametros-edificabilidad"
+    element={
+      <RouteWrapper>
+        <ParametrosEdificabilidadPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="afectaciones"
+    path="/afectaciones"
+    element={
+      <RouteWrapper>
+        <AfectacionesPage />
+      </RouteWrapper>
+    }
+  />,
+];
+
+const createRulesRoutes = (): React.ReactElement[] => [
+  <Route
+    key="reglas"
+    path="/reglas"
+    element={
+      <RouteWrapper>
+        <ReglasAdminPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="reglas-slug"
+    path="/reglas/:slug"
+    element={
+      <RouteWrapper>
+        <ReglasCategoriaPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="reglas-todas"
+    path="/reglas/ver-todas"
+    element={
+      <RouteWrapper>
+        <ReglasAllPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="reglas-logicas"
+    path="/reglas-logicas"
+    element={
+      <RouteWrapper>
+        <ReglasLogicasPage />
+      </RouteWrapper>
+    }
+  />,
+];
+
+const createAdminRoutes = (): React.ReactElement[] => [
+  <Route
+    key="email-templates"
+    path="/email-templates"
+    element={
+      <RouteWrapper>
+        <EmailTemplatesPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="prompts"
+    path="/prompts"
+    element={
+      <RouteWrapper>
+        <PromptTemplatesPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="plan-tags"
+    path="/plan-tags"
+    element={
+      <RouteWrapper>
+        <PlanTagsPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="constantes-troneras"
+    path="/constantes-troneras"
+    element={
+      <RouteWrapper>
+        <ConstantesTronerasPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="newsletter"
+    path="/newsletter"
+    element={
+      <RouteWrapper>
+        <SendNewsletterPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="newsletter-history"
+    path="/newsletter-history"
+    element={
+      <RouteWrapper>
+        <NewsletterHistoryPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="calculo-pasos"
+    path="/calculo-pasos"
+    element={
+      <RouteWrapper>
+        <CalculoPasosPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="admin-users"
+    path="/admin-users"
+    element={
+      <RouteWrapper>
+        <AdminUsersPage />
+      </RouteWrapper>
+    }
+  />,
+];
+
+const AppRoutes: React.FC = () => (
+  <Routes>
+    {createMainRoutes()}
+    {createContentRoutes()}
+    {createRulesRoutes()}
+    {createAdminRoutes()}
+  </Routes>
+);
+
+const App: React.FC = () => (
+  <AuthProvider>
+    <Router>
+      <AppRoutes />
+    </Router>
+  </AuthProvider>
+);
 
 export default App;

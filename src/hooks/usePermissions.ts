@@ -69,20 +69,21 @@ export function usePermissions() {
       if (user.isSuperAdmin) return true;
       if (!route || typeof route !== 'string') return false;
 
-      let requiredPermissions: string[] | undefined;
-
-      if (route.startsWith('/reglas/')) {
-        const reglasKey = '/reglas';
-        if (Object.prototype.hasOwnProperty.call(ROUTE_PERMISSIONS, reglasKey)) {
-          const descriptor = Object.getOwnPropertyDescriptor(ROUTE_PERMISSIONS, reglasKey);
-          requiredPermissions = descriptor?.value;
+      const requiredPermissions: string[] | undefined = (() => {
+        if (route.startsWith('/reglas/')) {
+          const reglasKey = '/reglas';
+          if (Object.prototype.hasOwnProperty.call(ROUTE_PERMISSIONS, reglasKey)) {
+            const descriptor = Object.getOwnPropertyDescriptor(ROUTE_PERMISSIONS, reglasKey);
+            return descriptor?.value;
+          }
+        } else {
+          if (Object.prototype.hasOwnProperty.call(ROUTE_PERMISSIONS, route)) {
+            const descriptor = Object.getOwnPropertyDescriptor(ROUTE_PERMISSIONS, route);
+            return descriptor?.value;
+          }
         }
-      } else {
-        if (Object.prototype.hasOwnProperty.call(ROUTE_PERMISSIONS, route)) {
-          const descriptor = Object.getOwnPropertyDescriptor(ROUTE_PERMISSIONS, route);
-          requiredPermissions = descriptor?.value;
-        }
-      }
+        return undefined;
+      })();
 
       if (!requiredPermissions || requiredPermissions.length === 0) return false;
       return hasAnyPermission(requiredPermissions);

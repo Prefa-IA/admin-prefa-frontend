@@ -19,13 +19,63 @@ import {
 import { Paso } from '../types/pasos';
 import { ReglaLogica } from '../types/reglas';
 
-const ReglasLogicasPage: React.FC = () => {
+const LoadingSpinner: React.FC = () => (
+  <div className="flex items-center justify-center min-h-[400px]">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+      <p className="mt-4 text-gray-600 dark:text-gray-400">Cargando reglas lógicas...</p>
+    </div>
+  </div>
+);
+
+const formatCuReferencia = (idCu: string | string[] | undefined): string => {
+  if (Array.isArray(idCu)) return idCu.join(', ');
+  if (idCu) return idCu;
+  return '';
+};
+
+const ReglaLogicaRow: React.FC<{
+  regla: ReglaLogica;
+  pasoNombre: (id?: string) => string;
+  onEdit: (r: ReglaLogica) => void;
+  onDelete: (r: ReglaLogica) => void;
+}> = ({ regla, pasoNombre, onEdit, onDelete }) => (
+  <TableRow key={regla._id}>
+    <TableCell>{pasoNombre(regla.id_paso)}</TableCell>
+    <TableCell>{regla.distrito_cpu}</TableCell>
+    <TableCell>{formatCuReferencia(regla.id_cu_referencia)}</TableCell>
+    <TableCell>
+      <span
+        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+          regla.activo
+            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+            : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+        }`}
+      >
+        {regla.activo ? 'Sí' : 'No'}
+      </span>
+    </TableCell>
+    <TableCell align="right">
+      <div className="flex items-center justify-end gap-1">
+        <EditIconButton onClick={() => onEdit(regla)} />
+        <DeleteIconButton onClick={() => onDelete(regla)} />
+      </div>
+    </TableCell>
+  </TableRow>
+);
+
+const saveReglaLogica = async (regla: ReglaLogica, editing: ReglaLogica | null): Promise<void> => {
+  if (editing && editing._id) {
+    await axios.put(`/admin/reglas-logicas/${editing._id}`, regla);
+  } else {
+    await axios.post('/admin/reglas-logicas', regla);
+  }
+};
+
+const useReglasLogicasData = () => {
   const [reglas, setReglas] = useState<ReglaLogica[]>([]);
   const [pasos, setPasos] = useState<Paso[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [editing, setEditing] = useState<ReglaLogica | null>(null);
-  const [toDelete, setToDelete] = useState<ReglaLogica | null>(null);
 
   const fetchAll = async () => {
     setLoading(true);
@@ -46,16 +96,61 @@ const ReglasLogicasPage: React.FC = () => {
     void fetchAll();
   }, []);
 
+  return { reglas, pasos, loading, refetch: fetchAll };
+};
+
+const ReglasTable: React.FC<{
+  reglas: ReglaLogica[];
+  pasoNombre: (id?: string) => string;
+  onEdit: (r: ReglaLogica) => void;
+  onDelete: (r: ReglaLogica) => void;
+}> = ({ reglas, pasoNombre, onEdit, onDelete }) => (
+  <Card>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Paso</TableHead>
+          <TableHead>Distrito</TableHead>
+          <TableHead>Ref CU</TableHead>
+          <TableHead>Activo</TableHead>
+          <TableHead align="right">Acciones</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {reglas.length === 0 ? (
+          <TableRow>
+            <TableCell colSpan={5} className="text-center py-8 text-gray-500 dark:text-gray-400">
+              No hay reglas lógicas registradas
+            </TableCell>
+          </TableRow>
+        ) : (
+          reglas.map((r) => (
+            <ReglaLogicaRow
+              key={r._id}
+              regla={r}
+              pasoNombre={pasoNombre}
+              onEdit={onEdit}
+              onDelete={onDelete}
+            />
+          ))
+        )}
+      </TableBody>
+    </Table>
+  </Card>
+);
+
+const ReglasLogicasPage: React.FC = () => {
+  const [showModal, setShowModal] = useState(false);
+  const [editing, setEditing] = useState<ReglaLogica | null>(null);
+  const [toDelete, setToDelete] = useState<ReglaLogica | null>(null);
+  const { reglas, pasos, loading, refetch } = useReglasLogicasData();
+
   const handleSave = async (r: ReglaLogica) => {
     try {
-      if (editing && editing._id) {
-        await axios.put(`/admin/reglas-logicas/${editing._id}`, r);
-      } else {
-        await axios.post('/admin/reglas-logicas', r);
-      }
+      await saveReglaLogica(r, editing);
       setShowModal(false);
       setEditing(null);
-      void fetchAll();
+      void refetch();
     } catch (e) {
       console.error(e);
       alert('Error guardando regla');
@@ -67,24 +162,22 @@ const ReglasLogicasPage: React.FC = () => {
     try {
       await axios.delete(`/admin/reglas-logicas/${toDelete._id}`);
       setToDelete(null);
-      void fetchAll();
+      void refetch();
     } catch (e) {
       console.error(e);
     }
+  };
+
+  const handleEdit = (regla: ReglaLogica) => {
+    setEditing(regla);
+    setShowModal(true);
   };
 
   const pasoNombre = (id?: string) => pasos.find((p) => p._id === id)?.nombre_paso || '';
   const pasosSafe = pasos.filter((p): p is Paso & { _id: string } => !!p._id);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Cargando reglas lógicas...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   return (
@@ -95,68 +188,12 @@ const ReglasLogicasPage: React.FC = () => {
         actions={<NewItemButton label="Nueva regla" onClick={() => setShowModal(true)} />}
       />
 
-      <Card>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Paso</TableHead>
-              <TableHead>Distrito</TableHead>
-              <TableHead>Ref CU</TableHead>
-              <TableHead>Activo</TableHead>
-              <TableHead align="right">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {reglas.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={5}
-                  className="text-center py-8 text-gray-500 dark:text-gray-400"
-                >
-                  No hay reglas lógicas registradas
-                </TableCell>
-              </TableRow>
-            ) : (
-              reglas.map((r) => (
-                <TableRow key={r._id}>
-                  <TableCell>{pasoNombre(r.id_paso)}</TableCell>
-                  <TableCell>{r.distrito_cpu}</TableCell>
-                  <TableCell>
-                    {(Array.isArray(r.id_cu_referencia)
-                      ? r.id_cu_referencia
-                      : r.id_cu_referencia
-                        ? [r.id_cu_referencia]
-                        : []
-                    ).join(', ')}
-                  </TableCell>
-                  <TableCell>
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        r.activo
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                          : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                      }`}
-                    >
-                      {r.activo ? 'Sí' : 'No'}
-                    </span>
-                  </TableCell>
-                  <TableCell align="right">
-                    <div className="flex items-center justify-end gap-1">
-                      <EditIconButton
-                        onClick={() => {
-                          setEditing(r);
-                          setShowModal(true);
-                        }}
-                      />
-                      <DeleteIconButton onClick={() => setToDelete(r)} />
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </Card>
+      <ReglasTable
+        reglas={reglas}
+        pasoNombre={pasoNombre}
+        onEdit={handleEdit}
+        onDelete={setToDelete}
+      />
 
       {showModal && (
         <EditReglaLogicaModal

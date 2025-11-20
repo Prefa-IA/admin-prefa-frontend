@@ -33,26 +33,335 @@ interface Plan {
 
 const SAVING_TEXT = 'Guardando...';
 
-const UsersPage: React.FC = () => {
-  const { user } = useAuth();
-  const isSuperAdmin = user?.isSuperAdmin === true;
+const UserStatusBadge: React.FC<{ isActive: boolean }> = ({ isActive }) => (
+  <span
+    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+      isActive
+        ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+        : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+    }`}
+  >
+    {isActive ? 'Sí' : 'No'}
+  </span>
+);
+
+const PlanActionCell: React.FC<{
+  isSuperAdmin: boolean;
+  userIsSuperAdmin: boolean;
+  onEditPlan: () => void;
+}> = ({ isSuperAdmin, userIsSuperAdmin, onEditPlan }) => {
+  if (!isSuperAdmin) return null;
+  if (userIsSuperAdmin) {
+    return (
+      <TableCell>
+        <span className="text-xs text-gray-400 dark:text-gray-500">—</span>
+      </TableCell>
+    );
+  }
+  return (
+    <TableCell>
+      <Button variant="secondary" size="sm" onClick={onEditPlan}>
+        Asignar Plan
+      </Button>
+    </TableCell>
+  );
+};
+
+const CreditsActionCell: React.FC<{
+  isSuperAdmin: boolean;
+  userIsSuperAdmin: boolean;
+  onEditCredits: () => void;
+}> = ({ isSuperAdmin, userIsSuperAdmin, onEditCredits }) => {
+  if (!isSuperAdmin) return null;
+  if (userIsSuperAdmin) {
+    return (
+      <TableCell>
+        <span className="text-xs text-gray-400 dark:text-gray-500">—</span>
+      </TableCell>
+    );
+  }
+  return (
+    <TableCell>
+      <Button variant="secondary" size="sm" onClick={onEditCredits}>
+        Asignar Créditos
+      </Button>
+    </TableCell>
+  );
+};
+
+const UserActionsCell: React.FC<{
+  isSuperAdmin: boolean;
+  userIsSuperAdmin: boolean;
+  isActive: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+  onToggleActivo: () => void;
+}> = ({ isSuperAdmin, userIsSuperAdmin, isActive, onEdit, onDelete, onToggleActivo }) => {
+  if (userIsSuperAdmin) {
+    return (
+      <TableCell align="right">
+        <span className="text-xs text-gray-400 dark:text-gray-500">—</span>
+      </TableCell>
+    );
+  }
+  if (!isSuperAdmin) {
+    return (
+      <TableCell align="right">
+        <span className="text-xs text-gray-400 dark:text-gray-500">Solo super admin</span>
+      </TableCell>
+    );
+  }
+  return (
+    <TableCell align="right">
+      <div className="flex items-center justify-end gap-1">
+        <EditIconButton onClick={onEdit} />
+        <DeleteIconButton onClick={onDelete} />
+        <Button variant="secondary" size="sm" onClick={onToggleActivo}>
+          {isActive ? 'Suspender' : 'Activar'}
+        </Button>
+      </div>
+    </TableCell>
+  );
+};
+
+const UserRow: React.FC<{
+  usuario: Usuario;
+  isSuperAdmin: boolean;
+  onEditPlan: (u: Usuario) => void;
+  onEditCredits: (u: Usuario) => void;
+  onEdit: (u: Usuario) => void;
+  onDelete: (u: Usuario) => void;
+  onToggleActivo: (id: string, isActive: boolean) => void;
+}> = ({ usuario, isSuperAdmin, onEditPlan, onEditCredits, onEdit, onDelete, onToggleActivo }) => (
+  <TableRow key={usuario._id}>
+    <TableCell>{usuario.nombre}</TableCell>
+    <TableCell>{usuario.email}</TableCell>
+    <TableCell>
+      <UserStatusBadge isActive={usuario.isActive} />
+    </TableCell>
+    <TableCell>{usuario.suscripcion?.nombrePlan || usuario.suscripcion?.tipo || '—'}</TableCell>
+    <TableCell>{usuario.creditBalance ?? usuario.consultasDisponibles ?? '—'}</TableCell>
+    <PlanActionCell
+      isSuperAdmin={isSuperAdmin}
+      userIsSuperAdmin={usuario.isSuperAdmin || false}
+      onEditPlan={() => onEditPlan(usuario)}
+    />
+    <CreditsActionCell
+      isSuperAdmin={isSuperAdmin}
+      userIsSuperAdmin={usuario.isSuperAdmin || false}
+      onEditCredits={() => onEditCredits(usuario)}
+    />
+    <UserActionsCell
+      isSuperAdmin={isSuperAdmin}
+      userIsSuperAdmin={usuario.isSuperAdmin || false}
+      isActive={usuario.isActive}
+      onEdit={() => onEdit(usuario)}
+      onDelete={() => onDelete(usuario)}
+      onToggleActivo={() => {
+        void onToggleActivo(usuario._id, usuario.isActive);
+      }}
+    />
+  </TableRow>
+);
+
+const UsersTable: React.FC<{
+  usuarios: Usuario[];
+  isSuperAdmin: boolean;
+  onEditPlan: (u: Usuario) => void;
+  onEditCredits: (u: Usuario) => void;
+  onEdit: (u: Usuario) => void;
+  onDelete: (u: Usuario) => void;
+  onToggleActivo: (id: string, isActive: boolean) => void;
+}> = ({ usuarios, isSuperAdmin, onEditPlan, onEditCredits, onEdit, onDelete, onToggleActivo }) => (
+  <Card>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Nombre</TableHead>
+          <TableHead>Email</TableHead>
+          <TableHead>Activo</TableHead>
+          <TableHead>Plan</TableHead>
+          <TableHead>Créditos</TableHead>
+          {isSuperAdmin && <TableHead>Acciones Plan</TableHead>}
+          {isSuperAdmin && <TableHead>Acciones Créditos</TableHead>}
+          <TableHead align="right">Acciones</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {usuarios.length === 0 ? (
+          <TableRow>
+            <TableCell
+              colSpan={isSuperAdmin ? 8 : 6}
+              className="text-center py-8 text-gray-500 dark:text-gray-400"
+            >
+              No se encontraron usuarios
+            </TableCell>
+          </TableRow>
+        ) : (
+          usuarios.map((u) => (
+            <UserRow
+              key={u._id}
+              usuario={u}
+              isSuperAdmin={isSuperAdmin}
+              onEditPlan={onEditPlan}
+              onEditCredits={onEditCredits}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              onToggleActivo={onToggleActivo}
+            />
+          ))
+        )}
+      </TableBody>
+    </Table>
+  </Card>
+);
+
+const PlanModal: React.FC<{
+  show: boolean;
+  editingUsuario: Usuario | null;
+  selectedPlan: string;
+  planes: Plan[];
+  saving: boolean;
+  onClose: () => void;
+  onPlanChange: (plan: string) => void;
+  onSave: () => void;
+}> = ({ show, editingUsuario, selectedPlan, planes, saving, onClose, onPlanChange, onSave }) => {
+  if (!show) return null;
+  return (
+    <Modal show={true} title="Asignar Plan" onClose={onClose} size="md">
+      <div className="space-y-4">
+        <Select
+          label="Plan"
+          value={selectedPlan}
+          onChange={(e) => onPlanChange(e.target.value)}
+          options={[
+            { value: '', label: 'Selecciona un plan' },
+            ...planes.map((p) => ({
+              value: p._id || p.id,
+              label: p.name,
+            })),
+          ]}
+        />
+        {editingUsuario && (
+          <div className="text-sm text-gray-600 dark:text-gray-400">
+            <p>
+              <strong>Usuario:</strong> {editingUsuario.nombre} ({editingUsuario.email})
+            </p>
+            <p className="mt-1">
+              <strong>Plan actual:</strong> {editingUsuario.suscripcion?.nombrePlan || 'Sin plan'}
+            </p>
+          </div>
+        )}
+      </div>
+      <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <Button variant="ghost" onClick={onClose}>
+          Cancelar
+        </Button>
+        <Button onClick={onSave} disabled={saving || !selectedPlan}>
+          {saving ? SAVING_TEXT : 'Asignar Plan'}
+        </Button>
+      </div>
+    </Modal>
+  );
+};
+
+const CreditsModal: React.FC<{
+  show: boolean;
+  editingUsuario: Usuario | null;
+  creditsAmount: string;
+  saving: boolean;
+  onClose: () => void;
+  onCreditsChange: (amount: string) => void;
+  onSave: () => void;
+}> = ({ show, editingUsuario, creditsAmount, saving, onClose, onCreditsChange, onSave }) => {
+  if (!show) return null;
+  return (
+    <Modal show={true} title="Asignar Créditos" onClose={onClose} size="md">
+      <div className="space-y-4">
+        <Input
+          label="Cantidad de créditos"
+          type="number"
+          value={creditsAmount}
+          onChange={(e) => onCreditsChange(e.target.value)}
+          placeholder="Ingresa la cantidad de créditos"
+          min="1"
+        />
+        {editingUsuario && (
+          <div className="text-sm text-gray-600 dark:text-gray-400">
+            <p>
+              <strong>Usuario:</strong> {editingUsuario.nombre} ({editingUsuario.email})
+            </p>
+            <p className="mt-1">
+              <strong>Créditos actuales:</strong> {editingUsuario.creditBalance ?? 0}
+            </p>
+          </div>
+        )}
+      </div>
+      <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <Button variant="ghost" onClick={onClose}>
+          Cancelar
+        </Button>
+        <Button onClick={onSave} disabled={saving || !creditsAmount}>
+          {saving ? SAVING_TEXT : 'Asignar Créditos'}
+        </Button>
+      </div>
+    </Modal>
+  );
+};
+
+const EditUserModal: React.FC<{
+  show: boolean;
+  editingUsuario: Usuario | null;
+  editFormData: { nombre: string; email: string };
+  saving: boolean;
+  onClose: () => void;
+  onFormDataChange: (data: { nombre: string; email: string }) => void;
+  onSave: () => void;
+}> = ({ show, editingUsuario, editFormData, saving, onClose, onFormDataChange, onSave }) => {
+  if (!show) return null;
+  return (
+    <Modal show={true} title="Editar Usuario" onClose={onClose} size="md">
+      <div className="space-y-4">
+        <Input
+          label="Nombre"
+          value={editFormData.nombre}
+          onChange={(e) => onFormDataChange({ ...editFormData, nombre: e.target.value })}
+          required
+          placeholder="Nombre completo"
+        />
+        <Input
+          label="Email"
+          type="email"
+          value={editFormData.email}
+          onChange={(e) => onFormDataChange({ ...editFormData, email: e.target.value })}
+          required
+          placeholder="usuario@ejemplo.com"
+        />
+        {editingUsuario && (
+          <div className="text-sm text-gray-600 dark:text-gray-400">
+            <p>
+              <strong>ID:</strong> {editingUsuario._id}
+            </p>
+          </div>
+        )}
+      </div>
+      <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <Button variant="ghost" onClick={onClose}>
+          Cancelar
+        </Button>
+        <Button onClick={onSave} disabled={saving || !editFormData.nombre || !editFormData.email}>
+          {saving ? SAVING_TEXT : 'Guardar Cambios'}
+        </Button>
+      </div>
+    </Modal>
+  );
+};
+
+const useUsers = () => {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
-  const [planes, setPlanes] = useState<Plan[]>([]);
-  const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const PAGE_SIZE = 20;
   const [hasFetched, setHasFetched] = useState(false);
-  const [editingUsuario, setEditingUsuario] = useState<Usuario | null>(null);
-  const [showPlanModal, setShowPlanModal] = useState(false);
-  const [showCreditsModal, setShowCreditsModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState('');
-  const [creditsAmount, setCreditsAmount] = useState('');
-  const [editFormData, setEditFormData] = useState({ nombre: '', email: '' });
-  const [saving, setSaving] = useState(false);
 
   const fetchUsuarios = useCallback(async () => {
     setLoading(true);
@@ -75,6 +384,12 @@ const UsersPage: React.FC = () => {
     }
   }, [hasFetched, fetchUsuarios]);
 
+  return { usuarios, loading, error, refetch: fetchUsuarios };
+};
+
+const usePlans = (isSuperAdmin: boolean) => {
+  const [planes, setPlanes] = useState<Plan[]>([]);
+
   useEffect(() => {
     const fetchPlanes = async () => {
       try {
@@ -89,482 +404,742 @@ const UsersPage: React.FC = () => {
     }
   }, [isSuperAdmin]);
 
-  const toggleActivo = async (id: string, isActive: boolean) => {
-    try {
-      await axios.patch(`/api/admin/usuarios/${id}/estado`, { isActive: !isActive });
-      void fetchUsuarios();
-      toast.success('Estado del usuario actualizado');
-    } catch (err: unknown) {
-      const error = err as { response?: { data?: { error?: string } } };
-      toast.error(error.response?.data?.error || 'Error al actualizar usuario');
-    }
-  };
+  return planes;
+};
 
-  const handleEdit = (usuario: Usuario) => {
-    setEditingUsuario(usuario);
-    setEditFormData({ nombre: usuario.nombre, email: usuario.email });
-    setShowEditModal(true);
-  };
+const useUserState = () => {
+  const [editingUsuario, setEditingUsuario] = useState<Usuario | null>(null);
+  const [saving, setSaving] = useState(false);
+  return { editingUsuario, setEditingUsuario, saving, setSaving };
+};
 
-  const handleDelete = (usuario: Usuario) => {
-    setEditingUsuario(usuario);
-    setShowDeleteModal(true);
-  };
+const useUserSaveHandlers = (
+  editingUsuario: Usuario | null,
+  refetch: () => void,
+  setEditingUsuario: (usuario: Usuario | null) => void,
+  setSaving: (saving: boolean) => void
+) => {
+  const handleSaveEdit = useCallback(
+    async (editFormData: { nombre: string; email: string }) => {
+      if (!editingUsuario || !editFormData.nombre || !editFormData.email) {
+        toast.error('Nombre y email son requeridos');
+        return false;
+      }
 
-  const handleSaveEdit = async () => {
-    if (!editingUsuario || !editFormData.nombre || !editFormData.email) {
-      toast.error('Nombre y email son requeridos');
-      return;
-    }
+      setSaving(true);
+      try {
+        await axios.put(`/api/admin/usuarios/${editingUsuario._id}`, editFormData);
+        toast.success('Usuario actualizado correctamente');
+        setEditingUsuario(null);
+        void refetch();
+        return true;
+      } catch (err: unknown) {
+        const error = err as { response?: { data?: { error?: string } } };
+        toast.error(error.response?.data?.error || 'Error al actualizar usuario');
+        return false;
+      } finally {
+        setSaving(false);
+      }
+    },
+    [editingUsuario, refetch, setEditingUsuario, setSaving]
+  );
 
-    setSaving(true);
-    try {
-      await axios.put(`/api/admin/usuarios/${editingUsuario._id}`, editFormData);
-      toast.success('Usuario actualizado correctamente');
-      setShowEditModal(false);
-      setEditingUsuario(null);
-      setEditFormData({ nombre: '', email: '' });
-      void fetchUsuarios();
-    } catch (err: unknown) {
-      const error = err as { response?: { data?: { error?: string } } };
-      toast.error(error.response?.data?.error || 'Error al actualizar usuario');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!editingUsuario) return;
+  const handleConfirmDelete = useCallback(async () => {
+    if (!editingUsuario) return false;
     setSaving(true);
     try {
       await axios.delete(`/api/admin/usuarios/${editingUsuario._id}`);
       toast.success('Usuario eliminado correctamente');
-      setShowDeleteModal(false);
       setEditingUsuario(null);
-      void fetchUsuarios();
+      void refetch();
+      return true;
     } catch (err: unknown) {
       const error = err as { response?: { data?: { error?: string } } };
       toast.error(error.response?.data?.error || 'Error al eliminar usuario');
+      return false;
     } finally {
       setSaving(false);
     }
-  };
+  }, [editingUsuario, refetch, setEditingUsuario, setSaving]);
 
-  const handleEditPlan = (usuario: Usuario) => {
-    setEditingUsuario(usuario);
-    setSelectedPlan(usuario.suscripcion?.plan || usuario.suscripcion?.nombrePlan || '');
-    setShowPlanModal(true);
-  };
+  return { handleSaveEdit, handleConfirmDelete };
+};
 
-  const handleEditCredits = (usuario: Usuario) => {
-    setEditingUsuario(usuario);
-    setCreditsAmount('');
-    setShowCreditsModal(true);
-  };
-
-  const handleSavePlan = async () => {
-    if (!editingUsuario || !selectedPlan) {
-      toast.error('Selecciona un plan');
-      return;
-    }
-
-    setSaving(true);
-    try {
-      const plan = planes.find((p) => p.id === selectedPlan || p._id === selectedPlan);
-      const updateData: {
-        plan?: string;
-        nombrePlan?: string;
-        fechaInicio?: string;
-        fechaFin?: string;
-      } = {};
-
-      if (plan) {
-        updateData.plan = plan._id || plan.id;
-        updateData.nombrePlan = plan.name;
-        const now = new Date();
-        const fin = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // +30 días
-        updateData.fechaInicio = now.toISOString();
-        updateData.fechaFin = fin.toISOString();
+const useUserPlanHandlers = (
+  editingUsuario: Usuario | null,
+  refetch: () => void,
+  setEditingUsuario: (usuario: Usuario | null) => void,
+  setSaving: (saving: boolean) => void
+) => {
+  const handleSavePlan = useCallback(
+    async (selectedPlan: string, planes: Plan[]) => {
+      if (!editingUsuario || !selectedPlan) {
+        toast.error('Selecciona un plan');
+        return false;
       }
 
-      await axios.patch(`/api/admin/usuarios/${editingUsuario._id}/plan`, updateData);
-      toast.success('Plan asignado correctamente');
-      setShowPlanModal(false);
-      setEditingUsuario(null);
-      void fetchUsuarios();
-    } catch (err: unknown) {
-      const error = err as { response?: { data?: { error?: string } } };
-      toast.error(error.response?.data?.error || 'Error al asignar plan');
-    } finally {
-      setSaving(false);
-    }
+      setSaving(true);
+      try {
+        const plan = planes.find((p) => p.id === selectedPlan || p._id === selectedPlan);
+        const updateData: {
+          plan?: string;
+          nombrePlan?: string;
+          fechaInicio?: string;
+          fechaFin?: string;
+        } = {};
+
+        if (plan) {
+          updateData.plan = plan._id || plan.id;
+          updateData.nombrePlan = plan.name;
+          const now = new Date();
+          const fin = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+          updateData.fechaInicio = now.toISOString();
+          updateData.fechaFin = fin.toISOString();
+        }
+
+        await axios.patch(`/api/admin/usuarios/${editingUsuario._id}/plan`, updateData);
+        toast.success('Plan asignado correctamente');
+        setEditingUsuario(null);
+        void refetch();
+        return true;
+      } catch (err: unknown) {
+        const error = err as { response?: { data?: { error?: string } } };
+        toast.error(error.response?.data?.error || 'Error al asignar plan');
+        return false;
+      } finally {
+        setSaving(false);
+      }
+    },
+    [editingUsuario, refetch, setEditingUsuario, setSaving]
+  );
+
+  const handleSaveCredits = useCallback(
+    async (creditsAmount: string) => {
+      if (!editingUsuario || !creditsAmount) {
+        toast.error('Ingresa un monto válido');
+        return false;
+      }
+
+      const monto = Number(creditsAmount);
+      if (isNaN(monto) || monto <= 0) {
+        toast.error('El monto debe ser un número positivo');
+        return false;
+      }
+
+      setSaving(true);
+      try {
+        await axios.post(`/api/admin/usuarios/${editingUsuario._id}/creditos`, { monto });
+        toast.success('Créditos asignados correctamente');
+        setEditingUsuario(null);
+        void refetch();
+        return true;
+      } catch (err: unknown) {
+        const error = err as { response?: { data?: { error?: string } } };
+        toast.error(error.response?.data?.error || 'Error al asignar créditos');
+        return false;
+      } finally {
+        setSaving(false);
+      }
+    },
+    [editingUsuario, refetch, setEditingUsuario, setSaving]
+  );
+
+  return { handleSavePlan, handleSaveCredits };
+};
+
+const useUserModalState = () => {
+  const [showPlanModal, setShowPlanModal] = useState(false);
+  const [showCreditsModal, setShowCreditsModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState('');
+  const [creditsAmount, setCreditsAmount] = useState('');
+  const [editFormData, setEditFormData] = useState({ nombre: '', email: '' });
+
+  return {
+    showPlanModal,
+    setShowPlanModal,
+    showCreditsModal,
+    setShowCreditsModal,
+    showEditModal,
+    setShowEditModal,
+    showDeleteModal,
+    setShowDeleteModal,
+    selectedPlan,
+    setSelectedPlan,
+    creditsAmount,
+    setCreditsAmount,
+    editFormData,
+    setEditFormData,
   };
+};
 
-  const handleSaveCredits = async () => {
-    if (!editingUsuario || !creditsAmount) {
-      toast.error('Ingresa un monto válido');
-      return;
-    }
+const useUserHandlers = (
+  setEditingUsuario: (usuario: Usuario | null) => void,
+  setShowPlanModal: (show: boolean) => void,
+  setShowCreditsModal: (show: boolean) => void,
+  setShowEditModal: (show: boolean) => void,
+  setShowDeleteModal: (show: boolean) => void,
+  setSelectedPlan: (plan: string) => void,
+  setCreditsAmount: (amount: string) => void,
+  setEditFormData: (data: { nombre: string; email: string }) => void
+) => {
+  const handleEdit = useCallback(
+    (usuario: Usuario) => {
+      setEditingUsuario(usuario);
+      setEditFormData({ nombre: usuario.nombre, email: usuario.email });
+      setShowEditModal(true);
+    },
+    [setEditingUsuario, setEditFormData, setShowEditModal]
+  );
 
-    const monto = Number(creditsAmount);
-    if (isNaN(monto) || monto <= 0) {
-      toast.error('El monto debe ser un número positivo');
-      return;
-    }
+  const handleDelete = useCallback(
+    (usuario: Usuario) => {
+      setEditingUsuario(usuario);
+      setShowDeleteModal(true);
+    },
+    [setEditingUsuario, setShowDeleteModal]
+  );
 
-    setSaving(true);
-    try {
-      await axios.post(`/api/admin/usuarios/${editingUsuario._id}/creditos`, { monto });
-      toast.success('Créditos asignados correctamente');
-      setShowCreditsModal(false);
-      setEditingUsuario(null);
+  const handleEditPlan = useCallback(
+    (usuario: Usuario) => {
+      setEditingUsuario(usuario);
+      setSelectedPlan(usuario.suscripcion?.plan || usuario.suscripcion?.nombrePlan || '');
+      setShowPlanModal(true);
+    },
+    [setEditingUsuario, setSelectedPlan, setShowPlanModal]
+  );
+
+  const handleEditCredits = useCallback(
+    (usuario: Usuario) => {
+      setEditingUsuario(usuario);
       setCreditsAmount('');
-      void fetchUsuarios();
-    } catch (err: unknown) {
-      const error = err as { response?: { data?: { error?: string } } };
-      toast.error(error.response?.data?.error || 'Error al asignar créditos');
-    } finally {
-      setSaving(false);
-    }
-  };
+      setShowCreditsModal(true);
+    },
+    [setEditingUsuario, setCreditsAmount, setShowCreditsModal]
+  );
 
+  return { handleEdit, handleDelete, handleEditPlan, handleEditCredits };
+};
+
+const useUserActions = (refetch: () => void) => {
+  const { editingUsuario, setEditingUsuario, saving, setSaving } = useUserState();
+  const { handleSaveEdit, handleConfirmDelete } = useUserSaveHandlers(
+    editingUsuario,
+    refetch,
+    setEditingUsuario,
+    setSaving
+  );
+  const { handleSavePlan, handleSaveCredits } = useUserPlanHandlers(
+    editingUsuario,
+    refetch,
+    setEditingUsuario,
+    setSaving
+  );
+
+  const toggleActivo = useCallback(
+    async (id: string, isActive: boolean) => {
+      try {
+        await axios.patch(`/api/admin/usuarios/${id}/estado`, { isActive: !isActive });
+        void refetch();
+        toast.success('Estado del usuario actualizado');
+      } catch (err: unknown) {
+        const error = err as { response?: { data?: { error?: string } } };
+        toast.error(error.response?.data?.error || 'Error al actualizar usuario');
+      }
+    },
+    [refetch]
+  );
+
+  return {
+    editingUsuario,
+    setEditingUsuario,
+    saving,
+    toggleActivo,
+    handleSaveEdit,
+    handleConfirmDelete,
+    handleSavePlan,
+    handleSaveCredits,
+  };
+};
+
+const createModalSaveHandler = (
+  onSave: () => Promise<boolean>,
+  onClose: () => void
+): (() => void) => {
+  return () => {
+    const executeSave = async () => {
+      const success = await onSave();
+      if (success) {
+        onClose();
+      }
+    };
+    void executeSave();
+  };
+};
+
+const PlanModalWrapper: React.FC<{
+  show: boolean;
+  editingUsuario: Usuario | null;
+  selectedPlan: string;
+  planes: Plan[];
+  saving: boolean;
+  onClose: () => void;
+  onPlanChange: (plan: string) => void;
+  onSave: () => Promise<boolean>;
+}> = ({ show, editingUsuario, selectedPlan, planes, saving, onClose, onPlanChange, onSave }) => (
+  <PlanModal
+    show={show}
+    editingUsuario={editingUsuario}
+    selectedPlan={selectedPlan}
+    planes={planes}
+    saving={saving}
+    onClose={onClose}
+    onPlanChange={onPlanChange}
+    onSave={createModalSaveHandler(onSave, onClose)}
+  />
+);
+
+const CreditsModalWrapper: React.FC<{
+  show: boolean;
+  editingUsuario: Usuario | null;
+  creditsAmount: string;
+  saving: boolean;
+  onClose: () => void;
+  onCreditsChange: (amount: string) => void;
+  onSave: () => Promise<boolean>;
+}> = ({ show, editingUsuario, creditsAmount, saving, onClose, onCreditsChange, onSave }) => (
+  <CreditsModal
+    show={show}
+    editingUsuario={editingUsuario}
+    creditsAmount={creditsAmount}
+    saving={saving}
+    onClose={onClose}
+    onCreditsChange={onCreditsChange}
+    onSave={createModalSaveHandler(onSave, onClose)}
+  />
+);
+
+const EditUserModalWrapper: React.FC<{
+  show: boolean;
+  editingUsuario: Usuario | null;
+  editFormData: { nombre: string; email: string };
+  saving: boolean;
+  onClose: () => void;
+  onFormDataChange: (data: { nombre: string; email: string }) => void;
+  onSave: () => Promise<boolean>;
+}> = ({ show, editingUsuario, editFormData, saving, onClose, onFormDataChange, onSave }) => (
+  <EditUserModal
+    show={show}
+    editingUsuario={editingUsuario}
+    editFormData={editFormData}
+    saving={saving}
+    onClose={onClose}
+    onFormDataChange={onFormDataChange}
+    onSave={createModalSaveHandler(onSave, onClose)}
+  />
+);
+
+const DeleteConfirmModalWrapper: React.FC<{
+  show: boolean;
+  editingUsuario: Usuario | null;
+  onClose: () => void;
+  onConfirm: () => Promise<boolean>;
+}> = ({ show, editingUsuario, onClose, onConfirm }) => (
+  <ConfirmModal
+    open={show}
+    title="Eliminar Usuario"
+    message={`¿Estás seguro de que deseas eliminar al usuario "${editingUsuario?.nombre}" (${editingUsuario?.email})?`}
+    confirmText="Eliminar"
+    cancelText="Cancelar"
+    onConfirm={createModalSaveHandler(onConfirm, onClose)}
+    onCancel={onClose}
+  />
+);
+
+const UsersModals: React.FC<{
+  showPlanModal: boolean;
+  showCreditsModal: boolean;
+  showEditModal: boolean;
+  showDeleteModal: boolean;
+  editingUsuario: Usuario | null;
+  selectedPlan: string;
+  creditsAmount: string;
+  editFormData: { nombre: string; email: string };
+  saving: boolean;
+  planes: Plan[];
+  onClosePlanModal: () => void;
+  onCloseCreditsModal: () => void;
+  onCloseEditModal: () => void;
+  onCloseDeleteModal: () => void;
+  onPlanChange: (plan: string) => void;
+  onCreditsChange: (amount: string) => void;
+  onFormDataChange: (data: { nombre: string; email: string }) => void;
+  onSavePlan: () => Promise<boolean>;
+  onSaveCredits: () => Promise<boolean>;
+  onSaveEdit: () => Promise<boolean>;
+  onConfirmDelete: () => Promise<boolean>;
+}> = (props) => (
+  <>
+    <PlanModalWrapper
+      show={props.showPlanModal}
+      editingUsuario={props.editingUsuario}
+      selectedPlan={props.selectedPlan}
+      planes={props.planes}
+      saving={props.saving}
+      onClose={props.onClosePlanModal}
+      onPlanChange={props.onPlanChange}
+      onSave={props.onSavePlan}
+    />
+    <CreditsModalWrapper
+      show={props.showCreditsModal}
+      editingUsuario={props.editingUsuario}
+      creditsAmount={props.creditsAmount}
+      saving={props.saving}
+      onClose={props.onCloseCreditsModal}
+      onCreditsChange={props.onCreditsChange}
+      onSave={props.onSaveCredits}
+    />
+    <EditUserModalWrapper
+      show={props.showEditModal}
+      editingUsuario={props.editingUsuario}
+      editFormData={props.editFormData}
+      saving={props.saving}
+      onClose={props.onCloseEditModal}
+      onFormDataChange={props.onFormDataChange}
+      onSave={props.onSaveEdit}
+    />
+    <DeleteConfirmModalWrapper
+      show={props.showDeleteModal}
+      editingUsuario={props.editingUsuario}
+      onClose={props.onCloseDeleteModal}
+      onConfirm={props.onConfirmDelete}
+    />
+  </>
+);
+
+const filterAndPaginateUsers = (
+  usuarios: Usuario[],
+  query: string,
+  page: number,
+  PAGE_SIZE: number
+) => {
   const filtered = usuarios.filter(
     (u) =>
       u.nombre.toLowerCase().includes(query.toLowerCase()) ||
       u.email.toLowerCase().includes(query.toLowerCase())
   );
-
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  return { filtered, paginated };
+};
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Cargando usuarios...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card>
-        <div className="text-center py-8">
-          <p className="text-red-600 dark:text-red-400">{error}</p>
-        </div>
-      </Card>
-    );
-  }
+const UsersPageContent: React.FC<{
+  usuarios: Usuario[];
+  planes: Plan[];
+  isSuperAdmin: boolean;
+  query: string;
+  page: number;
+  PAGE_SIZE: number;
+  editingUsuario: Usuario | null;
+  saving: boolean;
+  selectedPlan: string;
+  creditsAmount: string;
+  editFormData: { nombre: string; email: string };
+  showPlanModal: boolean;
+  showCreditsModal: boolean;
+  showEditModal: boolean;
+  showDeleteModal: boolean;
+  onQueryChange: (query: string) => void;
+  onPageChange: (page: number) => void;
+  onEdit: (usuario: Usuario) => void;
+  onDelete: (usuario: Usuario) => void;
+  onEditPlan: (usuario: Usuario) => void;
+  onEditCredits: (usuario: Usuario) => void;
+  onToggleActivo: (id: string, isActive: boolean) => void;
+  onClosePlanModal: () => void;
+  onCloseCreditsModal: () => void;
+  onCloseEditModal: () => void;
+  onCloseDeleteModal: () => void;
+  onPlanChange: (plan: string) => void;
+  onCreditsChange: (amount: string) => void;
+  onFormDataChange: (data: { nombre: string; email: string }) => void;
+  onSavePlan: () => Promise<boolean>;
+  onSaveCredits: () => Promise<boolean>;
+  onSaveEdit: () => Promise<boolean>;
+  onConfirmDelete: () => Promise<boolean>;
+}> = (props) => {
+  const { filtered, paginated } = filterAndPaginateUsers(
+    props.usuarios,
+    props.query,
+    props.page,
+    props.PAGE_SIZE
+  );
 
   return (
     <div>
       <PageHeader title="Usuarios" description="Gestiona los usuarios del sistema" />
-
       <FilterBar
-        searchValue={query}
-        onSearchChange={setQuery}
+        searchValue={props.query}
+        onSearchChange={props.onQueryChange}
         searchPlaceholder="Buscar por nombre o email..."
       />
-
-      <Card>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nombre</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Activo</TableHead>
-              <TableHead>Plan</TableHead>
-              <TableHead>Créditos</TableHead>
-              {isSuperAdmin && <TableHead>Acciones Plan</TableHead>}
-              {isSuperAdmin && <TableHead>Acciones Créditos</TableHead>}
-              <TableHead align="right">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {paginated.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={isSuperAdmin ? 8 : 6}
-                  className="text-center py-8 text-gray-500 dark:text-gray-400"
-                >
-                  No se encontraron usuarios
-                </TableCell>
-              </TableRow>
-            ) : (
-              paginated.map((u) => (
-                <TableRow key={u._id}>
-                  <TableCell>{u.nombre}</TableCell>
-                  <TableCell>{u.email}</TableCell>
-                  <TableCell>
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        u.isActive
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                          : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                      }`}
-                    >
-                      {u.isActive ? 'Sí' : 'No'}
-                    </span>
-                  </TableCell>
-                  <TableCell>{u.suscripcion?.nombrePlan || u.suscripcion?.tipo || '—'}</TableCell>
-                  <TableCell>{u.creditBalance ?? u.consultasDisponibles ?? '—'}</TableCell>
-                  {isSuperAdmin && (
-                    <TableCell>
-                      {u.isSuperAdmin ? (
-                        <span className="text-xs text-gray-400 dark:text-gray-500">—</span>
-                      ) : (
-                        <Button variant="secondary" size="sm" onClick={() => handleEditPlan(u)}>
-                          Asignar Plan
-                        </Button>
-                      )}
-                    </TableCell>
-                  )}
-                  {isSuperAdmin && (
-                    <TableCell>
-                      {u.isSuperAdmin ? (
-                        <span className="text-xs text-gray-400 dark:text-gray-500">—</span>
-                      ) : (
-                        <Button variant="secondary" size="sm" onClick={() => handleEditCredits(u)}>
-                          Asignar Créditos
-                        </Button>
-                      )}
-                    </TableCell>
-                  )}
-                  <TableCell align="right">
-                    {u.isSuperAdmin ? (
-                      <span className="text-xs text-gray-400 dark:text-gray-500">—</span>
-                    ) : isSuperAdmin ? (
-                      <div className="flex items-center justify-end gap-1">
-                        <EditIconButton onClick={() => handleEdit(u)} />
-                        <DeleteIconButton onClick={() => handleDelete(u)} />
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => {
-                            void toggleActivo(u._id, u.isActive);
-                          }}
-                        >
-                          {u.isActive ? 'Suspender' : 'Activar'}
-                        </Button>
-                      </div>
-                    ) : (
-                      <span className="text-xs text-gray-400 dark:text-gray-500">
-                        Solo super admin
-                      </span>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-
-        {filtered.length > 0 && (
-          <div className="mt-6">
-            <Pagination
-              total={filtered.length}
-              current={page}
-              pageSize={PAGE_SIZE}
-              onPageChange={(p) => setPage(p)}
-            />
-          </div>
-        )}
-      </Card>
-
-      {/* Modal para asignar plan */}
-      <Modal
-        show={showPlanModal}
-        title="Asignar Plan"
-        onClose={() => {
-          setShowPlanModal(false);
-          setEditingUsuario(null);
-          setSelectedPlan('');
-        }}
-        size="md"
-      >
-        <div className="space-y-4">
-          <div>
-            <Select
-              label="Plan"
-              value={selectedPlan}
-              onChange={(e) => setSelectedPlan(e.target.value)}
-              options={[
-                { value: '', label: 'Selecciona un plan' },
-                ...planes.map((p) => ({
-                  value: p._id || p.id,
-                  label: p.name,
-                })),
-              ]}
-            />
-          </div>
-          {editingUsuario && (
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              <p>
-                <strong>Usuario:</strong> {editingUsuario.nombre} ({editingUsuario.email})
-              </p>
-              <p className="mt-1">
-                <strong>Plan actual:</strong> {editingUsuario.suscripcion?.nombrePlan || 'Sin plan'}
-              </p>
-            </div>
-          )}
-        </div>
-        <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-          <Button
-            variant="ghost"
-            onClick={() => {
-              setShowPlanModal(false);
-              setEditingUsuario(null);
-              setSelectedPlan('');
-            }}
-          >
-            Cancelar
-          </Button>
-          <Button
-            onClick={() => {
-              void handleSavePlan();
-            }}
-            disabled={saving || !selectedPlan}
-          >
-            {saving ? SAVING_TEXT : 'Asignar Plan'}
-          </Button>
-        </div>
-      </Modal>
-
-      {/* Modal para asignar créditos */}
-      <Modal
-        show={showCreditsModal}
-        title="Asignar Créditos"
-        onClose={() => {
-          setShowCreditsModal(false);
-          setEditingUsuario(null);
-          setCreditsAmount('');
-        }}
-        size="md"
-      >
-        <div className="space-y-4">
-          <div>
-            <label
-              htmlFor="credits-amount"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-            >
-              Cantidad de créditos
-            </label>
-            <Input
-              id="credits-amount"
-              type="number"
-              value={creditsAmount}
-              onChange={(e) => setCreditsAmount(e.target.value)}
-              placeholder="Ingresa la cantidad de créditos"
-              min="1"
-            />
-          </div>
-          {editingUsuario && (
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              <p>
-                <strong>Usuario:</strong> {editingUsuario.nombre} ({editingUsuario.email})
-              </p>
-              <p className="mt-1">
-                <strong>Créditos actuales:</strong> {editingUsuario.creditBalance ?? 0}
-              </p>
-            </div>
-          )}
-        </div>
-        <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-          <Button
-            variant="ghost"
-            onClick={() => {
-              setShowCreditsModal(false);
-              setEditingUsuario(null);
-              setCreditsAmount('');
-            }}
-          >
-            Cancelar
-          </Button>
-          <Button
-            onClick={() => {
-              void handleSaveCredits();
-            }}
-            disabled={saving || !creditsAmount}
-          >
-            {saving ? SAVING_TEXT : 'Asignar Créditos'}
-          </Button>
-        </div>
-      </Modal>
-
-      {/* Modal para editar usuario */}
-      <Modal
-        show={showEditModal}
-        title="Editar Usuario"
-        onClose={() => {
-          setShowEditModal(false);
-          setEditingUsuario(null);
-          setEditFormData({ nombre: '', email: '' });
-        }}
-        size="md"
-      >
-        <div className="space-y-4">
-          <Input
-            label="Nombre"
-            value={editFormData.nombre}
-            onChange={(e) => setEditFormData({ ...editFormData, nombre: e.target.value })}
-            required
-            placeholder="Nombre completo"
+      <UsersTable
+        usuarios={paginated}
+        isSuperAdmin={props.isSuperAdmin}
+        onEditPlan={props.onEditPlan}
+        onEditCredits={props.onEditCredits}
+        onEdit={props.onEdit}
+        onDelete={props.onDelete}
+        onToggleActivo={props.onToggleActivo}
+      />
+      {filtered.length > 0 && (
+        <div className="mt-6">
+          <Pagination
+            total={filtered.length}
+            current={props.page}
+            pageSize={props.PAGE_SIZE}
+            onPageChange={props.onPageChange}
           />
-          <Input
-            label="Email"
-            type="email"
-            value={editFormData.email}
-            onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
-            required
-            placeholder="usuario@ejemplo.com"
-          />
-          {editingUsuario && (
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              <p>
-                <strong>ID:</strong> {editingUsuario._id}
-              </p>
-            </div>
-          )}
         </div>
-        <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-          <Button
-            variant="ghost"
-            onClick={() => {
-              setShowEditModal(false);
-              setEditingUsuario(null);
-              setEditFormData({ nombre: '', email: '' });
-            }}
-          >
-            Cancelar
-          </Button>
-          <Button
-            onClick={() => {
-              void handleSaveEdit();
-            }}
-            disabled={saving || !editFormData.nombre || !editFormData.email}
-          >
-            {saving ? SAVING_TEXT : 'Guardar Cambios'}
-          </Button>
-        </div>
-      </Modal>
-
-      {/* Modal de confirmación de eliminación */}
-      <ConfirmModal
-        open={showDeleteModal}
-        title="Eliminar Usuario"
-        message={`¿Estás seguro de que deseas eliminar al usuario "${editingUsuario?.nombre}" (${editingUsuario?.email})?`}
-        confirmText="Eliminar"
-        cancelText="Cancelar"
-        onConfirm={() => {
-          void handleConfirmDelete();
-        }}
-        onCancel={() => {
-          setShowDeleteModal(false);
-          setEditingUsuario(null);
-        }}
+      )}
+      <UsersModals
+        showPlanModal={props.showPlanModal}
+        showCreditsModal={props.showCreditsModal}
+        showEditModal={props.showEditModal}
+        showDeleteModal={props.showDeleteModal}
+        editingUsuario={props.editingUsuario}
+        selectedPlan={props.selectedPlan}
+        creditsAmount={props.creditsAmount}
+        editFormData={props.editFormData}
+        saving={props.saving}
+        planes={props.planes}
+        onClosePlanModal={props.onClosePlanModal}
+        onCloseCreditsModal={props.onCloseCreditsModal}
+        onCloseEditModal={props.onCloseEditModal}
+        onCloseDeleteModal={props.onCloseDeleteModal}
+        onPlanChange={props.onPlanChange}
+        onCreditsChange={props.onCreditsChange}
+        onFormDataChange={props.onFormDataChange}
+        onSavePlan={props.onSavePlan}
+        onSaveCredits={props.onSaveCredits}
+        onSaveEdit={props.onSaveEdit}
+        onConfirmDelete={props.onConfirmDelete}
       />
     </div>
+  );
+};
+
+const useUsersPageHandlers = (
+  modalState: ReturnType<typeof useUserModalState>,
+  setEditingUsuario: (usuario: Usuario | null) => void
+) => {
+  const createClosePlanModal = useCallback(() => {
+    modalState.setShowPlanModal(false);
+    setEditingUsuario(null);
+    modalState.setSelectedPlan('');
+  }, [modalState, setEditingUsuario]);
+
+  const createCloseCreditsModal = useCallback(() => {
+    modalState.setShowCreditsModal(false);
+    setEditingUsuario(null);
+    modalState.setCreditsAmount('');
+  }, [modalState, setEditingUsuario]);
+
+  const createCloseEditModal = useCallback(() => {
+    modalState.setShowEditModal(false);
+    setEditingUsuario(null);
+    modalState.setEditFormData({ nombre: '', email: '' });
+  }, [modalState, setEditingUsuario]);
+
+  const createCloseDeleteModal = useCallback(() => {
+    modalState.setShowDeleteModal(false);
+    setEditingUsuario(null);
+  }, [modalState, setEditingUsuario]);
+
+  return {
+    createClosePlanModal,
+    createCloseCreditsModal,
+    createCloseEditModal,
+    createCloseDeleteModal,
+  };
+};
+
+const useUsersPageData = () => {
+  const { user } = useAuth();
+  const isSuperAdmin = user?.isSuperAdmin === true;
+  const { usuarios, loading, error, refetch } = useUsers();
+  const planes = usePlans(isSuperAdmin);
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
+
+  return {
+    isSuperAdmin,
+    usuarios,
+    loading,
+    error,
+    refetch,
+    planes,
+    query,
+    setQuery,
+    page,
+    setPage,
+    PAGE_SIZE,
+  };
+};
+
+const UsersPageLoadingState: React.FC = () => (
+  <div className="flex items-center justify-center min-h-[400px]">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+      <p className="mt-4 text-gray-600 dark:text-gray-400">Cargando usuarios...</p>
+    </div>
+  </div>
+);
+
+const UsersPageErrorState: React.FC<{ error: string }> = ({ error }) => (
+  <Card>
+    <div className="text-center py-8">
+      <p className="text-red-600 dark:text-red-400">{error}</p>
+    </div>
+  </Card>
+);
+
+const useUsersPageHandlersAndState = (refetch: () => void) => {
+  const modalState = useUserModalState();
+  const {
+    editingUsuario,
+    setEditingUsuario,
+    saving,
+    toggleActivo,
+    handleSaveEdit,
+    handleConfirmDelete,
+    handleSavePlan,
+    handleSaveCredits,
+  } = useUserActions(refetch);
+
+  const { handleEdit, handleDelete, handleEditPlan, handleEditCredits } = useUserHandlers(
+    setEditingUsuario,
+    modalState.setShowPlanModal,
+    modalState.setShowCreditsModal,
+    modalState.setShowEditModal,
+    modalState.setShowDeleteModal,
+    modalState.setSelectedPlan,
+    modalState.setCreditsAmount,
+    modalState.setEditFormData
+  );
+
+  const {
+    createClosePlanModal,
+    createCloseCreditsModal,
+    createCloseEditModal,
+    createCloseDeleteModal,
+  } = useUsersPageHandlers(modalState, setEditingUsuario);
+
+  const handleConfirmDeleteWrapper = useCallback((): Promise<boolean> => {
+    return handleConfirmDelete();
+  }, [handleConfirmDelete]);
+
+  return {
+    modalState,
+    editingUsuario,
+    saving,
+    toggleActivo,
+    handleEdit,
+    handleDelete,
+    handleEditPlan,
+    handleEditCredits,
+    createClosePlanModal,
+    createCloseCreditsModal,
+    createCloseEditModal,
+    createCloseDeleteModal,
+    handleSavePlan,
+    handleSaveCredits,
+    handleSaveEdit,
+    handleConfirmDelete: handleConfirmDeleteWrapper,
+  };
+};
+
+const UsersPage: React.FC = () => {
+  const {
+    isSuperAdmin,
+    usuarios,
+    loading,
+    error,
+    refetch,
+    planes,
+    query,
+    setQuery,
+    page,
+    setPage,
+    PAGE_SIZE,
+  } = useUsersPageData();
+
+  const {
+    modalState,
+    editingUsuario,
+    saving,
+    toggleActivo,
+    handleEdit,
+    handleDelete,
+    handleEditPlan,
+    handleEditCredits,
+    createClosePlanModal,
+    createCloseCreditsModal,
+    createCloseEditModal,
+    createCloseDeleteModal,
+    handleSavePlan,
+    handleSaveCredits,
+    handleSaveEdit,
+    handleConfirmDelete,
+  } = useUsersPageHandlersAndState(refetch);
+
+  if (loading) {
+    return <UsersPageLoadingState />;
+  }
+
+  if (error) {
+    return <UsersPageErrorState error={error} />;
+  }
+
+  return (
+    <UsersPageContent
+      usuarios={usuarios}
+      planes={planes}
+      isSuperAdmin={isSuperAdmin}
+      query={query}
+      page={page}
+      PAGE_SIZE={PAGE_SIZE}
+      editingUsuario={editingUsuario}
+      saving={saving}
+      selectedPlan={modalState.selectedPlan}
+      creditsAmount={modalState.creditsAmount}
+      editFormData={modalState.editFormData}
+      showPlanModal={modalState.showPlanModal}
+      showCreditsModal={modalState.showCreditsModal}
+      showEditModal={modalState.showEditModal}
+      showDeleteModal={modalState.showDeleteModal}
+      onQueryChange={setQuery}
+      onPageChange={setPage}
+      onEdit={handleEdit}
+      onDelete={handleDelete}
+      onEditPlan={handleEditPlan}
+      onEditCredits={handleEditCredits}
+      onToggleActivo={(id, isActive) => {
+        void toggleActivo(id, isActive);
+      }}
+      onClosePlanModal={createClosePlanModal}
+      onCloseCreditsModal={createCloseCreditsModal}
+      onCloseEditModal={createCloseEditModal}
+      onCloseDeleteModal={createCloseDeleteModal}
+      onPlanChange={modalState.setSelectedPlan}
+      onCreditsChange={modalState.setCreditsAmount}
+      onFormDataChange={modalState.setEditFormData}
+      onSavePlan={() => handleSavePlan(modalState.selectedPlan, planes)}
+      onSaveCredits={() => handleSaveCredits(modalState.creditsAmount)}
+      onSaveEdit={() => handleSaveEdit(modalState.editFormData)}
+      onConfirmDelete={handleConfirmDelete}
+    />
   );
 };
 

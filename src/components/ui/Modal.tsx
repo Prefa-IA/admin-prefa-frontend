@@ -11,6 +11,26 @@ interface ModalProps {
   closeOnOverlayClick?: boolean;
 }
 
+const SIZE_CLASSES = {
+  sm: 'max-w-md',
+  md: 'max-w-lg',
+  lg: 'max-w-2xl',
+  xl: 'max-w-4xl',
+} as const;
+
+const useBodyScrollLock = (isLocked: boolean) => {
+  useEffect(() => {
+    if (isLocked) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isLocked]);
+};
+
 const Modal: React.FC<ModalProps> = ({
   show,
   title,
@@ -20,26 +40,11 @@ const Modal: React.FC<ModalProps> = ({
   size = 'md',
   closeOnOverlayClick = true,
 }) => {
-  useEffect(() => {
-    if (show) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [show]);
+  useBodyScrollLock(show);
 
   if (!show) return null;
 
-  const sizes = {
-    sm: 'max-w-md',
-    md: 'max-w-lg',
-    lg: 'max-w-2xl',
-    xl: 'max-w-4xl',
-  };
-  const sizeClass = Reflect.get(sizes, size) || sizes.md;
+  const sizeClass = Reflect.get(SIZE_CLASSES, size) || SIZE_CLASSES.md;
 
   const handleOverlayClick = (e: React.MouseEvent<HTMLElement>) => {
     if (closeOnOverlayClick && e.target === e.currentTarget) {

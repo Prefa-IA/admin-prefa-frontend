@@ -12,6 +12,50 @@ interface PaginationProps {
   showPageNumbers?: boolean;
 }
 
+const generateAllPages = (totalPages: number): (number | string)[] =>
+  Array.from({ length: totalPages }, (_, i) => i + 1);
+
+const generateStartPages = (totalPages: number): (number | string)[] => {
+  const pages: (number | string)[] = Array.from({ length: 4 }, (_, i) => i + 1);
+  pages.push('...');
+  pages.push(totalPages);
+  return pages;
+};
+
+const generateEndPages = (totalPages: number): (number | string)[] => {
+  const pages: (number | string)[] = [1, '...'];
+  const endPages = Array.from({ length: 4 }, (_, i) => totalPages - 3 + i);
+  pages.push(...endPages);
+  return pages;
+};
+
+const generateMiddlePages = (current: number, totalPages: number): (number | string)[] => {
+  const pages: (number | string)[] = [1, '...'];
+  const middlePages = Array.from({ length: 3 }, (_, i) => current - 1 + i);
+  pages.push(...middlePages);
+  pages.push('...');
+  pages.push(totalPages);
+  return pages;
+};
+
+const getPageNumbers = (current: number, totalPages: number): (number | string)[] => {
+  const maxVisible = 7;
+
+  if (totalPages <= maxVisible) {
+    return generateAllPages(totalPages);
+  }
+
+  if (current <= 3) {
+    return generateStartPages(totalPages);
+  }
+
+  if (current >= totalPages - 2) {
+    return generateEndPages(totalPages);
+  }
+
+  return generateMiddlePages(current, totalPages);
+};
+
 const Pagination: React.FC<PaginationProps> = ({
   total,
   current,
@@ -24,52 +68,37 @@ const Pagination: React.FC<PaginationProps> = ({
 
   if (totalPages <= 1) return null;
 
-  const generateAllPages = (): (number | string)[] => {
-    const pages: (number | string)[] = [];
-    for (let i = 1; i <= totalPages; i++) {
-      pages.push(i);
-    }
-    return pages;
-  };
-
-  const generateStartPages = (): (number | string)[] => {
-    const pages: (number | string)[] = [];
-    for (let i = 1; i <= 4; i++) pages.push(i);
-    pages.push('...');
-    pages.push(totalPages);
-    return pages;
-  };
-
-  const generateEndPages = (): (number | string)[] => {
-    const pages: (number | string)[] = [1, '...'];
-    for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
-    return pages;
-  };
-
-  const generateMiddlePages = (): (number | string)[] => {
-    const pages: (number | string)[] = [1, '...'];
-    for (let i = current - 1; i <= current + 1; i++) pages.push(i);
-    pages.push('...');
-    pages.push(totalPages);
-    return pages;
-  };
-
-  const getPageNumbers = (): (number | string)[] => {
-    const maxVisible = 7;
-
-    if (totalPages <= maxVisible) {
-      return generateAllPages();
+  const PageNumberButton: React.FC<{ page: number | string; index: number }> = ({
+    page,
+    index,
+  }) => {
+    if (page === '...') {
+      return (
+        <span key={`ellipsis-${index}`} className="px-2 text-gray-500">
+          ...
+        </span>
+      );
     }
 
-    if (current <= 3) {
-      return generateStartPages();
-    }
+    const pageNum = page as number;
+    const isActive = pageNum === current;
 
-    if (current >= totalPages - 2) {
-      return generateEndPages();
-    }
-
-    return generateMiddlePages();
+    return (
+      <button
+        key={pageNum}
+        onClick={() => onPageChange(pageNum)}
+        className={`
+          min-w-[2.5rem] h-9 px-3 rounded-lg text-sm font-medium transition-all
+          ${
+            isActive
+              ? 'bg-primary-600 text-white shadow-sm'
+              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600'
+          }
+        `}
+      >
+        {pageNum}
+      </button>
+    );
   };
 
   return (
@@ -86,35 +115,9 @@ const Pagination: React.FC<PaginationProps> = ({
 
         {showPageNumbers && (
           <div className="flex items-center gap-1">
-            {getPageNumbers().map((page, idx) => {
-              if (page === '...') {
-                return (
-                  <span key={`ellipsis-${idx}`} className="px-2 text-gray-500">
-                    ...
-                  </span>
-                );
-              }
-
-              const pageNum = page as number;
-              const isActive = pageNum === current;
-
-              return (
-                <button
-                  key={pageNum}
-                  onClick={() => onPageChange(pageNum)}
-                  className={`
-                    min-w-[2.5rem] h-9 px-3 rounded-lg text-sm font-medium transition-all
-                    ${
-                      isActive
-                        ? 'bg-primary-600 text-white shadow-sm'
-                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600'
-                    }
-                  `}
-                >
-                  {pageNum}
-                </button>
-              );
-            })}
+            {getPageNumbers(current, totalPages).map((page, idx) => (
+              <PageNumberButton key={idx} page={page} index={idx} />
+            ))}
           </div>
         )}
 

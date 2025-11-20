@@ -16,6 +16,150 @@ import {
 } from '../components/ui';
 import { Codigo, Precio } from '../types/contenido';
 
+const TabButton: React.FC<{
+  id: 'codigos' | 'precios';
+  label: string;
+  isActive: boolean;
+  onClick: () => void;
+}> = ({ id, label, isActive, onClick }) => (
+  <button
+    key={id}
+    className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${
+      isActive
+        ? 'border-primary-600 text-primary-600 dark:text-primary-400'
+        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+    }`}
+    onClick={onClick}
+  >
+    {label}
+  </button>
+);
+
+const CodigosTable: React.FC<{
+  codigos: Codigo[];
+  onNewClick: () => void;
+}> = ({ codigos, onNewClick }) => (
+  <Card
+    title="Códigos Urbanísticos"
+    headerActions={<NewItemButton label="Nuevo código" onClick={onNewClick} />}
+  >
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Código</TableHead>
+          <TableHead>Descripción</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {codigos.length === 0 ? (
+          <TableRow>
+            <TableCell colSpan={2} className="text-center py-8 text-gray-500 dark:text-gray-400">
+              No hay códigos registrados
+            </TableCell>
+          </TableRow>
+        ) : (
+          codigos.map((c) => (
+            <TableRow key={c._id}>
+              <TableCell className="font-medium">{c.codigo}</TableCell>
+              <TableCell>{c.descripcion}</TableCell>
+            </TableRow>
+          ))
+        )}
+      </TableBody>
+    </Table>
+  </Card>
+);
+
+const PreciosTable: React.FC<{
+  precios: Precio[];
+  onNewClick: () => void;
+}> = ({ precios, onNewClick }) => (
+  <Card
+    title="Precios por m²"
+    headerActions={<NewItemButton label="Nuevo precio" onClick={onNewClick} />}
+  >
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Barrio</TableHead>
+          <TableHead>Valor USD</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {precios.length === 0 ? (
+          <TableRow>
+            <TableCell colSpan={2} className="text-center py-8 text-gray-500 dark:text-gray-400">
+              No hay precios registrados
+            </TableCell>
+          </TableRow>
+        ) : (
+          precios.map((p) => (
+            <TableRow key={p._id}>
+              <TableCell className="font-medium">{p.barrio}</TableCell>
+              <TableCell>${p.valor}</TableCell>
+            </TableRow>
+          ))
+        )}
+      </TableBody>
+    </Table>
+  </Card>
+);
+
+const ContenidoModals: React.FC<{
+  showCodigoModal: boolean;
+  showPrecioModal: boolean;
+  onCloseCodigoModal: () => void;
+  onClosePrecioModal: () => void;
+  onSaveCodigo: (payload: Record<string, unknown>) => void;
+  onSavePrecio: (payload: Record<string, unknown>) => void;
+}> = ({
+  showCodigoModal,
+  showPrecioModal,
+  onCloseCodigoModal,
+  onClosePrecioModal,
+  onSaveCodigo,
+  onSavePrecio,
+}) => (
+  <>
+    {showCodigoModal && <NewCodigoModal onClose={onCloseCodigoModal} onSave={onSaveCodigo} />}
+    {showPrecioModal && <NewPrecioModal onClose={onClosePrecioModal} onSave={onSavePrecio} />}
+  </>
+);
+
+const useContenidoHandlers = (
+  reload: () => Promise<void>,
+  setShowCodigoModal: (show: boolean) => void,
+  setShowPrecioModal: (show: boolean) => void
+) => {
+  const handleSaveCodigoWrapper = useCallback(
+    async (payload: Record<string, unknown>): Promise<void> => {
+      try {
+        await axios.post('/api/admin/content/codigos', payload);
+        setShowCodigoModal(false);
+        await reload();
+      } catch (err) {
+        console.error('Error guardando código:', err);
+      }
+    },
+    [reload, setShowCodigoModal]
+  );
+
+  const handleSavePrecioWrapper = useCallback(
+    async (payload: Record<string, unknown>): Promise<void> => {
+      try {
+        await axios.post('/api/admin/content/precios', payload);
+        setShowPrecioModal(false);
+        await reload();
+      } catch (err) {
+        console.error('Error guardando precio:', err);
+      }
+    },
+    [reload, setShowPrecioModal]
+  );
+
+  return { handleSaveCodigoWrapper, handleSavePrecioWrapper };
+};
+
 const ContenidoPage: React.FC = () => {
   const [tab, setTab] = useState<'codigos' | 'precios'>('codigos');
   const [codigos, setCodigos] = useState<Codigo[]>([]);
@@ -37,6 +181,12 @@ const ContenidoPage: React.FC = () => {
     void reload();
   }, [reload]);
 
+  const { handleSaveCodigoWrapper, handleSavePrecioWrapper } = useContenidoHandlers(
+    reload,
+    setShowCodigoModal,
+    setShowPrecioModal
+  );
+
   const tabs = [
     { id: 'codigos' as const, label: 'Códigos Urbanísticos' },
     { id: 'precios' as const, label: 'Precios m²' },
@@ -48,121 +198,36 @@ const ContenidoPage: React.FC = () => {
 
       <div className="mb-6 flex space-x-2 border-b border-gray-200 dark:border-gray-700">
         {tabs.map((t) => (
-          <button
+          <TabButton
             key={t.id}
-            className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${
-              tab === t.id
-                ? 'border-primary-600 text-primary-600 dark:text-primary-400'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
-            }`}
+            id={t.id}
+            label={t.label}
+            isActive={tab === t.id}
             onClick={() => setTab(t.id)}
-          >
-            {t.label}
-          </button>
+          />
         ))}
       </div>
 
       {tab === 'codigos' && (
-        <Card
-          title="Códigos Urbanísticos"
-          headerActions={
-            <NewItemButton label="Nuevo código" onClick={() => setShowCodigoModal(true)} />
-          }
-        >
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Código</TableHead>
-                <TableHead>Descripción</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {codigos.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={2}
-                    className="text-center py-8 text-gray-500 dark:text-gray-400"
-                  >
-                    No hay códigos registrados
-                  </TableCell>
-                </TableRow>
-              ) : (
-                codigos.map((c) => (
-                  <TableRow key={c._id}>
-                    <TableCell className="font-medium">{c.codigo}</TableCell>
-                    <TableCell>{c.descripcion}</TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </Card>
+        <CodigosTable codigos={codigos} onNewClick={() => setShowCodigoModal(true)} />
       )}
 
       {tab === 'precios' && (
-        <Card
-          title="Precios por m²"
-          headerActions={
-            <NewItemButton label="Nuevo precio" onClick={() => setShowPrecioModal(true)} />
-          }
-        >
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Barrio</TableHead>
-                <TableHead>Valor USD</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {precios.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={2}
-                    className="text-center py-8 text-gray-500 dark:text-gray-400"
-                  >
-                    No hay precios registrados
-                  </TableCell>
-                </TableRow>
-              ) : (
-                precios.map((p) => (
-                  <TableRow key={p._id}>
-                    <TableCell className="font-medium">{p.barrio}</TableCell>
-                    <TableCell>${p.valor}</TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </Card>
+        <PreciosTable precios={precios} onNewClick={() => setShowPrecioModal(true)} />
       )}
 
-      {showCodigoModal && (
-        <NewCodigoModal
-          onClose={() => setShowCodigoModal(false)}
-          onSave={(payload: Record<string, unknown>) => {
-            const handleSave = async () => {
-              await axios.post('/api/admin/content/codigos', payload);
-              setShowCodigoModal(false);
-              void reload();
-            };
-            void handleSave();
-          }}
-        />
-      )}
-
-      {showPrecioModal && (
-        <NewPrecioModal
-          onClose={() => setShowPrecioModal(false)}
-          onSave={(payload: Record<string, unknown>) => {
-            const handleSave = async () => {
-              await axios.post('/api/admin/content/precios', payload);
-              setShowPrecioModal(false);
-              void reload();
-            };
-            void handleSave();
-          }}
-        />
-      )}
+      <ContenidoModals
+        showCodigoModal={showCodigoModal}
+        showPrecioModal={showPrecioModal}
+        onCloseCodigoModal={() => setShowCodigoModal(false)}
+        onClosePrecioModal={() => setShowPrecioModal(false)}
+        onSaveCodigo={(payload) => {
+          void handleSaveCodigoWrapper(payload);
+        }}
+        onSavePrecio={(payload) => {
+          void handleSavePrecioWrapper(payload);
+        }}
+      />
     </div>
   );
 };

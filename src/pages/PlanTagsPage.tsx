@@ -22,12 +22,48 @@ import { PlanTag } from '../types/planTags';
 
 const emptyTag: PlanTag = { slug: '', name: '', bgClass: '', icon: '' };
 
-const PlanTagsPage: React.FC = () => {
+const LoadingSpinner: React.FC = () => (
+  <div className="flex items-center justify-center min-h-[400px]">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+      <p className="mt-4 text-gray-600 dark:text-gray-400">Cargando etiquetas...</p>
+    </div>
+  </div>
+);
+
+const getErrorMessage = (err: unknown): string => {
+  const error = err as { response?: { data?: { error?: string } }; message?: string };
+  return error.response?.data?.error || error.message || 'Error al cargar etiquetas';
+};
+
+const TagRow: React.FC<{
+  tag: PlanTag;
+  onEdit: (t: PlanTag) => void;
+  onDelete: (t: PlanTag) => void;
+}> = ({ tag, onEdit, onDelete }) => (
+  <TableRow key={tag._id || tag.slug}>
+    <TableCell className="font-mono text-sm">{tag.slug}</TableCell>
+    <TableCell className="font-medium">{tag.name}</TableCell>
+    <TableCell className="text-center">{tag.icon || '—'}</TableCell>
+    <TableCell className="text-xs font-mono">{tag.bgClass}</TableCell>
+    <TableCell align="right">
+      <div className="flex items-center justify-end gap-1">
+        <EditIconButton onClick={() => onEdit(tag)} />
+        <DeleteIconButton onClick={() => onDelete(tag)} />
+      </div>
+    </TableCell>
+  </TableRow>
+);
+
+const savePlanTag = async (tag: PlanTag): Promise<void> => {
+  if (tag._id) await axios.put(`/api/admin/plan-tags/${tag._id}`, tag);
+  else await axios.post('/api/admin/plan-tags', tag);
+};
+
+const usePlanTagsData = () => {
   const [tags, setTags] = useState<PlanTag[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [editing, setEditing] = useState<PlanTag | null>(null);
-  const [confirmDel, setConfirmDel] = useState<PlanTag | null>(null);
 
   const fetchTags = async () => {
     setLoading(true);
@@ -38,10 +74,7 @@ const PlanTagsPage: React.FC = () => {
       setTags(Array.isArray(data) ? data : []);
     } catch (err: unknown) {
       console.error('Error al cargar etiquetas:', err);
-      const error = err as { response?: { data?: { error?: string } }; message?: string };
-      console.error('Response:', error.response?.data);
-      const errorMessage =
-        error.response?.data?.error || error.message || 'Error al cargar etiquetas';
+      const errorMessage = getErrorMessage(err);
       setError(errorMessage);
       setTags([]);
     } finally {
@@ -53,29 +86,64 @@ const PlanTagsPage: React.FC = () => {
     void fetchTags();
   }, []);
 
+  return { tags, loading, error, refetch: fetchTags };
+};
+
+const TagsTable: React.FC<{
+  tags: PlanTag[];
+  error: string | null;
+  loading: boolean;
+  onEdit: (t: PlanTag) => void;
+  onDelete: (t: PlanTag) => void;
+}> = ({ tags, error, loading, onEdit, onDelete }) => (
+  <Card>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Slug</TableHead>
+          <TableHead>Nombre</TableHead>
+          <TableHead>Icono</TableHead>
+          <TableHead>Clases</TableHead>
+          <TableHead align="right">Acciones</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {tags.length === 0 && !loading ? (
+          <TableRow>
+            <TableCell colSpan={5} className="text-center py-8 text-gray-500 dark:text-gray-400">
+              {error ? 'Error al cargar etiquetas' : 'No hay etiquetas registradas'}
+            </TableCell>
+          </TableRow>
+        ) : (
+          tags.map((t) => (
+            <TagRow key={t._id || t.slug} tag={t} onEdit={onEdit} onDelete={onDelete} />
+          ))
+        )}
+      </TableBody>
+    </Table>
+  </Card>
+);
+
+const PlanTagsPage: React.FC = () => {
+  const [editing, setEditing] = useState<PlanTag | null>(null);
+  const [confirmDel, setConfirmDel] = useState<PlanTag | null>(null);
+  const { tags, loading, error, refetch } = usePlanTagsData();
+
   const saveTag = async (tag: PlanTag) => {
-    if (tag._id) await axios.put(`/api/admin/plan-tags/${tag._id}`, tag);
-    else await axios.post('/api/admin/plan-tags', tag);
+    await savePlanTag(tag);
     setEditing(null);
-    void fetchTags();
+    void refetch();
   };
 
   const deleteTag = async () => {
     if (!confirmDel?._id) return;
     await axios.delete(`/api/admin/plan-tags/${confirmDel._id}`);
     setConfirmDel(null);
-    void fetchTags();
+    void refetch();
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Cargando etiquetas...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   return (
@@ -94,46 +162,13 @@ const PlanTagsPage: React.FC = () => {
         </div>
       )}
 
-      <Card>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Slug</TableHead>
-              <TableHead>Nombre</TableHead>
-              <TableHead>Icono</TableHead>
-              <TableHead>Clases</TableHead>
-              <TableHead align="right">Acciones</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {tags.length === 0 && !loading ? (
-              <TableRow>
-                <TableCell
-                  colSpan={5}
-                  className="text-center py-8 text-gray-500 dark:text-gray-400"
-                >
-                  {error ? 'Error al cargar etiquetas' : 'No hay etiquetas registradas'}
-                </TableCell>
-              </TableRow>
-            ) : (
-              tags.map((t) => (
-                <TableRow key={t._id || t.slug}>
-                  <TableCell className="font-mono text-sm">{t.slug}</TableCell>
-                  <TableCell className="font-medium">{t.name}</TableCell>
-                  <TableCell className="text-center">{t.icon || '—'}</TableCell>
-                  <TableCell className="text-xs font-mono">{t.bgClass}</TableCell>
-                  <TableCell align="right">
-                    <div className="flex items-center justify-end gap-1">
-                      <EditIconButton onClick={() => setEditing(t)} />
-                      <DeleteIconButton onClick={() => setConfirmDel(t)} />
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </Card>
+      <TagsTable
+        tags={tags}
+        error={error}
+        loading={loading}
+        onEdit={setEditing}
+        onDelete={setConfirmDel}
+      />
 
       {editing && (
         <TagModal

@@ -24,12 +24,13 @@ const SettingModal: React.FC<Props> = ({ initial, category, onClose, onSave }) =
 
   const handleSubmit = () => {
     if (!keyValue.trim()) return;
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(value);
-    } catch {
-      parsed = value;
-    }
+    const parsed: unknown = (() => {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return value;
+      }
+    })();
     onSave({
       ...(initial?._id ? { _id: initial._id } : {}),
       key: keyValue.trim(),
