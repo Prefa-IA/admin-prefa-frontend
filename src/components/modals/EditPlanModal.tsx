@@ -344,31 +344,110 @@ const PlanPriorityFields: React.FC<{
   </>
 );
 
+const OverageFields: React.FC<{
+  formState: ReturnType<typeof usePlanFormState>;
+  basePlans?: { id: string; name: string }[];
+  currentParentPlan: string;
+  onParentPlanChange?: (parentPlan: string) => void;
+}> = ({ formState, basePlans, currentParentPlan, onParentPlanChange }) => {
+  if (!formState.isOverage || !basePlans || basePlans.length === 0) {
+    return null;
+  }
+
+  const canChangeParentPlan = !!onParentPlanChange;
+
+  return (
+    <div className="md:col-span-2">
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        Plan base (al que pertenece este overage)
+        <select
+          className="input-field w-full"
+          value={currentParentPlan}
+          onChange={(e) => {
+            if (canChangeParentPlan) {
+              onParentPlanChange(e.target.value);
+            }
+          }}
+          disabled={!canChangeParentPlan}
+        >
+          <option value="">— Seleccionar plan base —</option>
+          {basePlans.map((bp) => (
+            <option key={bp.id} value={bp.id}>
+              {bp.name}
+            </option>
+          ))}
+        </select>
+        {!canChangeParentPlan && (
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            No se puede cambiar el plan base
+          </p>
+        )}
+      </label>
+    </div>
+  );
+};
+
 const PlanFormFields: React.FC<{
   plan: Partial<Plan> & { id?: string };
   formState: ReturnType<typeof usePlanFormState>;
   tags: ReturnType<typeof usePlanTags>;
-}> = ({ plan, formState, tags }) => (
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <PlanBasicFields plan={plan} formState={formState} />
-    <PlanCheckboxes formState={formState} />
-    <PlanDiscountFields formState={formState} />
-    <PlanPriorityFields formState={formState} tags={tags} />
-  </div>
-);
+  basePlans?: { id: string; name: string }[];
+  currentParentPlan?: string;
+  onParentPlanChange?: (parentPlan: string) => void;
+}> = ({ plan, formState, tags, basePlans, currentParentPlan, onParentPlanChange }) => {
+  const isOverage = formState.isOverage;
 
-const EditPlanModal: React.FC<Props> = ({ plan, onClose, onSave }) => {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <PlanBasicFields plan={plan} formState={formState} />
+      {isOverage ? (
+        basePlans && currentParentPlan !== undefined ? (
+          <OverageFields
+            formState={formState}
+            basePlans={basePlans}
+            currentParentPlan={currentParentPlan}
+            {...(onParentPlanChange ? { onParentPlanChange } : {})}
+          />
+        ) : null
+      ) : (
+        <>
+          <PlanCheckboxes formState={formState} />
+          <PlanDiscountFields formState={formState} />
+          <PlanPriorityFields formState={formState} tags={tags} />
+        </>
+      )}
+    </div>
+  );
+};
+
+const EditPlanModal: React.FC<Props> = ({ plan, onClose, onSave, basePlans }) => {
   const [errorMsg, setErrorMsg] = useState<string>('');
+  const [currentParentPlan, setCurrentParentPlan] = useState<string>(plan.parentPlan || '');
   const tags = usePlanTags();
   const formState = usePlanFormState(plan);
   const selectedTag = tags.find((t) => t._id === formState.tagId);
+  const isOverage = plan.isOverage ?? false;
 
   const handleSubmit = () => {
     setErrorMsg('');
-    if (!validatePlanForm(formState.prioridad, formState.freeCredits, selectedTag, setErrorMsg)) {
+    // Solo validar prioridad y créditos si NO es un overage
+    if (
+      !isOverage &&
+      !validatePlanForm(formState.prioridad, formState.freeCredits, selectedTag, setErrorMsg)
+    ) {
       return;
     }
-    const payload = buildPlanPayload(plan, formState);
+    // Validar que los overages tengan un parentPlan
+    if (isOverage && !currentParentPlan) {
+      setErrorMsg('Debes seleccionar un plan base para el overage');
+      return;
+    }
+    // Crear un formState modificado con el parentPlan actual
+    const modifiedFormState = {
+      ...formState,
+      parentPlan: currentParentPlan,
+    };
+    const payload = buildPlanPayload(plan, modifiedFormState);
     onSave(payload as Partial<Plan>);
   };
 
@@ -376,9 +455,21 @@ const EditPlanModal: React.FC<Props> = ({ plan, onClose, onSave }) => {
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl space-y-4 shadow-xl">
         <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-          {plan.id ? 'Editar plan' : 'Nuevo plan'}
+          {plan.id
+            ? isOverage
+              ? 'Editar paquete overage'
+              : 'Editar plan'
+            : isOverage
+              ? 'Nuevo paquete overage'
+              : 'Nuevo plan'}
         </h3>
-        <PlanFormFields plan={plan} formState={formState} tags={tags} />
+        <PlanFormFields
+          plan={{ ...plan, parentPlan: currentParentPlan }}
+          formState={formState}
+          tags={tags}
+          {...(basePlans ? { basePlans } : {})}
+          {...(isOverage ? { currentParentPlan, onParentPlanChange: setCurrentParentPlan } : {})}
+        />
         {errorMsg && <p className="text-red-600 dark:text-red-400 text-sm">{errorMsg}</p>}
         <div className="flex justify-end space-x-3 pt-2">
           <button className="btn-secondary" onClick={onClose}>

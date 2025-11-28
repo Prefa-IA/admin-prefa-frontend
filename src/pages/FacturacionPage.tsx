@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import axios from 'axios';
 import {
   Bar,
@@ -47,6 +49,7 @@ interface RevenueData {
 
 const ERROR_LOADING = 'Error al cargar';
 const PLANES_API_ENDPOINT = '/api/admin/billing/planes';
+const OVERAGES_API_ENDPOINT = '/api/admin/billing/overages';
 
 const useAnalytics = () => {
   const [purchasesByPlan, setPurchasesByPlan] = useState<
@@ -125,24 +128,73 @@ const useAnalytics = () => {
   };
 };
 
+const validateOverageUniqueness = async (
+  parentPlan: string,
+  editingId?: string
+): Promise<boolean> => {
+  try {
+    const existingOveragesRes = await axios.get<Plan[]>(OVERAGES_API_ENDPOINT);
+    const existingOverages: Plan[] = Array.isArray(existingOveragesRes.data)
+      ? existingOveragesRes.data
+      : Object.values(existingOveragesRes.data || {});
+
+    const existingOverage = existingOverages.find(
+      (o: Plan) => o.parentPlan === parentPlan && o.id !== editingId
+    );
+
+    return !existingOverage;
+  } catch {
+    return true;
+  }
+};
+
+const saveOverage = async (editing: Partial<Plan>, updated: Partial<Plan>): Promise<string> => {
+  if (editing.id) {
+    await axios.patch(`${OVERAGES_API_ENDPOINT}/${editing.id}`, updated);
+    return 'Overage actualizado correctamente';
+  }
+  await axios.post(OVERAGES_API_ENDPOINT, updated);
+  return 'Overage creado correctamente';
+};
+
+const savePlan = async (editing: Partial<Plan>, updated: Partial<Plan>): Promise<string> => {
+  if (editing.id) {
+    await axios.patch(`${PLANES_API_ENDPOINT}/${editing.id}`, updated);
+    return 'Plan actualizado correctamente';
+  }
+  await axios.post(PLANES_API_ENDPOINT, updated);
+  return 'Plan creado correctamente';
+};
+
 const handleSavePlan = async (
   editing: Partial<Plan>,
   updated: Partial<Plan>,
   setError: (error: string | null) => void,
   setSuccess: (success: string | null) => void,
-  setEditing: (editing: Partial<Plan> | null) => void
+  setEditing: (editing: Partial<Plan> | null) => void,
+  refreshData: () => void
 ) => {
   try {
-    if (editing.id) {
-      await axios.patch(`${PLANES_API_ENDPOINT}/${editing.id}`, updated);
-      setSuccess('Plan actualizado correctamente');
-    } else {
-      await axios.post(PLANES_API_ENDPOINT, updated);
-      setSuccess('Plan creado correctamente');
+    if (updated.isOverage && updated.parentPlan) {
+      const isValid = await validateOverageUniqueness(updated.parentPlan, editing.id);
+      if (!isValid) {
+        toast.error(
+          'El plan base ya cuenta con un overage. Un plan no puede tener más de un overage.'
+        );
+        setError('El plan base ya cuenta con un overage');
+        setSuccess(null);
+        return;
+      }
     }
+
+    const successMessage = updated.isOverage
+      ? await saveOverage(editing, updated)
+      : await savePlan(editing, updated);
+
+    setSuccess(successMessage);
     setError(null);
     setEditing(null);
-    window.location.reload();
+    refreshData();
   } catch (err: unknown) {
     console.error(err);
     setError('Error guardando el plan');
@@ -152,16 +204,23 @@ const handleSavePlan = async (
 
 const handleDeletePlan = async (
   planId: string,
+  isOverage: boolean,
   setError: (error: string | null) => void,
   setSuccess: (success: string | null) => void,
-  setConfirmDelete: (confirmDelete: { id: string; name: string } | null) => void
+  setConfirmDelete: (confirmDelete: { id: string; name: string } | null) => void,
+  refreshData: () => void
 ) => {
   try {
-    await axios.delete(`${PLANES_API_ENDPOINT}/${planId}`);
+    if (isOverage) {
+      await axios.delete(`${OVERAGES_API_ENDPOINT}/${planId}`);
+      setSuccess('Overage eliminado correctamente');
+    } else {
+      await axios.delete(`${PLANES_API_ENDPOINT}/${planId}`);
+      setSuccess('Plan eliminado correctamente');
+    }
     setConfirmDelete(null);
-    setSuccess('Plan eliminado correctamente');
     setError(null);
-    window.location.reload();
+    refreshData();
   } catch (err: unknown) {
     console.error(err);
     setError('Error eliminando el plan');
@@ -169,15 +228,16 @@ const handleDeletePlan = async (
   }
 };
 
-const useTabData = (
-  tab: 'pagos' | 'planes' | 'overages',
-  parentPlanFilter: string,
-  basePlansLength: number
-) => {
+const useTabData = (tab: 'pagos' | 'planes' | 'overages', basePlansLength: number) => {
   const [pagos, setPagos] = useState<Payment[]>([]);
   const [planes, setPlanes] = useState<Plan[]>([]);
   const [overages, setOverages] = useState<Plan[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  const refreshData = () => {
+    setRefreshTrigger((prev) => prev + 1);
+  };
 
   useEffect(() => {
     const loadPagos = async () => {
@@ -194,7 +254,9 @@ const useTabData = (
         const res = await axios.get<Plan[] | Record<string, Plan>>(PLANES_API_ENDPOINT);
         const data = res.data;
         const arr = Array.isArray(data) ? data : Object.values(data || {});
-        setPlanes(arr);
+        // Filtrar out overages - solo mostrar planes reales (sin isOverage y sin parentPlan)
+        const planesOnly = arr.filter((p) => !p.isOverage && !p.parentPlan);
+        setPlanes(planesOnly);
         setError(null);
       } catch {
         setError(`${ERROR_LOADING} planes`);
@@ -203,11 +265,9 @@ const useTabData = (
 
     const loadOverages = async () => {
       try {
-        const res = await axios.get<Plan[] | Record<string, Plan>>(
-          `${PLANES_API_ENDPOINT}?isOverage=1`
-        );
+        const res = await axios.get<Plan[]>(OVERAGES_API_ENDPOINT);
         const data = res.data;
-        const arr = Array.isArray(data) ? data : Object.values(data || {});
+        const arr: Plan[] = Array.isArray(data) ? data : Object.values(data || {});
         setOverages(arr);
       } catch {
         setOverages([]);
@@ -224,10 +284,10 @@ const useTabData = (
     };
 
     const loadOveragesFiltered = async () => {
-      const url = `${PLANES_API_ENDPOINT}?isOverage=1${parentPlanFilter ? `&parentPlan=${parentPlanFilter}` : ''}`;
       try {
-        const res = await axios.get<Plan[]>(url);
-        setPlanes(res.data);
+        const res = await axios.get<Plan[]>(OVERAGES_API_ENDPOINT);
+        const arr: Plan[] = Array.isArray(res.data) ? res.data : Object.values(res.data || {});
+        setPlanes(arr);
       } catch {
         setError(`${ERROR_LOADING} overages`);
       }
@@ -244,9 +304,9 @@ const useTabData = (
       }
       void loadOveragesFiltered();
     }
-  }, [tab, parentPlanFilter, basePlansLength]);
+  }, [tab, basePlansLength, refreshTrigger]);
 
-  return { pagos, planes, overages, error, setError };
+  return { pagos, planes, overages, error, setError, refreshData };
 };
 
 const PlanRow: React.FC<{
@@ -383,46 +443,56 @@ const PlanesTab: React.FC<{
 
 const OverageRow: React.FC<{
   plan: Plan;
+  basePlans: Plan[];
   isSuperAdmin: boolean;
   onEdit: () => void;
   onDelete: () => void;
-}> = ({ plan, isSuperAdmin, onEdit, onDelete }) => (
-  <TableRow key={plan.id}>
-    <TableCell className="font-medium">{plan.name}</TableCell>
-    <TableCell>${plan.price?.toLocaleString('es-AR') || '—'}</TableCell>
-    <TableCell>{plan.creditosTotales || '—'}</TableCell>
-    <TableCell align="right">
-      {isSuperAdmin ? (
-        <div className="flex items-center justify-end gap-1">
-          <EditIconButton onClick={onEdit} />
-          <DeleteIconButton onClick={onDelete} />
-        </div>
-      ) : (
-        <span className="text-gray-400 text-sm">Solo super admin</span>
-      )}
-    </TableCell>
-  </TableRow>
-);
+}> = ({ plan, basePlans, isSuperAdmin, onEdit, onDelete }) => {
+  const parentPlanName = plan.parentPlan
+    ? basePlans.find((bp) => bp.id === plan.parentPlan)?.name || plan.parentPlan
+    : '—';
+
+  return (
+    <TableRow key={plan.id}>
+      <TableCell className="font-medium">{plan.name}</TableCell>
+      <TableCell>${plan.price?.toLocaleString('es-AR') || '—'}</TableCell>
+      <TableCell>{plan.creditosTotales || '—'}</TableCell>
+      <TableCell>{parentPlanName}</TableCell>
+      <TableCell align="right">
+        {isSuperAdmin ? (
+          <div className="flex items-center justify-end gap-1">
+            <EditIconButton onClick={onEdit} />
+            <DeleteIconButton onClick={onDelete} />
+          </div>
+        ) : (
+          <span className="text-gray-400 text-sm">Solo super admin</span>
+        )}
+      </TableCell>
+    </TableRow>
+  );
+};
 
 const OveragesTable: React.FC<{
   planes: Plan[];
+  basePlans: Plan[];
   isSuperAdmin: boolean;
   onEditOverage: (p: Plan) => void;
   onDeleteOverage: (p: Plan) => void;
-}> = ({ planes, isSuperAdmin, onEditOverage, onDeleteOverage }) => (
+}> = ({ planes, basePlans, isSuperAdmin, onEditOverage, onDeleteOverage }) => (
   <Table>
     <TableHeader>
       <TableRow>
         <TableHead>Paquete</TableHead>
         <TableHead>Precio</TableHead>
         <TableHead>Créditos</TableHead>
+        <TableHead>Plan base</TableHead>
         <TableHead align="right">Acciones</TableHead>
       </TableRow>
     </TableHeader>
     <TableBody>
       {planes.length === 0 ? (
         <TableRow>
-          <TableCell colSpan={4} className="text-center py-8 text-gray-500 dark:text-gray-400">
+          <TableCell colSpan={5} className="text-center py-8 text-gray-500 dark:text-gray-400">
             No hay paquetes overages registrados
           </TableCell>
         </TableRow>
@@ -431,6 +501,7 @@ const OveragesTable: React.FC<{
           <OverageRow
             key={p.id}
             plan={p}
+            basePlans={basePlans}
             isSuperAdmin={isSuperAdmin}
             onEdit={() => onEditOverage(p)}
             onDelete={() => onDeleteOverage(p)}
@@ -442,35 +513,10 @@ const OveragesTable: React.FC<{
 );
 
 const OveragesHeader: React.FC<{
-  basePlans: Plan[];
-  parentPlanFilter: string;
   isSuperAdmin: boolean;
-  onParentPlanChange: (value: string) => void;
   onNewOverage: () => void;
-}> = ({ basePlans, parentPlanFilter, isSuperAdmin, onParentPlanChange, onNewOverage }) => (
+}> = ({ isSuperAdmin, onNewOverage }) => (
   <div className="flex items-center gap-4">
-    {basePlans.length > 0 && (
-      <div className="min-w-[200px]">
-        <label
-          htmlFor="parent-plan-select"
-          className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
-        >
-          Plan base
-        </label>
-        <select
-          id="parent-plan-select"
-          className="w-full px-4 py-2.5 rounded-lg border transition-all duration-200 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-          value={parentPlanFilter}
-          onChange={(e) => onParentPlanChange(e.target.value)}
-        >
-          {basePlans.map((bp) => (
-            <option key={bp.id} value={bp.id}>
-              {bp.name}
-            </option>
-          ))}
-        </select>
-      </div>
-    )}
     {isSuperAdmin && <NewItemButton label="Nuevo paquete" onClick={onNewOverage} />}
   </div>
 );
@@ -478,37 +524,25 @@ const OveragesHeader: React.FC<{
 const OveragesTab: React.FC<{
   planes: Plan[];
   basePlans: Plan[];
-  parentPlanFilter: string;
   isSuperAdmin: boolean;
   error: string | null;
   success: string | null;
-  onParentPlanChange: (value: string) => void;
   onNewOverage: () => void;
   onEditOverage: (p: Plan) => void;
   onDeleteOverage: (p: Plan) => void;
 }> = ({
   planes,
   basePlans,
-  parentPlanFilter,
   isSuperAdmin,
   error,
   success,
-  onParentPlanChange,
   onNewOverage,
   onEditOverage,
   onDeleteOverage,
 }) => (
   <Card
     title="Paquetes Overages"
-    headerActions={
-      <OveragesHeader
-        basePlans={basePlans}
-        parentPlanFilter={parentPlanFilter}
-        isSuperAdmin={isSuperAdmin}
-        onParentPlanChange={onParentPlanChange}
-        onNewOverage={onNewOverage}
-      />
-    }
+    headerActions={<OveragesHeader isSuperAdmin={isSuperAdmin} onNewOverage={onNewOverage} />}
   >
     {error && (
       <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
@@ -522,6 +556,7 @@ const OveragesTab: React.FC<{
     )}
     <OveragesTable
       planes={planes}
+      basePlans={basePlans}
       isSuperAdmin={isSuperAdmin}
       onEditOverage={onEditOverage}
       onDeleteOverage={onDeleteOverage}
@@ -707,14 +742,14 @@ const FacturacionTabs: React.FC<{
 
 const useBasePlans = (tab: 'pagos' | 'planes' | 'overages') => {
   const [basePlans, setBasePlans] = useState<Plan[]>([]);
-  const [parentPlanFilter, setParentPlanFilter] = useState<string>('');
 
   useEffect(() => {
     const loadBasePlans = async () => {
       try {
         const res = await axios.get<Plan[]>(PLANES_API_ENDPOINT);
-        setBasePlans(res.data);
-        if (!parentPlanFilter && res.data.length) setParentPlanFilter(res.data[0]?.id ?? '');
+        // Filtrar out overages - solo mostrar planes reales (sin isOverage y sin parentPlan)
+        const planesOnly = res.data.filter((p) => !p.isOverage && !p.parentPlan);
+        setBasePlans(planesOnly);
       } catch {
         // Silently handle error
       }
@@ -722,76 +757,156 @@ const useBasePlans = (tab: 'pagos' | 'planes' | 'overages') => {
     if (tab === 'overages' && basePlans.length === 0) {
       void loadBasePlans();
     }
-  }, [tab, basePlans.length, parentPlanFilter]);
+  }, [tab, basePlans.length]);
 
-  return { basePlans, parentPlanFilter, setParentPlanFilter };
+  return { basePlans };
 };
 
-const FacturacionPage: React.FC = () => {
-  const { user } = useAuth();
-  const isSuperAdmin = user?.isSuperAdmin === true;
-  const [tab, setTab] = useState<'pagos' | 'planes' | 'overages'>('pagos');
-  const [success, setSuccess] = useState<string | null>(null);
-  const [editing, setEditing] = useState<Partial<Plan> | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
+const useTabSync = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabFromUrl = (searchParams.get('tab') as 'pagos' | 'planes' | 'overages') || 'pagos';
+  const [tab, setTab] = useState<'pagos' | 'planes' | 'overages'>(tabFromUrl);
 
-  const analytics = useAnalytics();
-  const { basePlans, parentPlanFilter, setParentPlanFilter } = useBasePlans(tab);
-  const { planes, overages, error, setError } = useTabData(tab, parentPlanFilter, basePlans.length);
+  useEffect(() => {
+    const urlTab = (searchParams.get('tab') as 'pagos' | 'planes' | 'overages') || 'pagos';
+    if (urlTab !== tab) {
+      setTab(urlTab);
+    }
+  }, [searchParams, tab]);
+
+  const handleTabChange = (newTab: 'pagos' | 'planes' | 'overages') => {
+    setTab(newTab);
+    setSearchParams({ tab: newTab });
+  };
+
+  return { tab, handleTabChange };
+};
+
+interface TabContentProps {
+  tab: 'pagos' | 'planes' | 'overages';
+  analytics: ReturnType<typeof useAnalytics>;
+  planes: Plan[];
+  overages: Plan[];
+  basePlans: Plan[];
+  isSuperAdmin: boolean;
+  error: string | null;
+  success: string | null;
+  onNewPlan: () => void;
+  onEditPlan: (p: Plan) => void;
+  onDeletePlan: (p: Plan) => void;
+  onNewOverage: () => void;
+  onEditOverage: (p: Plan) => void;
+  onDeleteOverage: (p: Plan) => void;
+}
+
+const TabContent: React.FC<TabContentProps> = ({
+  tab,
+  analytics,
+  planes,
+  overages,
+  basePlans,
+  isSuperAdmin,
+  error,
+  success,
+  onNewPlan,
+  onEditPlan,
+  onDeletePlan,
+  onNewOverage,
+  onEditOverage,
+  onDeleteOverage,
+}) => {
+  if (tab === 'pagos') {
+    return (
+      <PagosTab
+        monthlyRevenue={analytics.monthlyRevenue}
+        revenueHistory={analytics.revenueHistory}
+        revenuePlan={analytics.revenuePlan}
+        purchasesByPlan={analytics.purchasesByPlan}
+        purchasesByOverage={analytics.purchasesByOverage}
+      />
+    );
+  }
+
+  if (tab === 'planes') {
+    return (
+      <PlanesTab
+        planes={planes}
+        overages={overages}
+        isSuperAdmin={isSuperAdmin}
+        error={error}
+        success={success}
+        onNewPlan={onNewPlan}
+        onEditPlan={onEditPlan}
+        onDeletePlan={onDeletePlan}
+      />
+    );
+  }
 
   return (
-    <div>
-      <PageHeader title="Facturación" description="Gestiona planes, pagos y overages" />
-      <FacturacionTabs tab={tab} onTabChange={setTab} />
+    <OveragesTab
+      planes={planes}
+      basePlans={basePlans}
+      isSuperAdmin={isSuperAdmin}
+      error={error}
+      success={success}
+      onNewOverage={onNewOverage}
+      onEditOverage={onEditOverage}
+      onDeleteOverage={onDeleteOverage}
+    />
+  );
+};
 
-      {tab === 'pagos' && (
-        <PagosTab
-          monthlyRevenue={analytics.monthlyRevenue}
-          revenueHistory={analytics.revenueHistory}
-          revenuePlan={analytics.revenuePlan}
-          purchasesByPlan={analytics.purchasesByPlan}
-          purchasesByOverage={analytics.purchasesByOverage}
-        />
-      )}
+interface ModalsProps {
+  editing: Partial<Plan> | null;
+  confirmDelete: { id: string; name: string } | null;
+  tab: 'pagos' | 'planes' | 'overages';
+  basePlans: Plan[];
+  setEditing: (plan: Partial<Plan> | null) => void;
+  setConfirmDelete: (deleteInfo: { id: string; name: string } | null) => void;
+  setError: (error: string | null) => void;
+  setSuccess: (success: string | null) => void;
+  refreshData: () => void;
+}
 
-      {tab === 'planes' && (
-        <PlanesTab
-          planes={planes}
-          overages={overages}
-          isSuperAdmin={isSuperAdmin}
-          error={error}
-          success={success}
-          onNewPlan={() => setEditing({} as Partial<Plan>)}
-          onEditPlan={(p) => setEditing(p)}
-          onDeletePlan={(p) => setConfirmDelete({ id: p.id, name: p.name })}
-        />
-      )}
+const Modals: React.FC<ModalsProps> = ({
+  editing,
+  confirmDelete,
+  tab,
+  basePlans,
+  setEditing,
+  setConfirmDelete,
+  setError,
+  setSuccess,
+  refreshData,
+}) => {
+  const handleSave = (updated: Partial<Plan>) => {
+    if (editing) {
+      void handleSavePlan(editing, updated, setError, setSuccess, setEditing, refreshData);
+    }
+  };
 
-      {tab === 'overages' && (
-        <OveragesTab
-          planes={planes}
-          basePlans={basePlans}
-          parentPlanFilter={parentPlanFilter}
-          isSuperAdmin={isSuperAdmin}
-          error={error}
-          success={success}
-          onParentPlanChange={setParentPlanFilter}
-          onNewOverage={() =>
-            setEditing({ isOverage: true, parentPlan: parentPlanFilter } as Partial<Plan>)
-          }
-          onEditOverage={(p) => setEditing(p)}
-          onDeleteOverage={(p) => setConfirmDelete({ id: p.id, name: p.name })}
-        />
-      )}
+  const handleDelete = () => {
+    if (confirmDelete) {
+      const isOverage = tab === 'overages';
+      void handleDeletePlan(
+        confirmDelete.id,
+        isOverage,
+        setError,
+        setSuccess,
+        setConfirmDelete,
+        refreshData
+      );
+    }
+  };
 
+  return (
+    <>
       {editing && (
         <EditPlanModal
           plan={editing}
           basePlans={basePlans}
           onClose={() => setEditing(null)}
-          onSave={(updated) => {
-            void handleSavePlan(editing, updated, setError, setSuccess, setEditing);
-          }}
+          onSave={handleSave}
         />
       )}
 
@@ -801,11 +916,58 @@ const FacturacionPage: React.FC = () => {
           title="Eliminar plan"
           message={`¿Seguro que deseas eliminar el plan "${confirmDelete.name}"?`}
           onCancel={() => setConfirmDelete(null)}
-          onConfirm={() => {
-            void handleDeletePlan(confirmDelete.id, setError, setSuccess, setConfirmDelete);
-          }}
+          onConfirm={handleDelete}
         />
       )}
+    </>
+  );
+};
+
+const FacturacionPage: React.FC = () => {
+  const { user } = useAuth();
+  const isSuperAdmin = user?.isSuperAdmin === true;
+  const { tab, handleTabChange } = useTabSync();
+  const [success, setSuccess] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Partial<Plan> | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
+
+  const analytics = useAnalytics();
+  const { basePlans } = useBasePlans(tab);
+  const { planes, overages, error, setError, refreshData } = useTabData(tab, basePlans.length);
+
+  return (
+    <div>
+      <PageHeader title="Facturación" description="Gestiona planes, pagos y overages" />
+      <FacturacionTabs tab={tab} onTabChange={handleTabChange} />
+
+      <TabContent
+        tab={tab}
+        analytics={analytics}
+        planes={planes}
+        overages={overages}
+        basePlans={basePlans}
+        isSuperAdmin={isSuperAdmin}
+        error={error}
+        success={success}
+        onNewPlan={() => setEditing({} as Partial<Plan>)}
+        onEditPlan={(p) => setEditing(p)}
+        onDeletePlan={(p) => setConfirmDelete({ id: p.id, name: p.name })}
+        onNewOverage={() => setEditing({ isOverage: true } as Partial<Plan>)}
+        onEditOverage={(p) => setEditing(p)}
+        onDeleteOverage={(p) => setConfirmDelete({ id: p.id, name: p.name })}
+      />
+
+      <Modals
+        editing={editing}
+        confirmDelete={confirmDelete}
+        tab={tab}
+        basePlans={basePlans}
+        setEditing={setEditing}
+        setConfirmDelete={setConfirmDelete}
+        setError={setError}
+        setSuccess={setSuccess}
+        refreshData={refreshData}
+      />
     </div>
   );
 };

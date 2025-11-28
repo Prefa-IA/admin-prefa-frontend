@@ -32,6 +32,7 @@ interface Group {
 }
 
 const REGLAS_PATH = '/reglas';
+const ROUTE_LEGAL_CONTENT = '/legal-content';
 
 const baseGroups: Group[] = [
   {
@@ -84,6 +85,8 @@ const baseGroups: Group[] = [
       { to: '/newsletter-history', label: 'Historial Newsletters' },
       { to: '/calculo-pasos', label: 'Pasos de Cálculo' },
       { to: '/reglas-logicas', label: 'Reglas Lógicas' },
+      { to: '/chatbot', label: 'Chatbot' },
+      { to: ROUTE_LEGAL_CONTENT, label: 'Contenido Legal' },
     ],
   },
 ];
@@ -115,41 +118,47 @@ const updateGroupsWithCategories = (groups: Group[], categoryLinks: LinkItem[]):
 
 const filterLinksByPermission = (
   links: LinkItem[],
-  canAccessRoute: (route: string) => boolean
+  canAccessRoute: (route: string) => boolean,
+  isSuperAdmin: boolean
 ): LinkItem[] =>
   links
     .map((link) => {
       if (link.children) {
         const filteredChildren = link.children.filter((child) => {
           if (!child.to) return true;
+          if (child.to === ROUTE_LEGAL_CONTENT && !isSuperAdmin) return false;
           return canAccessRoute(child.to);
         });
         if (filteredChildren.length === 0) return null;
         return { ...link, children: filteredChildren };
       }
       if (!link.to) return link;
+      if (link.to === ROUTE_LEGAL_CONTENT && !isSuperAdmin) return null;
       return canAccessRoute(link.to) ? link : null;
     })
     .filter((link): link is LinkItem => link !== null);
 
 const filterGroupsByPermission = (
   groups: Group[],
-  canAccessRoute: (route: string) => boolean
+  canAccessRoute: (route: string) => boolean,
+  isSuperAdmin: boolean
 ): Group[] =>
   groups
     .map((group) => {
-      const filteredLinks = filterLinksByPermission(group.links, canAccessRoute);
+      const filteredLinks = filterLinksByPermission(group.links, canAccessRoute, isSuperAdmin);
       if (filteredLinks.length === 0) return null;
       return { ...group, links: filteredLinks };
     })
     .filter((group): group is Group => group !== null);
 
-const SingleLinkGroup: React.FC<{ group: Group; canAccessRoute: (route: string) => boolean }> = ({
-  group,
-  canAccessRoute,
-}) => {
+const SingleLinkGroup: React.FC<{
+  group: Group;
+  canAccessRoute: (route: string) => boolean;
+  isSuperAdmin: boolean;
+}> = ({ group, canAccessRoute, isSuperAdmin }) => {
   const link = group.links[0];
   if (!link) return null;
+  if (link.to === '/legal-content' && !isSuperAdmin) return null;
   if (link.to && !canAccessRoute(link.to)) return null;
   const Icon = group.icon;
   return (
@@ -197,7 +206,7 @@ const Sidebar: React.FC = () => {
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [dynGroups, setDynGroups] = useState<Group[]>(baseGroups);
   const { logout } = useAuth();
-  const { canAccessRoute } = usePermissions();
+  const { canAccessRoute, isSuperAdmin } = usePermissions();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -222,8 +231,8 @@ const Sidebar: React.FC = () => {
   }, []);
 
   const groups = React.useMemo(
-    () => filterGroupsByPermission(dynGroups, canAccessRoute),
-    [dynGroups, canAccessRoute]
+    () => filterGroupsByPermission(dynGroups, canAccessRoute, isSuperAdmin),
+    [dynGroups, canAccessRoute, isSuperAdmin]
   );
 
   const toggle = (label: string) =>
@@ -247,7 +256,12 @@ const Sidebar: React.FC = () => {
           const singleLink = group.links.length === 1 && !group.links[0]?.children;
           if (singleLink) {
             return (
-              <SingleLinkGroup key={group.label} group={group} canAccessRoute={canAccessRoute} />
+              <SingleLinkGroup
+                key={group.label}
+                group={group}
+                canAccessRoute={canAccessRoute}
+                isSuperAdmin={isSuperAdmin}
+              />
             );
           }
           return (

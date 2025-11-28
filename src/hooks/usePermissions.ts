@@ -41,6 +41,8 @@ export const ROUTE_PERMISSIONS: Record<string, string[]> = {
   '/newsletter-history': [PERMISSIONS.CONFIG_VIEW],
   '/calculo-pasos': [PERMISSIONS.CONFIG_VIEW],
   '/reglas-logicas': [PERMISSIONS.CONFIG_VIEW],
+  '/legal-content': [PERMISSIONS.CONFIG_EDIT],
+  '/chatbot': [PERMISSIONS.CONFIG_EDIT],
 };
 
 export function usePermissions() {

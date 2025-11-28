@@ -8,12 +8,14 @@ import AdminUsersPage from './pages/AdminUsersPage';
 import AfectacionesPage from './pages/AfectacionesPage';
 import CalculoPasosPage from './pages/CalculoPasosPage';
 import CapasPage from './pages/CapasPage';
+import ChatbotPage from './pages/ChatbotPage';
 import CodigoUrbanisticoPage from './pages/CodigoUrbanisticoPage';
 import ConstantesTronerasPage from './pages/ConstantesTronerasPage';
 import CreditsConfigPage from './pages/CreditsConfigPage';
 import Dashboard from './pages/Dashboard';
 import EmailTemplatesPage from './pages/EmailTemplatesPage';
 import FacturacionPage from './pages/FacturacionPage';
+import LegalContentPage from './pages/LegalContentPage';
 import LoginPage from './pages/LoginPage';
 import NewsletterHistoryPage from './pages/NewsletterHistoryPage';
 import NormativaPage from './pages/NormativaPage';
@@ -249,6 +251,24 @@ const createAdminRoutesPart2 = (): React.ReactElement[] => [
     element={
       <RouteWrapper>
         <AdminUsersPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="legal-content"
+    path="/legal-content"
+    element={
+      <RouteWrapper>
+        <LegalContentPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="chatbot"
+    path="/chatbot"
+    element={
+      <RouteWrapper>
+        <ChatbotPage />
       </RouteWrapper>
     }
   />,
