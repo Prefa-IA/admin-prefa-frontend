@@ -310,12 +310,7 @@ const LogsTable: React.FC<LogsTableProps> = ({
       </div>
       {totalPages > 1 && (
         <div className="mt-4 px-4 pb-4">
-          <Pagination
-            total={total}
-            current={page}
-            pageSize={50}
-            onPageChange={onPageChange}
-          />
+          <Pagination total={total} current={page} pageSize={50} onPageChange={onPageChange} />
         </div>
       )}
     </Card>
