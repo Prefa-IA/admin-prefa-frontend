@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
 import axios from 'axios';
 
 import ConfirmModal from '../components/ConfirmModal';
@@ -9,6 +10,7 @@ import NewItemButton from '../components/NewItemButton';
 import {
   Card,
   PageHeader,
+  Select,
   Table,
   TableBody,
   TableCell,
@@ -139,21 +141,46 @@ const ReglasTable: React.FC<{
   </Card>
 );
 
-const ReglasLogicasPage: React.FC = () => {
-  const [showModal, setShowModal] = useState(false);
-  const [editing, setEditing] = useState<ReglaLogica | null>(null);
-  const [toDelete, setToDelete] = useState<ReglaLogica | null>(null);
-  const { reglas, pasos, loading, refetch } = useReglasLogicasData();
+const getOpcionesPasos = (
+  pasos: (Paso & { _id: string })[]
+): Array<{ value: string; label: string }> => [
+  { value: '', label: 'Todos los pasos' },
+  ...pasos.map((p) => ({
+    value: p._id,
+    label: p.nombre_paso || 'Sin nombre',
+  })),
+];
 
+const filtrarReglasPorPaso = (reglas: ReglaLogica[], filtroPaso: string): ReglaLogica[] =>
+  filtroPaso ? reglas.filter((r) => r.id_paso === filtroPaso) : reglas;
+
+const useReglasLogicasHandlers = (
+  editing: ReglaLogica | null,
+  setShowModal: (show: boolean) => void,
+  setEditing: (r: ReglaLogica | null) => void,
+  toDelete: ReglaLogica | null,
+  setToDelete: (r: ReglaLogica | null) => void,
+  refetch: () => Promise<void>
+) => {
   const handleSave = async (r: ReglaLogica) => {
+    if (!r.distrito_cpu || r.distrito_cpu.trim() === '') {
+      toast.error('El distrito CPU es requerido');
+      return;
+    }
     try {
       await saveReglaLogica(r, editing);
+      toast.success(editing ? 'Regla actualizada correctamente' : 'Regla creada correctamente');
       setShowModal(false);
       setEditing(null);
       void refetch();
     } catch (e) {
       console.error(e);
-      alert('Error guardando regla');
+      const errorMessage =
+        (e as { response?: { data?: { error?: string; message?: string } } })?.response?.data
+          ?.error ||
+        (e as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        'Error guardando regla';
+      toast.error(errorMessage);
     }
   };
 
@@ -161,10 +188,17 @@ const ReglasLogicasPage: React.FC = () => {
     if (!toDelete?._id) return;
     try {
       await axios.delete(`/admin/reglas-logicas/${toDelete._id}`);
+      toast.success('Regla eliminada correctamente');
       setToDelete(null);
       void refetch();
     } catch (e) {
       console.error(e);
+      const errorMessage =
+        (e as { response?: { data?: { error?: string; message?: string } } })?.response?.data
+          ?.error ||
+        (e as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        'Error eliminando regla';
+      toast.error(errorMessage);
     }
   };
 
@@ -173,8 +207,36 @@ const ReglasLogicasPage: React.FC = () => {
     setShowModal(true);
   };
 
+  return { handleSave, handleDelete, handleEdit };
+};
+
+const useReglasLogicasComputed = (pasos: Paso[], reglas: ReglaLogica[], filtroPaso: string) => {
   const pasoNombre = (id?: string) => pasos.find((p) => p._id === id)?.nombre_paso || '';
   const pasosSafe = pasos.filter((p): p is Paso & { _id: string } => !!p._id);
+  const reglasFiltradas = filtrarReglasPorPaso(reglas, filtroPaso);
+  const opcionesPasos = getOpcionesPasos(pasosSafe);
+  return { pasoNombre, pasosSafe, reglasFiltradas, opcionesPasos };
+};
+
+const ReglasLogicasPage: React.FC = () => {
+  const [showModal, setShowModal] = useState(false);
+  const [editing, setEditing] = useState<ReglaLogica | null>(null);
+  const [toDelete, setToDelete] = useState<ReglaLogica | null>(null);
+  const [filtroPaso, setFiltroPaso] = useState<string>('');
+  const { reglas, pasos, loading, refetch } = useReglasLogicasData();
+  const { handleSave, handleDelete, handleEdit } = useReglasLogicasHandlers(
+    editing,
+    setShowModal,
+    setEditing,
+    toDelete,
+    setToDelete,
+    refetch
+  );
+  const { pasoNombre, pasosSafe, reglasFiltradas, opcionesPasos } = useReglasLogicasComputed(
+    pasos,
+    reglas,
+    filtroPaso
+  );
 
   if (loading) {
     return <LoadingSpinner />;
@@ -188,8 +250,18 @@ const ReglasLogicasPage: React.FC = () => {
         actions={<NewItemButton label="Nueva regla" onClick={() => setShowModal(true)} />}
       />
 
+      <div className="mb-6">
+        <Select
+          label="Filtrar por paso"
+          value={filtroPaso}
+          onChange={(e) => setFiltroPaso(e.target.value)}
+          options={opcionesPasos}
+          className="max-w-xs"
+        />
+      </div>
+
       <ReglasTable
-        reglas={reglas}
+        reglas={reglasFiltradas}
         pasoNombre={pasoNombre}
         onEdit={handleEdit}
         onDelete={setToDelete}

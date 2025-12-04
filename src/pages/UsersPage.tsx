@@ -624,6 +624,9 @@ const useUserHandlers = (
 
 const useUserActions = (refetch: () => Promise<void>) => {
   const { editingUsuario, setEditingUsuario, saving, setSaving } = useUserState();
+  const [toToggleActivo, setToToggleActivo] = useState<{ id: string; isActive: boolean } | null>(
+    null
+  );
   const { handleSaveEdit, handleConfirmDelete } = useUserSaveHandlers(
     editingUsuario,
     refetch,
@@ -637,25 +640,33 @@ const useUserActions = (refetch: () => Promise<void>) => {
     setSaving
   );
 
-  const toggleActivo = useCallback(
-    async (id: string, isActive: boolean) => {
-      try {
-        await axios.patch(`/api/admin/usuarios/${id}/estado`, { isActive: !isActive });
-        void refetch();
-        toast.success('Estado del usuario actualizado');
-      } catch (err: unknown) {
-        const error = err as { response?: { data?: { error?: string } } };
-        toast.error(error.response?.data?.error || 'Error al actualizar usuario');
-      }
-    },
-    [refetch]
-  );
+  const toggleActivo = useCallback((id: string, isActive: boolean) => {
+    setToToggleActivo({ id, isActive });
+  }, []);
+
+  const handleConfirmToggleActivo = useCallback(async () => {
+    if (!toToggleActivo) return;
+    const { id, isActive } = toToggleActivo;
+    const nuevoEstado = !isActive;
+    try {
+      await axios.patch(`/api/admin/usuarios/${id}/estado`, { isActive: nuevoEstado });
+      setToToggleActivo(null);
+      void refetch();
+      toast.success(`Usuario ${nuevoEstado ? 'activado' : 'suspendido'} correctamente`);
+    } catch (err: unknown) {
+      const error = err as { response?: { data?: { error?: string } } };
+      toast.error(error.response?.data?.error || 'Error al actualizar usuario');
+    }
+  }, [toToggleActivo, refetch]);
 
   return {
     editingUsuario,
     setEditingUsuario,
     saving,
     toggleActivo,
+    toToggleActivo,
+    setToToggleActivo,
+    handleConfirmToggleActivo,
     handleSaveEdit,
     handleConfirmDelete,
     handleSavePlan,
@@ -867,6 +878,9 @@ const UsersPageContent: React.FC<{
   onSaveCredits: () => Promise<boolean>;
   onSaveEdit: () => Promise<boolean>;
   onConfirmDelete: () => Promise<boolean>;
+  toToggleActivo: { id: string; isActive: boolean } | null;
+  onCancelToggleActivo: () => void;
+  onConfirmToggleActivo: () => void;
 }> = (props) => {
   const { filtered, paginated } = filterAndPaginateUsers(
     props.usuarios,
@@ -925,6 +939,17 @@ const UsersPageContent: React.FC<{
         onSaveEdit={props.onSaveEdit}
         onConfirmDelete={props.onConfirmDelete}
       />
+      {props.toToggleActivo && (
+        <ConfirmModal
+          open={true}
+          title={props.toToggleActivo.isActive ? 'Suspender Usuario' : 'Activar Usuario'}
+          message={`¿Estás seguro de que deseas ${props.toToggleActivo.isActive ? 'suspender' : 'activar'} este usuario?`}
+          confirmText={props.toToggleActivo.isActive ? 'Suspender' : 'Activar'}
+          cancelText="Cancelar"
+          onConfirm={props.onConfirmToggleActivo}
+          onCancel={props.onCancelToggleActivo}
+        />
+      )}
     </div>
   );
 };
@@ -1005,6 +1030,24 @@ const UsersPageErrorState: React.FC<{ error: string }> = ({ error }) => (
   </Card>
 );
 
+const useUsersPageModalHandlers = (
+  modalState: ReturnType<typeof useUserModalState>,
+  setEditingUsuario: (usuario: Usuario | null) => void
+) => {
+  const {
+    createClosePlanModal,
+    createCloseCreditsModal,
+    createCloseEditModal,
+    createCloseDeleteModal,
+  } = useUsersPageHandlers(modalState, setEditingUsuario);
+  return {
+    createClosePlanModal,
+    createCloseCreditsModal,
+    createCloseEditModal,
+    createCloseDeleteModal,
+  };
+};
+
 const useUsersPageHandlersAndState = (refetch: () => Promise<void>) => {
   const modalState = useUserModalState();
   const {
@@ -1012,6 +1055,9 @@ const useUsersPageHandlersAndState = (refetch: () => Promise<void>) => {
     setEditingUsuario,
     saving,
     toggleActivo,
+    toToggleActivo,
+    setToToggleActivo,
+    handleConfirmToggleActivo,
     handleSaveEdit,
     handleConfirmDelete,
     handleSavePlan,
@@ -1029,13 +1075,7 @@ const useUsersPageHandlersAndState = (refetch: () => Promise<void>) => {
     modalState.setEditFormData
   );
 
-  const {
-    createClosePlanModal,
-    createCloseCreditsModal,
-    createCloseEditModal,
-    createCloseDeleteModal,
-  } = useUsersPageHandlers(modalState, setEditingUsuario);
-
+  const modalHandlers = useUsersPageModalHandlers(modalState, setEditingUsuario);
   const handleConfirmDeleteWrapper = useCallback((): Promise<boolean> => {
     return handleConfirmDelete();
   }, [handleConfirmDelete]);
@@ -1045,14 +1085,14 @@ const useUsersPageHandlersAndState = (refetch: () => Promise<void>) => {
     editingUsuario,
     saving,
     toggleActivo,
+    toToggleActivo,
+    setToToggleActivo,
+    handleConfirmToggleActivo,
     handleEdit,
     handleDelete,
     handleEditPlan,
     handleEditCredits,
-    createClosePlanModal,
-    createCloseCreditsModal,
-    createCloseEditModal,
-    createCloseDeleteModal,
+    ...modalHandlers,
     handleSavePlan,
     handleSaveCredits,
     handleSaveEdit,
@@ -1060,87 +1100,70 @@ const useUsersPageHandlersAndState = (refetch: () => Promise<void>) => {
   };
 };
 
+const buildUsersPageContentProps = (
+  data: ReturnType<typeof useUsersPageData>,
+  handlers: ReturnType<typeof useUsersPageHandlersAndState>
+) => {
+  const baseProps = {
+    usuarios: data.usuarios,
+    planes: data.planes,
+    isSuperAdmin: data.isSuperAdmin,
+    query: data.query,
+    page: data.page,
+    PAGE_SIZE: data.PAGE_SIZE,
+    editingUsuario: handlers.editingUsuario,
+    saving: handlers.saving,
+    selectedPlan: handlers.modalState.selectedPlan,
+    creditsAmount: handlers.modalState.creditsAmount,
+    editFormData: handlers.modalState.editFormData,
+    showPlanModal: handlers.modalState.showPlanModal,
+    showCreditsModal: handlers.modalState.showCreditsModal,
+    showEditModal: handlers.modalState.showEditModal,
+    showDeleteModal: handlers.modalState.showDeleteModal,
+    onQueryChange: data.setQuery,
+    onPageChange: data.setPage,
+    onEdit: handlers.handleEdit,
+    onDelete: handlers.handleDelete,
+    onEditPlan: handlers.handleEditPlan,
+    onEditCredits: handlers.handleEditCredits,
+    onToggleActivo: handlers.toggleActivo,
+    onClosePlanModal: handlers.createClosePlanModal,
+    onCloseCreditsModal: handlers.createCloseCreditsModal,
+    onCloseEditModal: handlers.createCloseEditModal,
+    onCloseDeleteModal: handlers.createCloseDeleteModal,
+    onPlanChange: handlers.modalState.setSelectedPlan,
+    onCreditsChange: handlers.modalState.setCreditsAmount,
+    onFormDataChange: handlers.modalState.setEditFormData,
+  };
+  const saveHandlers = {
+    onSavePlan: async () => handlers.handleSavePlan(handlers.modalState.selectedPlan, data.planes),
+    onSaveCredits: async () => handlers.handleSaveCredits(handlers.modalState.creditsAmount),
+    onSaveEdit: async () => handlers.handleSaveEdit(handlers.modalState.editFormData),
+    onConfirmDelete: handlers.handleConfirmDelete,
+  };
+  const toggleActivoProps = {
+    toToggleActivo: handlers.toToggleActivo,
+    onCancelToggleActivo: () => handlers.setToToggleActivo(null),
+    onConfirmToggleActivo: () => {
+      void handlers.handleConfirmToggleActivo();
+    },
+  };
+  return { ...baseProps, ...saveHandlers, ...toggleActivoProps };
+};
+
 const UsersPage: React.FC = () => {
-  const {
-    isSuperAdmin,
-    usuarios,
-    loading,
-    error,
-    refetch,
-    planes,
-    query,
-    setQuery,
-    page,
-    setPage,
-    PAGE_SIZE,
-  } = useUsersPageData();
+  const data = useUsersPageData();
+  const handlers = useUsersPageHandlersAndState(data.refetch);
 
-  const {
-    modalState,
-    editingUsuario,
-    saving,
-    toggleActivo,
-    handleEdit,
-    handleDelete,
-    handleEditPlan,
-    handleEditCredits,
-    createClosePlanModal,
-    createCloseCreditsModal,
-    createCloseEditModal,
-    createCloseDeleteModal,
-    handleSavePlan,
-    handleSaveCredits,
-    handleSaveEdit,
-    handleConfirmDelete,
-  } = useUsersPageHandlersAndState(refetch);
-
-  if (loading) {
+  if (data.loading) {
     return <UsersPageLoadingState />;
   }
 
-  if (error) {
-    return <UsersPageErrorState error={error} />;
+  if (data.error) {
+    return <UsersPageErrorState error={data.error} />;
   }
 
-  return (
-    <UsersPageContent
-      usuarios={usuarios}
-      planes={planes}
-      isSuperAdmin={isSuperAdmin}
-      query={query}
-      page={page}
-      PAGE_SIZE={PAGE_SIZE}
-      editingUsuario={editingUsuario}
-      saving={saving}
-      selectedPlan={modalState.selectedPlan}
-      creditsAmount={modalState.creditsAmount}
-      editFormData={modalState.editFormData}
-      showPlanModal={modalState.showPlanModal}
-      showCreditsModal={modalState.showCreditsModal}
-      showEditModal={modalState.showEditModal}
-      showDeleteModal={modalState.showDeleteModal}
-      onQueryChange={setQuery}
-      onPageChange={setPage}
-      onEdit={handleEdit}
-      onDelete={handleDelete}
-      onEditPlan={handleEditPlan}
-      onEditCredits={handleEditCredits}
-      onToggleActivo={(id, isActive) => {
-        void toggleActivo(id, isActive);
-      }}
-      onClosePlanModal={createClosePlanModal}
-      onCloseCreditsModal={createCloseCreditsModal}
-      onCloseEditModal={createCloseEditModal}
-      onCloseDeleteModal={createCloseDeleteModal}
-      onPlanChange={modalState.setSelectedPlan}
-      onCreditsChange={modalState.setCreditsAmount}
-      onFormDataChange={modalState.setEditFormData}
-      onSavePlan={() => handleSavePlan(modalState.selectedPlan, planes)}
-      onSaveCredits={() => handleSaveCredits(modalState.creditsAmount)}
-      onSaveEdit={() => handleSaveEdit(modalState.editFormData)}
-      onConfirmDelete={handleConfirmDelete}
-    />
-  );
+  return <UsersPageContent {...buildUsersPageContentProps(data, handlers)} />;
 };
 
 export default UsersPage;

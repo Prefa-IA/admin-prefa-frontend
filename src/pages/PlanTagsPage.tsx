@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
 import axios from 'axios';
 
 import ConfirmModal from '../components/ConfirmModal';
@@ -56,8 +57,31 @@ const TagRow: React.FC<{
 );
 
 const savePlanTag = async (tag: PlanTag): Promise<void> => {
-  if (tag._id) await axios.put(`/api/admin/plan-tags/${tag._id}`, tag);
-  else await axios.post('/api/admin/plan-tags', tag);
+  if (!tag.name || tag.name.trim() === '') {
+    toast.error('El nombre de la etiqueta es requerido');
+    throw new Error('Nombre requerido');
+  }
+  if (!tag.slug || tag.slug.trim() === '') {
+    toast.error('El slug de la etiqueta es requerido');
+    throw new Error('Slug requerido');
+  }
+  try {
+    if (tag._id) {
+      await axios.put(`/api/admin/plan-tags/${tag._id}`, tag);
+      toast.success('Etiqueta actualizada correctamente');
+    } else {
+      await axios.post('/api/admin/plan-tags', tag);
+      toast.success('Etiqueta creada correctamente');
+    }
+  } catch (err: unknown) {
+    const errorMessage =
+      (err as { response?: { data?: { error?: string; message?: string } } })?.response?.data
+        ?.error ||
+      (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+      'Error guardando etiqueta';
+    toast.error(errorMessage);
+    throw err;
+  }
 };
 
 const usePlanTagsData = () => {
@@ -130,16 +154,30 @@ const PlanTagsPage: React.FC = () => {
   const { tags, loading, error, refetch } = usePlanTagsData();
 
   const saveTag = async (tag: PlanTag) => {
-    await savePlanTag(tag);
-    setEditing(null);
-    void refetch();
+    try {
+      await savePlanTag(tag);
+      setEditing(null);
+      void refetch();
+    } catch {
+      // Error ya manejado en savePlanTag
+    }
   };
 
   const deleteTag = async () => {
     if (!confirmDel?._id) return;
-    await axios.delete(`/api/admin/plan-tags/${confirmDel._id}`);
-    setConfirmDel(null);
-    void refetch();
+    try {
+      await axios.delete(`/api/admin/plan-tags/${confirmDel._id}`);
+      toast.success('Etiqueta eliminada correctamente');
+      setConfirmDel(null);
+      void refetch();
+    } catch (err: unknown) {
+      const errorMessage =
+        (err as { response?: { data?: { error?: string; message?: string } } })?.response?.data
+          ?.error ||
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        'Error eliminando etiqueta';
+      toast.error(errorMessage);
+    }
   };
 
   if (loading) {
@@ -155,12 +193,6 @@ const PlanTagsPage: React.FC = () => {
           <NewItemButton label="Nueva etiqueta" onClick={() => setEditing({ ...emptyTag })} />
         }
       />
-
-      {error && (
-        <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-          <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
-        </div>
-      )}
 
       <TagsTable
         tags={tags}

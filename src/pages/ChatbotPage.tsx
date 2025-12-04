@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
 import axios from 'axios';
 
@@ -22,6 +22,13 @@ import {
   TableHeader,
   TableRow,
 } from '../components/ui';
+
+interface CreditCosts {
+  simple: number;
+  completa: number;
+  compuesta: number;
+  basicSearch: number;
+}
 
 interface ChatbotQuestion {
   _id?: string;
@@ -158,6 +165,39 @@ const useChatbotQuestionDelete = (onSuccess: () => void) => {
   return { confirmOpen, pendingDelete, askDelete, doDelete, setConfirmOpen };
 };
 
+const useCreditCosts = () => {
+  const [costs, setCosts] = useState<CreditCosts | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCosts = async () => {
+      try {
+        const { data } = await axios.get<CreditCosts>('/api/admin/billing/creditos');
+        setCosts({
+          simple: data.simple,
+          completa: data.completa,
+          compuesta: data.compuesta,
+          basicSearch: data.basicSearch || 5,
+        });
+      } catch (error) {
+        console.error('Error obteniendo costos de créditos:', error);
+        setCosts({
+          simple: 100,
+          completa: 200,
+          compuesta: 300,
+          basicSearch: 5,
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void fetchCosts();
+  }, []);
+
+  return { costs, loading };
+};
+
 const QuestionsTable: React.FC<{
   questions: ChatbotQuestion[];
   onEdit: (q: ChatbotQuestion) => void;
@@ -210,56 +250,130 @@ const QuestionsTable: React.FC<{
   </Card>
 );
 
+const CreditCostInsertButtons: React.FC<{
+  costs: CreditCosts;
+  loading: boolean;
+  onInsert: (value: string) => void;
+}> = ({ costs, loading, onInsert }) => (
+  <div className="flex items-center gap-2">
+    <span className="text-xs text-gray-500 dark:text-gray-400">Insertar:</span>
+    <Button
+      variant="secondary"
+      size="sm"
+      onClick={() => onInsert(costs.simple.toString())}
+      disabled={loading}
+      className="text-xs h-7 px-2"
+    >
+      Simple ({costs.simple})
+    </Button>
+    <Button
+      variant="secondary"
+      size="sm"
+      onClick={() => onInsert(costs.completa.toString())}
+      disabled={loading}
+      className="text-xs h-7 px-2"
+    >
+      Completa ({costs.completa})
+    </Button>
+    <Button
+      variant="secondary"
+      size="sm"
+      onClick={() => onInsert(costs.compuesta.toString())}
+      disabled={loading}
+      className="text-xs h-7 px-2"
+    >
+      Compuesta ({costs.compuesta})
+    </Button>
+  </div>
+);
+
 const QuestionForm: React.FC<{
   question: ChatbotQuestion;
   onQuestionChange: (q: ChatbotQuestion) => void;
-}> = ({ question, onQuestionChange }) => (
-  <div className="space-y-4">
-    <Input
-      label="Pregunta"
-      value={question.question}
-      onChange={(e) => onQuestionChange({ ...question, question: e.target.value })}
-      placeholder="Ej: ¿Cómo hago una consulta?"
-      maxLength={200}
-    />
-    <div>
-      <label
-        htmlFor="answer-textarea"
-        className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5"
-      >
-        Respuesta
-      </label>
-      <textarea
-        id="answer-textarea"
-        value={question.answer}
-        onChange={(e) => onQuestionChange({ ...question, answer: e.target.value })}
-        placeholder="Escribe la respuesta aquí..."
-        rows={6}
-        className="w-full px-3 py-2 border border-gray-300 rounded-lg dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200"
+}> = ({ question, onQuestionChange }) => {
+  const { costs, loading: costsLoading } = useCreditCosts();
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const isCreditsCategory = question.category === 'creditos';
+
+  const insertAtCursor = useCallback(
+    (value: string) => {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const text = question.answer;
+      const newText = text.substring(0, start) + value + text.substring(end);
+
+      onQuestionChange({ ...question, answer: newText });
+
+      setTimeout(() => {
+        textarea.focus();
+        const newCursorPos = start + value.length;
+        textarea.setSelectionRange(newCursorPos, newCursorPos);
+      }, 0);
+    },
+    [question, onQuestionChange]
+  );
+
+  return (
+    <div className="space-y-4">
+      <Input
+        label="Pregunta"
+        value={question.question}
+        onChange={(e) => onQuestionChange({ ...question, question: e.target.value })}
+        placeholder="Ej: ¿Cómo hago una consulta?"
+        maxLength={200}
+      />
+      <div>
+        <div className="flex items-center justify-between mb-1.5">
+          <label
+            htmlFor="answer-textarea"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
+            Respuesta
+          </label>
+          {isCreditsCategory && costs && (
+            <CreditCostInsertButtons
+              costs={costs}
+              loading={costsLoading}
+              onInsert={insertAtCursor}
+            />
+          )}
+        </div>
+        <textarea
+          ref={textareaRef}
+          id="answer-textarea"
+          value={question.answer}
+          onChange={(e) => onQuestionChange({ ...question, answer: e.target.value })}
+          placeholder="Escribe la respuesta aquí..."
+          rows={6}
+          className="w-full px-3 py-2 border border-gray-300 rounded-lg dark:bg-gray-800 dark:border-gray-600 dark:text-gray-200"
+        />
+      </div>
+      <Input
+        label="Orden"
+        type="number"
+        value={question.order.toString()}
+        onChange={(e) =>
+          onQuestionChange({ ...question, order: Number.parseInt(e.target.value, 10) || 0 })
+        }
+        placeholder="0"
+      />
+      <Select
+        label="Categoría"
+        value={question.category}
+        onChange={(e) => onQuestionChange({ ...question, category: e.target.value })}
+        options={CATEGORY_OPTIONS}
+      />
+      <Checkbox
+        label="Activo"
+        checked={!!question.isActive}
+        onChange={(e) => onQuestionChange({ ...question, isActive: e.target.checked })}
       />
     </div>
-    <Input
-      label="Orden"
-      type="number"
-      value={question.order.toString()}
-      onChange={(e) =>
-        onQuestionChange({ ...question, order: Number.parseInt(e.target.value, 10) || 0 })
-      }
-      placeholder="0"
-    />
-    <Select
-      label="Categoría"
-      value={question.category}
-      onChange={(e) => onQuestionChange({ ...question, category: e.target.value })}
-      options={CATEGORY_OPTIONS}
-    />
-    <Checkbox
-      label="Activo"
-      checked={!!question.isActive}
-      onChange={(e) => onQuestionChange({ ...question, isActive: e.target.checked })}
-    />
-  </div>
-);
+  );
+};
 
 const QuestionEditor: React.FC<{
   question: ChatbotQuestion;

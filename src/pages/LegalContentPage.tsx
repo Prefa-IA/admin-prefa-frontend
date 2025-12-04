@@ -97,6 +97,11 @@ const LegalContentEditor: React.FC<{
   }, [content]);
 
   const handleSave = async () => {
+    if (!editedContent || editedContent.trim() === '') {
+      toast.error('El contenido no puede estar vacío');
+      return;
+    }
+
     setSaving(true);
     try {
       if (content?._id) {
@@ -156,14 +161,18 @@ const LegalContentPage: React.FC = () => {
   const { terms, privacy, loading, refetch } = useLegalContent();
   const [activeTab, setActiveTab] = useState<'terms' | 'privacy'>('terms');
 
+  useEffect(() => {
+    if (!user?.isSuperAdmin) {
+      toast.error('Solo los super administradores pueden editar el contenido legal');
+    }
+  }, [user]);
+
   if (!user?.isSuperAdmin) {
     return (
       <div className="p-6">
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-          <p className="text-red-800 dark:text-red-200">
-            Solo los super administradores pueden editar el contenido legal.
-          </p>
-        </div>
+        <p className="text-gray-600 dark:text-gray-400">
+          Solo los super administradores pueden editar el contenido legal.
+        </p>
       </div>
     );
   }

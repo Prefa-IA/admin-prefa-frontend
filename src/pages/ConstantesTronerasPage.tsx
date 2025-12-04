@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
 import { PencilSquareIcon } from '@heroicons/react/24/outline';
 import axios from 'axios';
 
@@ -12,10 +13,13 @@ interface Setting {
   category?: string;
 }
 
+const CATEGORY_TRONERAS = 'troneras';
+const API_SETTINGS_ENDPOINT = '/api/admin/settings';
+
 const fetchConstantsByCategory = async (): Promise<Setting[]> => {
   try {
-    const { data } = await axios.get<Setting[]>('/api/admin/settings', {
-      params: { category: 'troneras' },
+    const { data } = await axios.get<Setting[]>(API_SETTINGS_ENDPOINT, {
+      params: { category: CATEGORY_TRONERAS },
     });
     return data || [];
   } catch (e) {
@@ -25,25 +29,49 @@ const fetchConstantsByCategory = async (): Promise<Setting[]> => {
 };
 
 const fetchAllConstants = async (): Promise<Setting[]> => {
-  const { data: allSettings } = await axios.get<Setting[]>('/api/admin/settings');
+  const { data: allSettings } = await axios.get<Setting[]>(API_SETTINGS_ENDPOINT);
   return (allSettings || []).filter(
     (s) =>
       s.key === 'TRONERA_DEPTH' ||
       s.key === 'MIN_ANGLE_FOR_TRONERA' ||
-      s.key === 'MAX_ANGLE_FOR_TRONERA'
+      s.key === 'MAX_ANGLE_FOR_TRONERA' ||
+      s.key === 'CODIGO_URBANISTICO_EDICION'
   );
 };
 
-const buildInitialValues = (constants: Setting[]): { [key: string]: number } => {
-  const initialValues: { [key: string]: number } = {};
+const formatDateForInput = (value: string | number | Date | null | undefined): string => {
+  if (!value) return '';
+  if (value instanceof Date) {
+    const isoString = value.toISOString();
+    return isoString.split('T')[0] || '';
+  }
+  if (typeof value === 'string') {
+    const date = new Date(value);
+    if (!isNaN(date.getTime())) {
+      const isoString = date.toISOString();
+      return isoString.split('T')[0] || '';
+    }
+    return value;
+  }
+  return '';
+};
+
+const buildInitialValues = (constants: Setting[]): { [key: string]: number | string } => {
+  const initialValues: { [key: string]: number | string } = {};
   constants.forEach((s) => {
-    const numValue = typeof s.value === 'number' ? s.value : Number(s.value);
-    initialValues[s.key] = isNaN(numValue) ? 0 : numValue;
+    if (s.key === 'CODIGO_URBANISTICO_EDICION') {
+      initialValues[s.key] = formatDateForInput(s.value);
+    } else {
+      const numValue = typeof s.value === 'number' ? s.value : Number(s.value);
+      initialValues[s.key] = isNaN(numValue) ? 0 : numValue;
+    }
   });
 
   if (!initialValues['TRONERA_DEPTH']) initialValues['TRONERA_DEPTH'] = 0;
   if (!initialValues['MIN_ANGLE_FOR_TRONERA']) initialValues['MIN_ANGLE_FOR_TRONERA'] = 0;
   if (!initialValues['MAX_ANGLE_FOR_TRONERA']) initialValues['MAX_ANGLE_FOR_TRONERA'] = 0;
+  if (!initialValues['CODIGO_URBANISTICO_EDICION'])
+    initialValues['CODIGO_URBANISTICO_EDICION'] = '';
 
   return initialValues;
 };
@@ -58,59 +86,59 @@ const LoadingState: React.FC = () => (
 );
 
 const ConstantsInputs: React.FC<{
-  values: { [key: string]: number };
+  values: { [key: string]: number | string };
   settings: Setting[];
   editing: boolean;
   setNum: (k: string, v: string) => void;
-  getValue: (key: string) => number;
-}> = ({ editing, setNum, getValue }) => (
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-    <Input
-      label="Profundidad tronera (m)"
-      type="number"
-      step="0.1"
-      value={getValue('TRONERA_DEPTH')}
-      onChange={(e) => setNum('TRONERA_DEPTH', e.target.value)}
-      disabled={!editing}
-    />
-    <Input
-      label="Ángulo mínimo (°)"
-      type="number"
-      step="1"
-      value={getValue('MIN_ANGLE_FOR_TRONERA')}
-      onChange={(e) => setNum('MIN_ANGLE_FOR_TRONERA', e.target.value)}
-      disabled={!editing}
-    />
-    <Input
-      label="Ángulo máximo (°)"
-      type="number"
-      step="1"
-      value={getValue('MAX_ANGLE_FOR_TRONERA')}
-      onChange={(e) => setNum('MAX_ANGLE_FOR_TRONERA', e.target.value)}
-      disabled={!editing}
-    />
+  getValue: (key: string) => number | string;
+  setString: (k: string, v: string) => void;
+}> = ({ editing, setNum, getValue, setString }) => (
+  <div className="space-y-6">
+    <div>
+      <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Variables</h3>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Input
+          label="Profundidad tronera (m)"
+          type="number"
+          step="0.1"
+          value={getValue('TRONERA_DEPTH') as number}
+          onChange={(e) => setNum('TRONERA_DEPTH', e.target.value)}
+          disabled={!editing}
+        />
+        <Input
+          label="Ángulo mínimo (°)"
+          type="number"
+          step="1"
+          value={getValue('MIN_ANGLE_FOR_TRONERA') as number}
+          onChange={(e) => setNum('MIN_ANGLE_FOR_TRONERA', e.target.value)}
+          disabled={!editing}
+        />
+        <Input
+          label="Ángulo máximo (°)"
+          type="number"
+          step="1"
+          value={getValue('MAX_ANGLE_FOR_TRONERA') as number}
+          onChange={(e) => setNum('MAX_ANGLE_FOR_TRONERA', e.target.value)}
+          disabled={!editing}
+        />
+      </div>
+    </div>
+    <div>
+      <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">
+        Version codigo urbanistico
+      </h3>
+      <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
+        <Input
+          label="Edición del Código Urbanístico"
+          type="date"
+          value={getValue('CODIGO_URBANISTICO_EDICION') as string}
+          onChange={(e) => setString('CODIGO_URBANISTICO_EDICION', e.target.value)}
+          disabled={!editing}
+        />
+      </div>
+    </div>
   </div>
 );
-
-const StatusMessage: React.FC<{ saved: null | 'ok' | 'err' }> = ({ saved }) => {
-  if (saved === 'ok') {
-    return (
-      <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-        <p className="text-sm text-green-700 dark:text-green-400">
-          Constantes guardadas correctamente
-        </p>
-      </div>
-    );
-  }
-  if (saved === 'err') {
-    return (
-      <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-        <p className="text-sm text-red-700 dark:text-red-400">Error guardando constantes</p>
-      </div>
-    );
-  }
-  return null;
-};
 
 const EditActions: React.FC<{
   editing: boolean;
@@ -136,8 +164,7 @@ const useConstantsState = () => {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [saved, setSaved] = useState<null | 'ok' | 'err'>(null);
-  const [values, setValues] = useState<{ [key: string]: number }>({});
+  const [values, setValues] = useState<{ [key: string]: number | string }>({});
 
   return {
     settings,
@@ -148,8 +175,6 @@ const useConstantsState = () => {
     setSaving,
     loading,
     setLoading,
-    saved,
-    setSaved,
     values,
     setValues,
   };
@@ -157,9 +182,8 @@ const useConstantsState = () => {
 
 const useConstantsData = (
   setSettings: React.Dispatch<React.SetStateAction<Setting[]>>,
-  setValues: React.Dispatch<React.SetStateAction<{ [key: string]: number }>>,
-  setLoading: (loading: boolean) => void,
-  setSaved: (saved: null | 'ok' | 'err') => void
+  setValues: React.Dispatch<React.SetStateAction<{ [key: string]: number | string }>>,
+  setLoading: (loading: boolean) => void
 ) => {
   const fetchConstants = useCallback(async () => {
     setLoading(true);
@@ -173,11 +197,11 @@ const useConstantsData = (
       setValues(initialValues);
     } catch (err: unknown) {
       console.error('Error al cargar constantes:', err);
-      setSaved('err');
+      toast.error('Error al cargar constantes');
     } finally {
       setLoading(false);
     }
-  }, [setSettings, setValues, setLoading, setSaved]);
+  }, [setSettings, setValues, setLoading]);
 
   useEffect(() => {
     void fetchConstants();
@@ -187,74 +211,109 @@ const useConstantsData = (
 };
 
 const createUpdatePromises = (
-  values: { [key: string]: number },
+  values: { [key: string]: number | string },
   settings: Setting[]
 ): Promise<unknown>[] =>
   Object.keys(values)
     .map((key) => {
       const setting = settings.find((s) => s.key === key);
-      if (!setting) return null;
       const settingValue = Reflect.get(values, key);
-      return axios.put(`/api/admin/settings/${setting._id}`, {
-        value: settingValue,
-        key: setting.key,
-        category: setting.category || 'troneras',
-      });
+      if (setting) {
+        return axios.put(`${API_SETTINGS_ENDPOINT}/${setting._id}`, {
+          value: settingValue,
+          key: setting.key,
+          category: setting.category || CATEGORY_TRONERAS,
+        });
+      }
+      if (key === 'CODIGO_URBANISTICO_EDICION') {
+        return axios.post(API_SETTINGS_ENDPOINT, {
+          key,
+          value: settingValue,
+          category: CATEGORY_TRONERAS,
+        });
+      }
+      return null;
     })
     .filter(Boolean) as Promise<unknown>[];
 
 const useSaveConstants = (
-  values: { [key: string]: number },
+  values: { [key: string]: number | string },
   settings: Setting[],
   setSaving: (saving: boolean) => void,
-  setSaved: (saved: null | 'ok' | 'err') => void,
   setEditing: (editing: boolean) => void,
   fetchConstants: () => Promise<void>
 ) => {
   const save = useCallback(async () => {
+    for (const [key, value] of Object.entries(values)) {
+      if (value === '' || value === null || value === undefined) {
+        toast.error(`El valor para "${key}" no puede estar vacío`);
+        return;
+      }
+      const numValue = Number(value);
+      if (Number.isNaN(numValue) || !Number.isFinite(numValue)) {
+        toast.error(`El valor para "${key}" debe ser un número válido`);
+        return;
+      }
+      if (numValue < 0) {
+        toast.error(`El valor para "${key}" no puede ser negativo`);
+        return;
+      }
+    }
+
     setSaving(true);
-    setSaved(null);
     try {
       const updates = createUpdatePromises(values, settings);
       await Promise.all(updates);
-      setSaved('ok');
+      toast.success('Constantes guardadas correctamente');
       setEditing(false);
-      setTimeout(() => {
-        setSaved(null);
-        void fetchConstants();
-      }, 2500);
+      void fetchConstants();
     } catch (e) {
       console.error('Error guardando constantes:', e);
-      setSaved('err');
-      setTimeout(() => setSaved(null), 3000);
+      const errorMessage =
+        (e as { response?: { data?: { error?: string; message?: string } } })?.response?.data
+          ?.error ||
+        (e as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        'Error guardando constantes';
+      toast.error(errorMessage);
     } finally {
       setSaving(false);
     }
-  }, [values, settings, setSaving, setSaved, setEditing, fetchConstants]);
+  }, [values, settings, setSaving, setEditing, fetchConstants]);
 
   return { save };
 };
 
 const createSetNum = (
-  setValues: React.Dispatch<React.SetStateAction<{ [key: string]: number }>>
+  setValues: React.Dispatch<React.SetStateAction<{ [key: string]: number | string }>>
 ) => {
   return (k: string, v: string) => {
-    setValues((prev: Record<string, number>) => ({ ...prev, [k]: Number(v) || 0 }));
+    setValues((prev: Record<string, number | string>) => ({ ...prev, [k]: Number(v) || 0 }));
   };
 };
 
-const createGetValue = (values: { [key: string]: number }, settings: Setting[]) => {
-  return (key: string): number => {
+const createSetString = (
+  setValues: React.Dispatch<React.SetStateAction<{ [key: string]: number | string }>>
+) => {
+  return (k: string, v: string) => {
+    setValues((prev: Record<string, number | string>) => ({ ...prev, [k]: v }));
+  };
+};
+
+const createGetValue = (values: { [key: string]: number | string }, settings: Setting[]) => {
+  return (key: string): number | string => {
     const value = Reflect.get(values, key);
     if (value !== undefined) {
       return value;
     }
     const setting = settings.find((s) => s.key === key);
     if (setting) {
+      if (key === 'CODIGO_URBANISTICO_EDICION') {
+        return formatDateForInput(setting.value);
+      }
       const numValue = typeof setting.value === 'number' ? setting.value : Number(setting.value);
       return isNaN(numValue) ? 0 : numValue;
     }
-    return 0;
+    return key === 'CODIGO_URBANISTICO_EDICION' ? '' : 0;
   };
 };
 
@@ -263,23 +322,18 @@ const ConstantesTronerasPage: React.FC = () => {
   const state = useConstantsState();
   const isSuperAdmin = user?.isSuperAdmin === true;
 
-  const { fetchConstants } = useConstantsData(
-    state.setSettings,
-    state.setValues,
-    state.setLoading,
-    state.setSaved
-  );
+  const { fetchConstants } = useConstantsData(state.setSettings, state.setValues, state.setLoading);
 
   const { save } = useSaveConstants(
     state.values,
     state.settings,
     state.setSaving,
-    state.setSaved,
     state.setEditing,
     fetchConstants
   );
 
   const setNum = createSetNum(state.setValues);
+  const setString = createSetString(state.setValues);
   const getValue = createGetValue(state.values, state.settings);
 
   if (state.loading) {
@@ -313,8 +367,8 @@ const ConstantesTronerasPage: React.FC = () => {
             editing={state.editing}
             setNum={setNum}
             getValue={getValue}
+            setString={setString}
           />
-          <StatusMessage saved={state.saved} />
           <EditActions
             editing={state.editing}
             saving={state.saving}

@@ -15,4 +15,5 @@ export interface Plan {
   maxPrefactibilidades?: number;
   tag?: string | { _id: string; name: string; slug: string };
   showDiscountSticker?: boolean;
+  purchaseEnabled?: boolean;
 }

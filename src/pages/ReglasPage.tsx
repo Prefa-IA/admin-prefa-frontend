@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
 import { CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
 import axios from 'axios';
 
@@ -69,9 +70,15 @@ const persistChanges = async (
     setReglas((prev) => prev.filter((r) => !modified[r.id_regla]));
     window.dispatchEvent(new Event('reglas-actualizadas'));
     setModified({});
+    toast.success('Cambios guardados correctamente');
   } catch (err) {
     console.error(err);
-    alert('Error guardando cambios');
+    const errorMessage =
+      (err as { response?: { data?: { error?: string; message?: string } } })?.response?.data
+        ?.error ||
+      (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+      'Error guardando cambios';
+    toast.error(errorMessage);
   }
 };
 

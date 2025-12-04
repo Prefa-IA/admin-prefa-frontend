@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   ArrowRightOnRectangleIcon,
+  CalculatorIcon,
   ChevronRightIcon,
   Cog6ToothIcon,
   CurrencyDollarIcon,
   DocumentTextIcon,
+  EnvelopeIcon,
   HomeIcon,
   Square3Stack3DIcon,
   UsersIcon,
@@ -19,6 +21,7 @@ import { slugify } from '../utils/slugify';
 import ThemeButton from './ThemeButton';
 
 const ACTIVE_LINK_CLASS = 'bg-blue-700';
+const ROUTE_FACTURACION = '/facturacion';
 
 interface LinkItem {
   to?: string;
@@ -33,6 +36,7 @@ interface Group {
 
 const REGLAS_PATH = '/reglas';
 const ROUTE_LEGAL_CONTENT = '/legal-content';
+const ROUTE_ADMIN_LOGS = '/admin-logs';
 
 const baseGroups: Group[] = [
   {
@@ -46,12 +50,17 @@ const baseGroups: Group[] = [
     links: [
       { to: '/usuarios', label: 'Usuarios' },
       { to: '/admin-users', label: 'Administradores' },
+      { to: '/usuarios/datos-estrategicos', label: 'Datos Estratégicos' },
     ],
   },
   {
     label: 'Consultas',
     icon: DocumentTextIcon,
-    links: [{ to: '/informes', label: 'Consultas' }],
+    links: [
+      { to: '/informes', label: 'Consultas' },
+      { to: '/consultas-fallidas', label: 'Consultas Fallidas' },
+      { to: '/creditos', label: 'Créditos' },
+    ],
   },
   {
     label: 'Normativa',
@@ -70,23 +79,39 @@ const baseGroups: Group[] = [
   {
     label: 'Facturación',
     icon: CurrencyDollarIcon,
-    links: [{ to: '/facturacion', label: 'Facturación' }],
+    links: [
+      { to: '/facturacion?tab=pagos', label: 'Pagos' },
+      { to: '/facturacion?tab=planes', label: 'Planes' },
+      { to: '/facturacion?tab=overages', label: 'Overages' },
+      { to: '/plan-tags', label: 'Etiquetas de Planes' },
+    ],
   },
   {
-    label: 'Configuración',
-    icon: Cog6ToothIcon,
+    label: 'Cálculos',
+    icon: CalculatorIcon,
     links: [
-      { to: '/plan-tags', label: 'Etiquetas de Planes' },
       { to: '/constantes-troneras', label: 'Constantes Troneras' },
-      { to: '/creditos', label: 'Créditos' },
-      { to: '/prompts', label: 'Prompts' },
+      { to: '/calculo-pasos', label: 'Pasos de Cálculo' },
+      { to: '/reglas-logicas', label: 'Reglas Lógicas' },
+    ],
+  },
+  {
+    label: 'Comunicación',
+    icon: EnvelopeIcon,
+    links: [
       { to: '/email-templates', label: 'Email Templates' },
       { to: '/newsletter', label: 'Newsletters' },
       { to: '/newsletter-history', label: 'Historial Newsletters' },
-      { to: '/calculo-pasos', label: 'Pasos de Cálculo' },
-      { to: '/reglas-logicas', label: 'Reglas Lógicas' },
       { to: '/chatbot', label: 'Chatbot' },
+    ],
+  },
+  {
+    label: 'Contenido',
+    icon: DocumentTextIcon,
+    links: [
+      { to: '/prompts', label: 'Prompts' },
       { to: ROUTE_LEGAL_CONTENT, label: 'Contenido Legal' },
+      { to: '/redes-sociales', label: 'Redes Sociales' },
     ],
   },
 ];
@@ -127,6 +152,7 @@ const filterLinksByPermission = (
         const filteredChildren = link.children.filter((child) => {
           if (!child.to) return true;
           if (child.to === ROUTE_LEGAL_CONTENT && !isSuperAdmin) return false;
+          if (child.to === ROUTE_ADMIN_LOGS && !isSuperAdmin) return false;
           return canAccessRoute(child.to);
         });
         if (filteredChildren.length === 0) return null;
@@ -134,6 +160,7 @@ const filterLinksByPermission = (
       }
       if (!link.to) return link;
       if (link.to === ROUTE_LEGAL_CONTENT && !isSuperAdmin) return null;
+      if (link.to === ROUTE_ADMIN_LOGS && !isSuperAdmin) return null;
       return canAccessRoute(link.to) ? link : null;
     })
     .filter((link): link is LinkItem => link !== null);
@@ -202,12 +229,8 @@ const MultiLinkGroup: React.FC<{
   );
 };
 
-const Sidebar: React.FC = () => {
-  const [open, setOpen] = useState<Record<string, boolean>>({});
+const useCategories = (): [Group[], React.Dispatch<React.SetStateAction<Group[]>>] => {
   const [dynGroups, setDynGroups] = useState<Group[]>(baseGroups);
-  const { logout } = useAuth();
-  const { canAccessRoute, isSuperAdmin } = usePermissions();
-  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchCats = async () => {
@@ -230,6 +253,78 @@ const Sidebar: React.FC = () => {
     return () => window.removeEventListener('reglas-actualizadas', handler);
   }, []);
 
+  return [dynGroups, setDynGroups];
+};
+
+const NavigationGroups: React.FC<{
+  groups: Group[];
+  open: Record<string, boolean>;
+  toggle: (label: string) => void;
+  canAccessRoute: (route: string) => boolean;
+  isSuperAdmin: boolean;
+}> = ({ groups, open, toggle, canAccessRoute, isSuperAdmin }) => (
+  <nav className="flex-1 px-2 space-y-1">
+    {groups.map((group) => {
+      const singleLink = group.links.length === 1 && !group.links[0]?.children;
+      if (singleLink) {
+        return (
+          <SingleLinkGroup
+            key={group.label}
+            group={group}
+            canAccessRoute={canAccessRoute}
+            isSuperAdmin={isSuperAdmin}
+          />
+        );
+      }
+      return (
+        <MultiLinkGroup
+          key={group.label}
+          group={group}
+          isOpen={open[group.label] ?? false}
+          onToggle={() => toggle(group.label)}
+        />
+      );
+    })}
+  </nav>
+);
+
+const SidebarFooter: React.FC<{
+  isSuperAdmin: boolean;
+  canAccessRoute: (route: string) => boolean;
+  onLogout: () => void;
+}> = ({ isSuperAdmin, canAccessRoute, onLogout }) => (
+  <div className="px-2 pb-4 border-t border-blue-600 pt-4 space-y-2">
+    {isSuperAdmin && canAccessRoute(ROUTE_ADMIN_LOGS) && (
+      <NavLink
+        to={ROUTE_ADMIN_LOGS}
+        className={({ isActive }) =>
+          `flex items-center px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-600 ${isActive ? ACTIVE_LINK_CLASS : ''}`
+        }
+      >
+        <Cog6ToothIcon className="h-5 w-5 mr-3" />
+        Logs de Admin
+      </NavLink>
+    )}
+    <div className="flex items-center gap-2">
+      <button
+        onClick={onLogout}
+        className="flex items-center flex-1 px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-600 focus:outline-none text-white"
+      >
+        <ArrowRightOnRectangleIcon className="h-5 w-5 mr-3" />
+        Cerrar sesión
+      </button>
+      <ThemeButton />
+    </div>
+  </div>
+);
+
+const Sidebar: React.FC = () => {
+  const [open, setOpen] = useState<Record<string, boolean>>({});
+  const [dynGroups] = useCategories();
+  const { logout } = useAuth();
+  const { canAccessRoute, isSuperAdmin } = usePermissions();
+  const navigate = useNavigate();
+
   const groups = React.useMemo(
     () => filterGroupsByPermission(dynGroups, canAccessRoute, isSuperAdmin),
     [dynGroups, canAccessRoute, isSuperAdmin]
@@ -251,41 +346,18 @@ const Sidebar: React.FC = () => {
       <div className="p-6 flex items-center justify-center">
         <img src="/logo.png" alt="PreFactibilidadYa" className="w-auto" />
       </div>
-      <nav className="flex-1 px-2 space-y-1">
-        {groups.map((group) => {
-          const singleLink = group.links.length === 1 && !group.links[0]?.children;
-          if (singleLink) {
-            return (
-              <SingleLinkGroup
-                key={group.label}
-                group={group}
-                canAccessRoute={canAccessRoute}
-                isSuperAdmin={isSuperAdmin}
-              />
-            );
-          }
-          return (
-            <MultiLinkGroup
-              key={group.label}
-              group={group}
-              isOpen={open[group.label] ?? false}
-              onToggle={() => toggle(group.label)}
-            />
-          );
-        })}
-      </nav>
-      <div className="px-2 pb-4 border-t border-blue-600 pt-4">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleLogout}
-            className="flex items-center flex-1 px-3 py-2 rounded-md text-sm font-medium hover:bg-blue-600 focus:outline-none text-white"
-          >
-            <ArrowRightOnRectangleIcon className="h-5 w-5 mr-3" />
-            Cerrar sesión
-          </button>
-          <ThemeButton />
-        </div>
-      </div>
+      <NavigationGroups
+        groups={groups}
+        open={open}
+        toggle={toggle}
+        canAccessRoute={canAccessRoute}
+        isSuperAdmin={isSuperAdmin}
+      />
+      <SidebarFooter
+        isSuperAdmin={isSuperAdmin}
+        canAccessRoute={canAccessRoute}
+        onLogout={handleLogout}
+      />
     </aside>
   );
 };
@@ -295,6 +367,19 @@ export default Sidebar;
 function NavItem({ link }: { link: LinkItem }) {
   const [openLocal, setOpenLocal] = React.useState(false);
   const { canAccessRoute } = usePermissions();
+  const location = useLocation();
+
+  const isFacturacionLinkActive = (linkTo: string, currentLocation: typeof location): boolean => {
+    if (!linkTo.includes(ROUTE_FACTURACION)) return false;
+    const currentSearch = new URLSearchParams(currentLocation.search);
+    const linkSearch = new URLSearchParams(linkTo.split('?')[1] || '');
+    const currentTab = currentSearch.get('tab');
+    const linkTab = linkSearch.get('tab');
+    if (linkTab) {
+      return currentTab === linkTab && currentLocation.pathname === ROUTE_FACTURACION;
+    }
+    return false;
+  };
 
   if (link.children) {
     return (
@@ -312,17 +397,27 @@ function NavItem({ link }: { link: LinkItem }) {
           <div className="ml-6 space-y-1">
             {link.children
               .filter((ch) => !ch.to || canAccessRoute(ch.to))
-              .map((ch) => (
-                <NavLink
-                  key={ch.to || ch.label}
-                  to={ch.to!}
-                  className={({ isActive }) =>
-                    `block px-3 py-2 rounded-md text-sm hover:bg-blue-600 ${isActive ? ACTIVE_LINK_CLASS : ''}`
-                  }
-                >
-                  {ch.label}
-                </NavLink>
-              ))}
+              .map((ch) => {
+                const isFacturacion = ch.to?.includes(ROUTE_FACTURACION);
+                const customIsActive = isFacturacion
+                  ? isFacturacionLinkActive(ch.to!, location)
+                  : null;
+                return (
+                  <NavLink
+                    key={ch.to || ch.label}
+                    to={ch.to!}
+                    end={!isFacturacion}
+                    className={({ isActive }) => {
+                      const active = customIsActive !== null ? customIsActive : isActive;
+                      return `block px-3 py-2 rounded-md text-sm hover:bg-blue-600 ${
+                        active ? ACTIVE_LINK_CLASS : ''
+                      }`;
+                    }}
+                  >
+                    {ch.label}
+                  </NavLink>
+                );
+              })}
           </div>
         )}
       </div>
@@ -332,12 +427,19 @@ function NavItem({ link }: { link: LinkItem }) {
     return null;
   }
 
+  const isFacturacion = link.to?.includes(ROUTE_FACTURACION);
+  const customIsActive = isFacturacion ? isFacturacionLinkActive(link.to!, location) : null;
+
   return (
     <NavLink
       to={link.to!}
-      className={({ isActive }) =>
-        `block px-3 py-2 rounded-md text-sm hover:bg-blue-600 ${isActive ? ACTIVE_LINK_CLASS : ''}`
-      }
+      end={!isFacturacion}
+      className={({ isActive }) => {
+        const active = customIsActive !== null ? customIsActive : isActive;
+        return `block px-3 py-2 rounded-md text-sm hover:bg-blue-600 ${
+          active ? ACTIVE_LINK_CLASS : ''
+        }`;
+      }}
     >
       {link.label}
     </NavLink>

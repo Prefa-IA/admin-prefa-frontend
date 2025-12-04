@@ -166,23 +166,60 @@ const savePlan = async (editing: Partial<Plan>, updated: Partial<Plan>): Promise
   return 'Plan creado correctamente';
 };
 
+const validatePlanBasicFields = (updated: Partial<Plan>): boolean => {
+  if (!updated.name || updated.name.trim() === '') {
+    toast.error('El nombre del plan es requerido');
+    return false;
+  }
+  return true;
+};
+
+const validateOveragePlan = async (
+  updated: Partial<Plan>,
+  editing: Partial<Plan>
+): Promise<boolean> => {
+  if (!updated.parentPlan) {
+    toast.error('Debes seleccionar un plan base para el overage');
+    return false;
+  }
+  const isValid = await validateOverageUniqueness(updated.parentPlan, editing.id);
+  if (!isValid) {
+    toast.error('El plan base ya cuenta con un overage. Un plan no puede tener más de un overage.');
+    return false;
+  }
+  return true;
+};
+
+const validateBasePlan = (updated: Partial<Plan>): boolean => {
+  if (!updated.price || updated.price <= 0) {
+    toast.error('El precio debe ser mayor a 0');
+    return false;
+  }
+  if (!updated.creditosTotales || updated.creditosTotales <= 0) {
+    toast.error('Los créditos totales deben ser mayor a 0');
+    return false;
+  }
+  return true;
+};
+
 const handleSavePlan = async (
   editing: Partial<Plan>,
   updated: Partial<Plan>,
-  setError: (error: string | null) => void,
-  setSuccess: (success: string | null) => void,
   setEditing: (editing: Partial<Plan> | null) => void,
   refreshData: () => void
 ) => {
   try {
-    if (updated.isOverage && updated.parentPlan) {
-      const isValid = await validateOverageUniqueness(updated.parentPlan, editing.id);
+    if (!validatePlanBasicFields(updated)) {
+      return;
+    }
+
+    if (updated.isOverage) {
+      const isValid = await validateOveragePlan(updated, editing);
       if (!isValid) {
-        toast.error(
-          'El plan base ya cuenta con un overage. Un plan no puede tener más de un overage.'
-        );
-        setError('El plan base ya cuenta con un overage');
-        setSuccess(null);
+        return;
+      }
+    } else {
+      if (!validateBasePlan(updated)) {
         return;
       }
     }
@@ -191,40 +228,44 @@ const handleSavePlan = async (
       ? await saveOverage(editing, updated)
       : await savePlan(editing, updated);
 
-    setSuccess(successMessage);
-    setError(null);
+    toast.success(successMessage);
     setEditing(null);
     refreshData();
   } catch (err: unknown) {
     console.error(err);
-    setError('Error guardando el plan');
-    setSuccess(null);
+    const errorMessage =
+      (err as { response?: { data?: { error?: string; message?: string } } })?.response?.data
+        ?.error ||
+      (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+      'Error guardando el plan';
+    toast.error(errorMessage);
   }
 };
 
 const handleDeletePlan = async (
   planId: string,
   isOverage: boolean,
-  setError: (error: string | null) => void,
-  setSuccess: (success: string | null) => void,
   setConfirmDelete: (confirmDelete: { id: string; name: string } | null) => void,
   refreshData: () => void
 ) => {
   try {
     if (isOverage) {
       await axios.delete(`${OVERAGES_API_ENDPOINT}/${planId}`);
-      setSuccess('Overage eliminado correctamente');
+      toast.success('Overage eliminado correctamente');
     } else {
       await axios.delete(`${PLANES_API_ENDPOINT}/${planId}`);
-      setSuccess('Plan eliminado correctamente');
+      toast.success('Plan eliminado correctamente');
     }
     setConfirmDelete(null);
-    setError(null);
     refreshData();
   } catch (err: unknown) {
     console.error(err);
-    setError('Error eliminando el plan');
-    setSuccess(null);
+    const errorMessage =
+      (err as { response?: { data?: { error?: string; message?: string } } })?.response?.data
+        ?.error ||
+      (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+      'Error eliminando el plan';
+    toast.error(errorMessage);
   }
 };
 
@@ -232,7 +273,6 @@ const useTabData = (tab: 'pagos' | 'planes' | 'overages', basePlansLength: numbe
   const [pagos, setPagos] = useState<Payment[]>([]);
   const [planes, setPlanes] = useState<Plan[]>([]);
   const [overages, setOverages] = useState<Plan[]>([]);
-  const [error, setError] = useState<string | null>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const refreshData = () => {
@@ -257,9 +297,8 @@ const useTabData = (tab: 'pagos' | 'planes' | 'overages', basePlansLength: numbe
         // Filtrar out overages - solo mostrar planes reales (sin isOverage y sin parentPlan)
         const planesOnly = arr.filter((p) => !p.isOverage && !p.parentPlan);
         setPlanes(planesOnly);
-        setError(null);
       } catch {
-        setError(`${ERROR_LOADING} planes`);
+        toast.error(`${ERROR_LOADING} planes`);
       }
     };
 
@@ -289,7 +328,7 @@ const useTabData = (tab: 'pagos' | 'planes' | 'overages', basePlansLength: numbe
         const arr: Plan[] = Array.isArray(res.data) ? res.data : Object.values(res.data || {});
         setPlanes(arr);
       } catch {
-        setError(`${ERROR_LOADING} overages`);
+        toast.error(`${ERROR_LOADING} overages`);
       }
     };
 
@@ -306,7 +345,7 @@ const useTabData = (tab: 'pagos' | 'planes' | 'overages', basePlansLength: numbe
     }
   }, [tab, basePlansLength, refreshTrigger]);
 
-  return { pagos, planes, overages, error, setError, refreshData };
+  return { pagos, planes, overages, refreshData };
 };
 
 const PlanRow: React.FC<{
@@ -411,26 +450,14 @@ const PlanesTab: React.FC<{
   planes: Plan[];
   overages: Plan[];
   isSuperAdmin: boolean;
-  error: string | null;
-  success: string | null;
   onNewPlan: () => void;
   onEditPlan: (p: Plan) => void;
   onDeletePlan: (p: Plan) => void;
-}> = ({ planes, overages, isSuperAdmin, error, success, onNewPlan, onEditPlan, onDeletePlan }) => (
+}> = ({ planes, overages, isSuperAdmin, onNewPlan, onEditPlan, onDeletePlan }) => (
   <Card
     title="Planes"
     headerActions={isSuperAdmin ? <NewItemButton label="Nuevo plan" onClick={onNewPlan} /> : null}
   >
-    {error && (
-      <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-        <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
-      </div>
-    )}
-    {success && (
-      <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-        <p className="text-green-600 dark:text-green-400 text-sm">{success}</p>
-      </div>
-    )}
     <PlanesTable
       planes={planes}
       overages={overages}
@@ -525,35 +552,14 @@ const OveragesTab: React.FC<{
   planes: Plan[];
   basePlans: Plan[];
   isSuperAdmin: boolean;
-  error: string | null;
-  success: string | null;
   onNewOverage: () => void;
   onEditOverage: (p: Plan) => void;
   onDeleteOverage: (p: Plan) => void;
-}> = ({
-  planes,
-  basePlans,
-  isSuperAdmin,
-  error,
-  success,
-  onNewOverage,
-  onEditOverage,
-  onDeleteOverage,
-}) => (
+}> = ({ planes, basePlans, isSuperAdmin, onNewOverage, onEditOverage, onDeleteOverage }) => (
   <Card
     title="Paquetes Overages"
     headerActions={<OveragesHeader isSuperAdmin={isSuperAdmin} onNewOverage={onNewOverage} />}
   >
-    {error && (
-      <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-        <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
-      </div>
-    )}
-    {success && (
-      <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-        <p className="text-green-600 dark:text-green-400 text-sm">{success}</p>
-      </div>
-    )}
     <OveragesTable
       planes={planes}
       basePlans={basePlans}
@@ -577,21 +583,42 @@ const MonthlyRevenueCard: React.FC<{ monthlyRevenue: number }> = ({ monthlyReven
   </div>
 );
 
-const RevenueHistoryChart: React.FC<{ revenueHistory: RevenueData[] }> = ({ revenueHistory }) => (
-  <Card title="Ingresos históricos (últimos 12 meses)">
-    <div className="mt-4">
-      <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={revenueHistory} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-          <CartesianGrid stroke="#e5e7eb" strokeDasharray="5 5" />
-          <XAxis dataKey="label" stroke="#6b7280" />
-          <YAxis stroke="#6b7280" />
-          <Tooltip formatter={(value: number) => `$${value.toLocaleString('es-AR')}`} />
-          <Bar dataKey="revenue" fill="#10b981" />
-        </BarChart>
-      </ResponsiveContainer>
-    </div>
-  </Card>
-);
+const RevenueHistoryChart: React.FC<{ revenueHistory: RevenueData[] }> = ({ revenueHistory }) => {
+  const formatCurrency = (value: number) => {
+    if (value >= 1000000) {
+      return `$${(value / 1000000).toFixed(1)}M`;
+    }
+    if (value >= 1000) {
+      return `$${(value / 1000).toFixed(0)}K`;
+    }
+    return `$${value}`;
+  };
+
+  return (
+    <Card title="Ingresos históricos (últimos 12 meses)">
+      <div className="mt-4">
+        {revenueHistory.length === 0 ? (
+          <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-8">
+            Sin información disponible.
+          </p>
+        ) : (
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={revenueHistory} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+              <CartesianGrid stroke="#e5e7eb" strokeDasharray="5 5" />
+              <XAxis dataKey="label" stroke="#6b7280" />
+              <YAxis stroke="#6b7280" tickFormatter={formatCurrency} width={80} />
+              <Tooltip
+                formatter={(value: number) => `$${Number(value).toLocaleString('es-AR')}`}
+                labelStyle={{ color: '#374151' }}
+              />
+              <Bar dataKey="revenue" fill="#10b981" />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
+      </div>
+    </Card>
+  );
+};
 
 const PurchasesChart: React.FC<{
   data: {
@@ -789,8 +816,6 @@ interface TabContentProps {
   overages: Plan[];
   basePlans: Plan[];
   isSuperAdmin: boolean;
-  error: string | null;
-  success: string | null;
   onNewPlan: () => void;
   onEditPlan: (p: Plan) => void;
   onDeletePlan: (p: Plan) => void;
@@ -806,8 +831,6 @@ const TabContent: React.FC<TabContentProps> = ({
   overages,
   basePlans,
   isSuperAdmin,
-  error,
-  success,
   onNewPlan,
   onEditPlan,
   onDeletePlan,
@@ -833,8 +856,6 @@ const TabContent: React.FC<TabContentProps> = ({
         planes={planes}
         overages={overages}
         isSuperAdmin={isSuperAdmin}
-        error={error}
-        success={success}
         onNewPlan={onNewPlan}
         onEditPlan={onEditPlan}
         onDeletePlan={onDeletePlan}
@@ -847,8 +868,6 @@ const TabContent: React.FC<TabContentProps> = ({
       planes={planes}
       basePlans={basePlans}
       isSuperAdmin={isSuperAdmin}
-      error={error}
-      success={success}
       onNewOverage={onNewOverage}
       onEditOverage={onEditOverage}
       onDeleteOverage={onDeleteOverage}
@@ -863,8 +882,6 @@ interface ModalsProps {
   basePlans: Plan[];
   setEditing: (plan: Partial<Plan> | null) => void;
   setConfirmDelete: (deleteInfo: { id: string; name: string } | null) => void;
-  setError: (error: string | null) => void;
-  setSuccess: (success: string | null) => void;
   refreshData: () => void;
 }
 
@@ -875,27 +892,18 @@ const Modals: React.FC<ModalsProps> = ({
   basePlans,
   setEditing,
   setConfirmDelete,
-  setError,
-  setSuccess,
   refreshData,
 }) => {
   const handleSave = (updated: Partial<Plan>) => {
     if (editing) {
-      void handleSavePlan(editing, updated, setError, setSuccess, setEditing, refreshData);
+      void handleSavePlan(editing, updated, setEditing, refreshData);
     }
   };
 
   const handleDelete = () => {
     if (confirmDelete) {
       const isOverage = tab === 'overages';
-      void handleDeletePlan(
-        confirmDelete.id,
-        isOverage,
-        setError,
-        setSuccess,
-        setConfirmDelete,
-        refreshData
-      );
+      void handleDeletePlan(confirmDelete.id, isOverage, setConfirmDelete, refreshData);
     }
   };
 
@@ -927,13 +935,12 @@ const FacturacionPage: React.FC = () => {
   const { user } = useAuth();
   const isSuperAdmin = user?.isSuperAdmin === true;
   const { tab, handleTabChange } = useTabSync();
-  const [success, setSuccess] = useState<string | null>(null);
   const [editing, setEditing] = useState<Partial<Plan> | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
 
   const analytics = useAnalytics();
   const { basePlans } = useBasePlans(tab);
-  const { planes, overages, error, setError, refreshData } = useTabData(tab, basePlans.length);
+  const { planes, overages, refreshData } = useTabData(tab, basePlans.length);
 
   return (
     <div>
@@ -947,13 +954,11 @@ const FacturacionPage: React.FC = () => {
         overages={overages}
         basePlans={basePlans}
         isSuperAdmin={isSuperAdmin}
-        error={error}
-        success={success}
         onNewPlan={() => setEditing({} as Partial<Plan>)}
         onEditPlan={(p) => setEditing(p)}
         onDeletePlan={(p) => setConfirmDelete({ id: p.id, name: p.name })}
         onNewOverage={() => setEditing({ isOverage: true } as Partial<Plan>)}
-        onEditOverage={(p) => setEditing(p)}
+        onEditOverage={(p) => setEditing({ ...p, isOverage: true })}
         onDeleteOverage={(p) => setConfirmDelete({ id: p.id, name: p.name })}
       />
 
@@ -964,8 +969,6 @@ const FacturacionPage: React.FC = () => {
         basePlans={basePlans}
         setEditing={setEditing}
         setConfirmDelete={setConfirmDelete}
-        setError={setError}
-        setSuccess={setSuccess}
         refreshData={refreshData}
       />
     </div>

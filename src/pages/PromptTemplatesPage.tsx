@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
 import axios from 'axios';
 
 import ConfirmModal from '../components/ConfirmModal';
@@ -96,6 +97,26 @@ const usePromptTemplatesData = () => {
   return { templates, loading, refetch };
 };
 
+const validateTemplate = (tpl: PromptTemplate): string | null => {
+  if ((!tpl.name || tpl.name.trim() === '') && (!tpl.nombre || tpl.nombre.trim() === '')) {
+    return 'El nombre de la plantilla es requerido';
+  }
+  const contenido = tpl.contenido_prompt || tpl.template || '';
+  if (!contenido || contenido.trim() === '') {
+    return 'El contenido de la plantilla es requerido';
+  }
+  return null;
+};
+
+const extractErrorMessage = (err: unknown): string => {
+  const errorObj = err as { response?: { data?: { error?: string; message?: string } } };
+  return (
+    errorObj?.response?.data?.error ||
+    errorObj?.response?.data?.message ||
+    'Error guardando plantilla'
+  );
+};
+
 const usePromptTemplateHandlers = (
   editing: PromptTemplate | null,
   toDelete: PromptTemplate | null,
@@ -105,14 +126,22 @@ const usePromptTemplateHandlers = (
   refetch: () => void
 ) => {
   const handleSave = async (tpl: PromptTemplate) => {
+    const validationError = validateTemplate(tpl);
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
     try {
       await saveTemplate(tpl, editing);
+      toast.success(
+        editing ? 'Plantilla actualizada correctamente' : 'Plantilla creada correctamente'
+      );
       setShowModal(false);
       setEditing(null);
       void refetch();
     } catch (err) {
       console.error(err);
-      alert('Error guardando plantilla');
+      toast.error(extractErrorMessage(err));
     }
   };
 

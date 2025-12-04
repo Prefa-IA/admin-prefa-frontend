@@ -110,6 +110,116 @@ const useHeatMapData = () => {
   return heatPoints;
 };
 
+const calculateYAxisTicks = (
+  yAxisDomain: [number, number],
+  yAxisInterval: 10 | 100 | 1000 | 10000
+): number[] => {
+  const maxTickValue = yAxisDomain[1];
+  const maxTick =
+    typeof maxTickValue === 'number' && !Number.isNaN(maxTickValue)
+      ? maxTickValue
+      : yAxisInterval * 4;
+  const numTicks = Math.max(4, Math.ceil(maxTick / yAxisInterval));
+  const ticks = Array.from({ length: numTicks }, (_, i) => {
+    const tick = (i + 1) * yAxisInterval;
+    return tick <= maxTick ? tick : null;
+  }).filter((tick): tick is number => tick !== null);
+  return ticks.length === 0 ? [yAxisInterval] : ticks;
+};
+
+const ChartControls: React.FC<{
+  yAxisInterval: 10 | 100 | 1000 | 10000;
+  onYAxisIntervalChange: (value: 10 | 100 | 1000 | 10000) => void;
+  range: 'day' | 'week' | 'month' | 'year' | 'historic';
+  onRangeChange: (r: 'day' | 'week' | 'month' | 'year' | 'historic') => void;
+}> = ({ yAxisInterval, onYAxisIntervalChange, range, onRangeChange }) => (
+  <div className="flex gap-2">
+    <select
+      value={yAxisInterval}
+      onChange={(e) => onYAxisIntervalChange(Number(e.target.value) as 10 | 100 | 1000 | 10000)}
+      className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+      title="Intervalo del eje Y"
+    >
+      <option value="10">De a 10</option>
+      <option value="100">De a 100</option>
+      <option value="1000">De a 1000</option>
+      <option value="10000">De a 10000</option>
+    </select>
+    <select
+      value={range}
+      onChange={(e) =>
+        onRangeChange(e.target.value as 'day' | 'week' | 'month' | 'year' | 'historic')
+      }
+      className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+    >
+      <option value="day">Día</option>
+      <option value="week">Semana</option>
+      <option value="month">Mes</option>
+      <option value="year">Año</option>
+      <option value="historic">Histórico</option>
+    </select>
+  </div>
+);
+
+const ConsultasLineChart: React.FC<{
+  series: {
+    label: string;
+    busquedasDirecciones: number;
+    prefaSimple: number;
+    prefaCompleta: number;
+    prefaCompuesta: number;
+  }[];
+  range: 'day' | 'week' | 'month' | 'year' | 'historic';
+  yAxisDomain: [number, number];
+  yAxisTicks: number[];
+}> = ({ series, range, yAxisDomain, yAxisTicks }) => (
+  <ResponsiveContainer width="100%" height={300}>
+    <LineChart data={series} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+      <CartesianGrid stroke="#e5e7eb" strokeDasharray="5 5" />
+      <XAxis dataKey="label" hide={range === 'day' || range === 'historic'} stroke="#6b7280" />
+      <YAxis
+        stroke="#6b7280"
+        domain={yAxisDomain}
+        ticks={yAxisTicks}
+        interval={0}
+        allowDecimals={false}
+        tickFormatter={(value) => value.toLocaleString('es-AR')}
+        width={60}
+      />
+      <Tooltip />
+      <Legend />
+      <Line
+        type="monotone"
+        dataKey="busquedasDirecciones"
+        stroke="#f59e0b"
+        strokeWidth={2}
+        name="Búsqueda de direcciones"
+      />
+      <Line
+        type="monotone"
+        dataKey="prefaSimple"
+        stroke="#10b981"
+        strokeWidth={2}
+        name="Prefactibilidades simples"
+      />
+      <Line
+        type="monotone"
+        dataKey="prefaCompleta"
+        stroke="#0284c7"
+        strokeWidth={2}
+        name="Prefactibilidades completas"
+      />
+      <Line
+        type="monotone"
+        dataKey="prefaCompuesta"
+        stroke="#8b5cf6"
+        strokeWidth={2}
+        name="Prefactibilidades compuestas"
+      />
+    </LineChart>
+  </ResponsiveContainer>
+);
+
 const ConsultasChart: React.FC<{
   series: {
     label: string;
@@ -121,6 +231,8 @@ const ConsultasChart: React.FC<{
   range: 'day' | 'week' | 'month' | 'year' | 'historic';
   onRangeChange: (r: 'day' | 'week' | 'month' | 'year' | 'historic') => void;
 }> = ({ series, range, onRangeChange }) => {
+  const [yAxisInterval, setYAxisInterval] = React.useState<10 | 100 | 1000 | 10000>(10);
+
   const RANGE_LABELS: Record<'day' | 'week' | 'month' | 'year' | 'historic', string> = {
     day: 'día',
     week: 'semana',
@@ -130,69 +242,51 @@ const ConsultasChart: React.FC<{
   };
   const rangeLabel = Reflect.get(RANGE_LABELS, range) || RANGE_LABELS.month;
 
+  const maxValue = React.useMemo(() => {
+    if (series.length === 0) return 0;
+    return Math.max(
+      ...series.flatMap((s) => [
+        s.busquedasDirecciones,
+        s.prefaSimple,
+        s.prefaCompleta,
+        s.prefaCompuesta,
+      ])
+    );
+  }, [series]);
+
+  const yAxisDomain = React.useMemo((): [number, number] => {
+    if (maxValue === 0) {
+      return [0, yAxisInterval * 4];
+    }
+    const maxDomain = Math.ceil(maxValue / yAxisInterval) * yAxisInterval;
+    const minDomain = yAxisInterval * 4;
+    return [0, Math.max(maxDomain, minDomain)];
+  }, [maxValue, yAxisInterval]);
+
+  const yAxisTicks = React.useMemo(
+    () => calculateYAxisTicks(yAxisDomain, yAxisInterval),
+    [yAxisDomain, yAxisInterval]
+  );
+
   return (
     <Card
       title={`Consultas por ${rangeLabel}`}
       headerActions={
-        <div className="min-w-[150px]">
-          <select
-            value={range}
-            onChange={(e) =>
-              onRangeChange(e.target.value as 'day' | 'week' | 'month' | 'year' | 'historic')
-            }
-            className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-          >
-            <option value="day">Día</option>
-            <option value="week">Semana</option>
-            <option value="month">Mes</option>
-            <option value="year">Año</option>
-            <option value="historic">Histórico</option>
-          </select>
-        </div>
+        <ChartControls
+          yAxisInterval={yAxisInterval}
+          onYAxisIntervalChange={setYAxisInterval}
+          range={range}
+          onRangeChange={onRangeChange}
+        />
       }
     >
       <div className="mt-4">
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={series} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-            <CartesianGrid stroke="#e5e7eb" strokeDasharray="5 5" />
-            <XAxis
-              dataKey="label"
-              hide={range === 'day' || range === 'historic'}
-              stroke="#6b7280"
-            />
-            <YAxis stroke="#6b7280" />
-            <Tooltip />
-            <Legend />
-            <Line
-              type="monotone"
-              dataKey="busquedasDirecciones"
-              stroke="#f59e0b"
-              strokeWidth={2}
-              name="Búsqueda de direcciones"
-            />
-            <Line
-              type="monotone"
-              dataKey="prefaSimple"
-              stroke="#10b981"
-              strokeWidth={2}
-              name="Prefactibilidades simples"
-            />
-            <Line
-              type="monotone"
-              dataKey="prefaCompleta"
-              stroke="#0284c7"
-              strokeWidth={2}
-              name="Prefactibilidades completas"
-            />
-            <Line
-              type="monotone"
-              dataKey="prefaCompuesta"
-              stroke="#8b5cf6"
-              strokeWidth={2}
-              name="Prefactibilidades compuestas"
-            />
-          </LineChart>
-        </ResponsiveContainer>
+        <ConsultasLineChart
+          series={series}
+          range={range}
+          yAxisDomain={yAxisDomain}
+          yAxisTicks={yAxisTicks}
+        />
       </div>
     </Card>
   );
@@ -247,7 +341,7 @@ const BarriosCard: React.FC<{ barrios: { barrio: string; count: number }[] }> = 
 const TopUsersCard: React.FC<{
   users: Array<{ usuarioId: string; nombre: string; email: string; count: number }>;
 }> = ({ users }) => (
-  <Card title="Top 10 usuarios del mes (por créditos consumidos)">
+  <Card title="Top 15 usuarios del mes (por créditos consumidos)">
     <ul className="space-y-2 text-sm">
       {users.length === 0 ? (
         <li className="text-gray-500 dark:text-gray-400 text-center py-4">

@@ -25,6 +25,7 @@ interface PlanPayload {
   showDiscountSticker: boolean;
   isOverage: boolean;
   parentPlan?: string | undefined;
+  purchaseEnabled?: boolean;
 }
 
 interface Props {
@@ -85,6 +86,13 @@ const usePlanFormState = (plan: Partial<Plan> & { id?: string }) => {
   const [freeCredits, setFreeCredits] = useState<string>(
     plan.freeCredits !== undefined ? String(plan.freeCredits) : ''
   );
+  const [purchaseEnabled, setPurchaseEnabled] = useState<boolean>(plan.purchaseEnabled !== false);
+
+  React.useEffect(() => {
+    if (prioridad !== '2' && freeCredits !== '') {
+      setFreeCredits('');
+    }
+  }, [prioridad, freeCredits]);
 
   return {
     isNew,
@@ -116,6 +124,8 @@ const usePlanFormState = (plan: Partial<Plan> & { id?: string }) => {
     setShowSticker,
     freeCredits,
     setFreeCredits,
+    purchaseEnabled,
+    setPurchaseEnabled,
   };
 };
 
@@ -160,21 +170,26 @@ const buildPlanPayload = (
     showSticker,
     isOverage,
     parentPlan,
+    purchaseEnabled,
   } = formState;
+  const prioridadNum = prioridad === '' ? undefined : Number(prioridad);
+  const freeCreditsValue =
+    prioridadNum === 2 ? (freeCredits === '' ? undefined : Number(freeCredits)) : 0;
   return {
     id: plan.id ?? id,
     name: name.trim(),
     price: price === '' ? undefined : Number(price),
     creditosTotales: creditosTotales === '' ? undefined : Number(creditosTotales),
-    freeCredits: freeCredits === '' ? undefined : Number(freeCredits),
+    freeCredits: freeCreditsValue,
     permiteCompuestas,
     watermarkOrg: wmOrg,
     watermarkPrefas: wmPrefas,
     discountPct: discountPct === '' ? undefined : Number(discountPct),
     discountUntil: discountUntil || undefined,
-    prioridad: prioridad === '' ? undefined : Number(prioridad),
+    prioridad: prioridadNum,
     tag: tagId === '' ? null : tagId,
     showDiscountSticker: showSticker,
+    purchaseEnabled,
     isOverage,
     parentPlan: isOverage ? parentPlan : undefined,
   };
@@ -265,6 +280,15 @@ const PlanCheckboxes: React.FC<{ formState: ReturnType<typeof usePlanFormState> 
         className="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 dark:bg-gray-700"
       />
       <span>Mostrar etiqueta de descuento en esquina</span>
+    </label>
+    <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+      <input
+        type="checkbox"
+        checked={formState.purchaseEnabled}
+        onChange={(e) => formState.setPurchaseEnabled(e.target.checked)}
+        className="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 dark:bg-gray-700"
+      />
+      <span>Habilitar botón de compra</span>
     </label>
   </div>
 );
@@ -357,7 +381,7 @@ const OverageFields: React.FC<{
   const canChangeParentPlan = !!onParentPlanChange;
 
   return (
-    <div className="md:col-span-2">
+    <div className="md:col-span-2 space-y-4">
       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
         Plan base (al que pertenece este overage)
         <select
@@ -383,6 +407,21 @@ const OverageFields: React.FC<{
           </p>
         )}
       </label>
+      <div className="flex items-center space-x-2">
+        <input
+          type="checkbox"
+          id="purchaseEnabled-overage"
+          checked={formState.purchaseEnabled}
+          onChange={(e) => formState.setPurchaseEnabled(e.target.checked)}
+          className="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 dark:bg-gray-700"
+        />
+        <label
+          htmlFor="purchaseEnabled-overage"
+          className="text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
+          Habilitar botón de compra
+        </label>
+      </div>
     </div>
   );
 };
@@ -420,6 +459,95 @@ const PlanFormFields: React.FC<{
   );
 };
 
+const ModalHeader: React.FC<{ plan: Partial<Plan> & { id?: string }; isOverage: boolean }> = ({
+  plan,
+  isOverage,
+}) => (
+  <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+    {plan.id
+      ? isOverage
+        ? 'Editar paquete overage'
+        : 'Editar plan'
+      : isOverage
+        ? 'Nuevo paquete overage'
+        : 'Nuevo plan'}
+  </h3>
+);
+
+const ModalActions: React.FC<{ onClose: () => void; onSubmit: () => void }> = ({
+  onClose,
+  onSubmit,
+}) => (
+  <div className="flex justify-end space-x-3 pt-2">
+    <button className="btn-secondary" onClick={onClose}>
+      Cancelar
+    </button>
+    <button className="btn-primary" onClick={onSubmit}>
+      Guardar
+    </button>
+  </div>
+);
+
+const usePlanValidation = (
+  plan: Partial<Plan> & { id?: string },
+  formState: ReturnType<typeof usePlanFormState>,
+  currentParentPlan: string,
+  isOverage: boolean,
+  selectedTag: PlanTag | undefined,
+  setErrorMsg: (msg: string) => void
+) => {
+  const validateBasicFields = (): boolean => {
+    if (!formState.name || formState.name.trim() === '') {
+      setErrorMsg('El nombre del plan es requerido');
+      return false;
+    }
+    if (!plan.id && !formState.id) {
+      setErrorMsg('El ID único es requerido para nuevos planes');
+      return false;
+    }
+    return true;
+  };
+
+  const validateOverageFields = (): boolean => {
+    if (!currentParentPlan) {
+      setErrorMsg('Debes seleccionar un plan base para el overage');
+      return false;
+    }
+    return true;
+  };
+
+  const validatePlanFields = (): boolean => {
+    if (!formState.price || formState.price.trim() === '' || Number(formState.price) <= 0) {
+      setErrorMsg('El precio debe ser mayor a 0');
+      return false;
+    }
+    if (
+      !formState.creditosTotales ||
+      formState.creditosTotales.trim() === '' ||
+      Number(formState.creditosTotales) <= 0
+    ) {
+      setErrorMsg('Los créditos totales deben ser mayor a 0');
+      return false;
+    }
+    if (!validatePlanForm(formState.prioridad, formState.freeCredits, selectedTag, setErrorMsg)) {
+      return false;
+    }
+    return true;
+  };
+
+  const validate = (): boolean => {
+    if (!validateBasicFields()) {
+      return false;
+    }
+    if (isOverage) {
+      return validateOverageFields();
+    }
+    return validatePlanFields();
+  };
+
+  return { validate };
+};
+
 const EditPlanModal: React.FC<Props> = ({ plan, onClose, onSave, basePlans }) => {
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [currentParentPlan, setCurrentParentPlan] = useState<string>(plan.parentPlan || '');
@@ -427,22 +555,20 @@ const EditPlanModal: React.FC<Props> = ({ plan, onClose, onSave, basePlans }) =>
   const formState = usePlanFormState(plan);
   const selectedTag = tags.find((t) => t._id === formState.tagId);
   const isOverage = plan.isOverage ?? false;
+  const { validate } = usePlanValidation(
+    plan,
+    formState,
+    currentParentPlan,
+    isOverage,
+    selectedTag,
+    setErrorMsg
+  );
 
   const handleSubmit = () => {
     setErrorMsg('');
-    // Solo validar prioridad y créditos si NO es un overage
-    if (
-      !isOverage &&
-      !validatePlanForm(formState.prioridad, formState.freeCredits, selectedTag, setErrorMsg)
-    ) {
+    if (!validate()) {
       return;
     }
-    // Validar que los overages tengan un parentPlan
-    if (isOverage && !currentParentPlan) {
-      setErrorMsg('Debes seleccionar un plan base para el overage');
-      return;
-    }
-    // Crear un formState modificado con el parentPlan actual
     const modifiedFormState = {
       ...formState,
       parentPlan: currentParentPlan,
@@ -454,15 +580,7 @@ const EditPlanModal: React.FC<Props> = ({ plan, onClose, onSave, basePlans }) =>
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
       <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl space-y-4 shadow-xl">
-        <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-          {plan.id
-            ? isOverage
-              ? 'Editar paquete overage'
-              : 'Editar plan'
-            : isOverage
-              ? 'Nuevo paquete overage'
-              : 'Nuevo plan'}
-        </h3>
+        <ModalHeader plan={plan} isOverage={isOverage} />
         <PlanFormFields
           plan={{ ...plan, parentPlan: currentParentPlan }}
           formState={formState}
@@ -471,14 +589,7 @@ const EditPlanModal: React.FC<Props> = ({ plan, onClose, onSave, basePlans }) =>
           {...(isOverage ? { currentParentPlan, onParentPlanChange: setCurrentParentPlan } : {})}
         />
         {errorMsg && <p className="text-red-600 dark:text-red-400 text-sm">{errorMsg}</p>}
-        <div className="flex justify-end space-x-3 pt-2">
-          <button className="btn-secondary" onClick={onClose}>
-            Cancelar
-          </button>
-          <button className="btn-primary" onClick={handleSubmit}>
-            Guardar
-          </button>
-        </div>
+        <ModalActions onClose={onClose} onSubmit={handleSubmit} />
       </div>
     </div>
   );

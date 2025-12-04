@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
 import axios from 'axios';
 
 import ConfirmModal from '../components/ConfirmModal';
@@ -124,14 +125,24 @@ const CalculoPasosPage: React.FC = () => {
   const { pasos, loading, refetch } = usePasosData();
 
   const handleSave = async (p: Paso) => {
+    if (!p.nombre_paso || p.nombre_paso.trim() === '') {
+      toast.error('El nombre del paso es requerido');
+      return;
+    }
     try {
       await savePaso(p, editing);
+      toast.success(editing ? 'Paso actualizado correctamente' : 'Paso creado correctamente');
       setShowModal(false);
       setEditing(null);
       void refetch();
     } catch (err) {
       console.error(err);
-      alert('Error guardando paso');
+      const errorMessage =
+        (err as { response?: { data?: { error?: string; message?: string } } })?.response?.data
+          ?.error ||
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        'Error guardando paso';
+      toast.error(errorMessage);
     }
   };
 
