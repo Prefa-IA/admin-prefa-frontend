@@ -266,6 +266,7 @@ interface LogsTableProps {
   logs: AdminLog[];
   loading: boolean;
   totalPages: number;
+  total: number;
   page: number;
   onPageChange: (page: number) => void;
   onUndo: (logId: string) => Promise<void>;
@@ -276,6 +277,7 @@ const LogsTable: React.FC<LogsTableProps> = ({
   logs,
   loading,
   totalPages,
+  total,
   page,
   onPageChange,
   onUndo,
@@ -307,9 +309,9 @@ const LogsTable: React.FC<LogsTableProps> = ({
         </Table>
       </div>
       {totalPages > 1 && (
-        <div className="mt-4">
+        <div className="mt-4 px-4 pb-4">
           <Pagination
-            total={totalPages * 50}
+            total={total}
             current={page}
             pageSize={50}
             onPageChange={onPageChange}
@@ -324,6 +326,7 @@ const useLogsData = (isSuperAdmin: boolean, page: number, filters: typeof defaul
   const [logs, setLogs] = useState<AdminLog[]>([]);
   const [loading, setLoading] = useState(false);
   const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
 
   const loadLogs = useCallback(async () => {
     setLoading(true);
@@ -340,6 +343,7 @@ const useLogsData = (isSuperAdmin: boolean, page: number, filters: typeof defaul
       const res = await axios.get<LogsResponse>(`/admin/logs?${params.toString()}`);
       setLogs(res.data.logs);
       setTotalPages(res.data.pagination.totalPages);
+      setTotal(res.data.pagination.total);
     } catch (error) {
       console.error('Error cargando logs:', error);
     } finally {
@@ -352,7 +356,7 @@ const useLogsData = (isSuperAdmin: boolean, page: number, filters: typeof defaul
     void loadLogs();
   }, [isSuperAdmin, loadLogs]);
 
-  return { logs, loading, totalPages, loadLogs };
+  return { logs, loading, totalPages, total, loadLogs };
 };
 
 const defaultFilters = {
@@ -368,7 +372,7 @@ const AdminLogsPage: React.FC = () => {
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState(defaultFilters);
 
-  const { logs, loading, totalPages, loadLogs } = useLogsData(isSuperAdmin, page, filters);
+  const { logs, loading, totalPages, total, loadLogs } = useLogsData(isSuperAdmin, page, filters);
 
   const handleUndo = useCallback(
     async (logId: string) => {
@@ -415,6 +419,7 @@ const AdminLogsPage: React.FC = () => {
         logs={logs}
         loading={loading}
         totalPages={totalPages}
+        total={total}
         page={page}
         onPageChange={setPage}
         onUndo={handleUndo}
