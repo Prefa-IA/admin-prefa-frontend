@@ -1,165 +1,598 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
-interface Plan {
-  id: string;
+import { Plan } from '../../types/planes';
+
+interface PlanTag {
+  _id: string;
   name: string;
-  price: number;
-  maxPrefactibilidades?: number;
-  discountPct?: number;
-  freeCredits?: number;
-  discountUntil?: string | null;
-  prioridad?: number;
+  slug: string;
+}
+
+interface PlanPayload {
+  id?: string;
+  name: string;
+  price?: number | undefined;
+  creditosTotales?: number | undefined;
+  freeCredits?: number | undefined;
+  permiteCompuestas: boolean;
+  watermarkOrg: boolean;
+  watermarkPrefas: boolean;
+  discountPct?: number | undefined;
+  discountUntil?: string | undefined;
+  prioridad?: number | undefined;
+  tag: string | null;
+  showDiscountSticker: boolean;
+  isOverage: boolean;
+  parentPlan?: string | undefined;
+  purchaseEnabled?: boolean;
 }
 
 interface Props {
   plan: Partial<Plan> & { id?: string };
   onClose: () => void;
   onSave: (updated: Partial<Plan>) => void;
+  basePlans?: { id: string; name: string }[];
 }
 
-const EditPlanModal: React.FC<Props> = ({ plan, onClose, onSave }) => {
+const getInitialTagId = (tag: Plan['tag']): string => {
+  if (!tag) return '';
+  if (typeof tag === 'string') return tag;
+  return tag._id || '';
+};
+
+const getInitialStringValue = (value: number | undefined, isNew: boolean): string => {
+  return isNew ? '' : String(value ?? '');
+};
+
+const usePlanTags = () => {
+  const [tags, setTags] = useState<PlanTag[]>([]);
+  useEffect(() => {
+    const fetchTags = async () => {
+      try {
+        const response = await axios.get<PlanTag[]>('/api/admin/plan-tags');
+        setTags(response.data);
+      } catch {
+        // Silently handle errors
+      }
+    };
+    void fetchTags();
+  }, []);
+  return tags;
+};
+
+const usePlanFormState = (plan: Partial<Plan> & { id?: string }) => {
+  const isNew = !plan.id;
   const [id, setId] = useState(plan.id || '');
   const [name, setName] = useState(plan.name || '');
-  const isNew = !plan.id;
-  const [price, setPrice] = useState<string>(isNew ? '' : String(plan.price ?? ''));
-  const [creditosMes, setCreditosMes] = useState<string>((plan as any).creditosMes !== undefined ? String((plan as any).creditosMes) : '');
-  const [creditosDia, setCreditosDia] = useState<string>((plan as any).creditosDia !== undefined ? String((plan as any).creditosDia) : '');
-  const [permiteCompuestas, setPermiteCompuestas] = useState<boolean>((plan as any).permiteCompuestas ?? false);
-  const [wmOrg, setWmOrg] = useState<boolean>((plan as any).watermarkOrg ?? false);
-  const [wmPrefas, setWmPrefas] = useState<boolean>((plan as any).watermarkPrefas ?? false);
-  const [discountPct, setDiscountPct] = useState<string>(isNew ? '' : String(plan.discountPct ?? ''));
+  const [price, setPrice] = useState<string>(getInitialStringValue(plan.price, isNew));
+  const [creditosTotales, setCreditosTotales] = useState<string>(
+    plan.creditosTotales !== undefined ? String(plan.creditosTotales) : ''
+  );
+  const [permiteCompuestas, setPermiteCompuestas] = useState<boolean>(
+    plan.permiteCompuestas ?? false
+  );
+  const [wmOrg, setWmOrg] = useState<boolean>(plan.watermarkOrg ?? false);
+  const [wmPrefas, setWmPrefas] = useState<boolean>(plan.watermarkPrefas ?? false);
+  const [discountPct, setDiscountPct] = useState<string>(
+    getInitialStringValue(plan.discountPct, isNew)
+  );
   const [discountUntil, setDiscountUntil] = useState<string>(plan.discountUntil ?? '');
-  const [freeCredits, setFreeCredits] = useState<string>(plan.freeCredits !== undefined ? String(plan.freeCredits) : '');
-  const [prioridad, setPrioridad] = useState<string>(isNew ? '' : String((plan as any).prioridad ?? ''));
-  const [tags, setTags] = useState<{_id:string,name:string,slug:string}[]>([]);
-  const [tagId, setTagId] = useState<string>(()=>{
-    const tagField:any = (plan as any).tag;
-    if (!tagField) return '';
-    if (typeof tagField === 'string') return tagField;
-    return tagField._id || '';
-  });
-  const [showSticker, setShowSticker] = useState<boolean>((plan as any).showDiscountSticker !== false);
-  const [errorMsg,setErrorMsg]=useState<string>('');
+  const [prioridad, setPrioridad] = useState<string>(getInitialStringValue(plan.prioridad, isNew));
+  const [isOverage] = useState<boolean>(plan.isOverage ?? false);
+  const [parentPlan] = useState<string>(plan.parentPlan || '');
+  const [tagId, setTagId] = useState<string>(getInitialTagId(plan.tag));
+  const [showSticker, setShowSticker] = useState<boolean>(plan.showDiscountSticker !== false);
+  const [freeCredits, setFreeCredits] = useState<string>(
+    plan.freeCredits !== undefined ? String(plan.freeCredits) : ''
+  );
+  const [purchaseEnabled, setPurchaseEnabled] = useState<boolean>(plan.purchaseEnabled !== false);
 
-  useEffect(()=>{
-    axios.get('/api/admin/plan-tags').then(res=>setTags(res.data));
-  },[]);
-
-  const selectedTag = tags.find(t=>t._id===tagId);
-  const isSuperSave = selectedTag?.slug==='super-save';
-
-  const handleSubmit = () => {
-    // Validaciones
-    const selectedTag= tags.find(t=>t._id===tagId);
-    if(prioridad==='2'){
-      if(Number(freeCredits)<=0){ setErrorMsg('Debes ingresar créditos promocionales > 0 para prioridad 2'); return; }
+  React.useEffect(() => {
+    if (prioridad !== '2' && freeCredits !== '') {
+      setFreeCredits('');
     }
-    if(selectedTag && selectedTag.slug==='free-credits'){
-      if(prioridad!=='2' || Number(freeCredits)<=0){ setErrorMsg('La etiqueta "créditos gratis" requiere prioridad 2 y créditos promocionales > 0'); return; }
-    }
-    setErrorMsg('');
+  }, [prioridad, freeCredits]);
 
-    const payload: any = {
-      id: plan.id ?? id,
-      name: name.trim(),
-      price: price === '' ? undefined : Number(price),
-      creditosMes: creditosMes === '' ? undefined : Number(creditosMes),
-      creditosDia: creditosDia === '' ? undefined : Number(creditosDia),
-      permiteCompuestas,
-      watermarkOrg: wmOrg,
-      watermarkPrefas: wmPrefas,
-      discountPct: discountPct === '' ? undefined : Number(discountPct),
-      discountUntil: discountUntil || undefined,
-      prioridad: prioridad === '' ? undefined : Number(prioridad),
-      freeCredits: prioridad==='2' && freeCredits !== '' ? Number(freeCredits) : undefined,
-      tag: tagId === '' ? null : tagId,
-      showDiscountSticker: showSticker
-    };
-    onSave(payload);
+  return {
+    isNew,
+    id,
+    setId,
+    name,
+    setName,
+    price,
+    setPrice,
+    creditosTotales,
+    setCreditosTotales,
+    permiteCompuestas,
+    setPermiteCompuestas,
+    wmOrg,
+    setWmOrg,
+    wmPrefas,
+    setWmPrefas,
+    discountPct,
+    setDiscountPct,
+    discountUntil,
+    setDiscountUntil,
+    prioridad,
+    setPrioridad,
+    isOverage,
+    parentPlan,
+    tagId,
+    setTagId,
+    showSticker,
+    setShowSticker,
+    freeCredits,
+    setFreeCredits,
+    purchaseEnabled,
+    setPurchaseEnabled,
   };
+};
+
+const validatePlanForm = (
+  prioridad: string,
+  freeCredits: string,
+  selectedTag: PlanTag | undefined,
+  setErrorMsg: (msg: string) => void
+): boolean => {
+  if (prioridad === '2' && Number(freeCredits) <= 0) {
+    setErrorMsg('Debes ingresar créditos promocionales > 0 para prioridad 2');
+    return false;
+  }
+  if (selectedTag?.slug === 'free-credits') {
+    if (prioridad !== '2' || Number(freeCredits) <= 0) {
+      setErrorMsg(
+        'La etiqueta "créditos gratis" requiere prioridad 2 y créditos promocionales > 0'
+      );
+      return false;
+    }
+  }
+  return true;
+};
+
+const buildPlanPayload = (
+  plan: Partial<Plan> & { id?: string },
+  formState: ReturnType<typeof usePlanFormState>
+): PlanPayload => {
+  const {
+    id,
+    name,
+    price,
+    creditosTotales,
+    freeCredits,
+    permiteCompuestas,
+    wmOrg,
+    wmPrefas,
+    discountPct,
+    discountUntil,
+    prioridad,
+    tagId,
+    showSticker,
+    isOverage,
+    parentPlan,
+    purchaseEnabled,
+  } = formState;
+  const prioridadNum = prioridad === '' ? undefined : Number(prioridad);
+  const freeCreditsValue =
+    prioridadNum === 2 ? (freeCredits === '' ? undefined : Number(freeCredits)) : 0;
+  return {
+    id: plan.id ?? id,
+    name: name.trim(),
+    price: price === '' ? undefined : Number(price),
+    creditosTotales: creditosTotales === '' ? undefined : Number(creditosTotales),
+    freeCredits: freeCreditsValue,
+    permiteCompuestas,
+    watermarkOrg: wmOrg,
+    watermarkPrefas: wmPrefas,
+    discountPct: discountPct === '' ? undefined : Number(discountPct),
+    discountUntil: discountUntil || undefined,
+    prioridad: prioridadNum,
+    tag: tagId === '' ? null : tagId,
+    showDiscountSticker: showSticker,
+    purchaseEnabled,
+    isOverage,
+    parentPlan: isOverage ? parentPlan : undefined,
+  };
+};
+
+const PlanBasicFields: React.FC<{
+  plan: Partial<Plan> & { id?: string };
+  formState: ReturnType<typeof usePlanFormState>;
+}> = ({ plan, formState }) => (
+  <>
+    {!plan.id && (
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        ID único
+        <input
+          className="input-field w-full"
+          value={formState.id}
+          onChange={(e) => formState.setId(e.target.value)}
+        />
+      </label>
+    )}
+    <label className="block text-sm font-medium md:col-span-2 text-gray-700 dark:text-gray-300">
+      Nombre
+      <input
+        className="input-field w-full"
+        value={formState.name}
+        onChange={(e) => formState.setName(e.target.value)}
+      />
+    </label>
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+      Precio (ARS)
+      <input
+        type="number"
+        className="input-field w-full"
+        value={formState.price}
+        placeholder="Ej: 210000"
+        onChange={(e) => formState.setPrice(e.target.value)}
+      />
+    </label>
+    <label className="block text-sm font-medium md:col-span-2 text-gray-700 dark:text-gray-300">
+      Créditos totales del plan
+      <input
+        type="number"
+        className="input-field w-full"
+        value={formState.creditosTotales}
+        placeholder="Ej: 1800"
+        onChange={(e) => formState.setCreditosTotales(e.target.value)}
+      />
+    </label>
+  </>
+);
+
+const PlanCheckboxes: React.FC<{ formState: ReturnType<typeof usePlanFormState> }> = ({
+  formState,
+}) => (
+  <div className="md:col-span-2 flex flex-col space-y-2">
+    <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+      <input
+        type="checkbox"
+        checked={formState.permiteCompuestas}
+        onChange={(e) => formState.setPermiteCompuestas(e.target.checked)}
+        className="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 dark:bg-gray-700"
+      />
+      <span>Permite prefactibilidades compuestas</span>
+    </label>
+    <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+      <input
+        type="checkbox"
+        checked={formState.wmOrg}
+        onChange={(e) => formState.setWmOrg(e.target.checked)}
+        className="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 dark:bg-gray-700"
+      />
+      <span>Marca de agua organización</span>
+    </label>
+    <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+      <input
+        type="checkbox"
+        checked={formState.wmPrefas}
+        onChange={(e) => formState.setWmPrefas(e.target.checked)}
+        className="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 dark:bg-gray-700"
+      />
+      <span>Marca de agua PreFac</span>
+    </label>
+    <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+      <input
+        type="checkbox"
+        checked={formState.showSticker}
+        onChange={(e) => formState.setShowSticker(e.target.checked)}
+        className="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 dark:bg-gray-700"
+      />
+      <span>Mostrar etiqueta de descuento en esquina</span>
+    </label>
+    <label className="flex items-center space-x-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+      <input
+        type="checkbox"
+        checked={formState.purchaseEnabled}
+        onChange={(e) => formState.setPurchaseEnabled(e.target.checked)}
+        className="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 dark:bg-gray-700"
+      />
+      <span>Habilitar botón de compra</span>
+    </label>
+  </div>
+);
+
+const PlanDiscountFields: React.FC<{ formState: ReturnType<typeof usePlanFormState> }> = ({
+  formState,
+}) => (
+  <>
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+      Descuento %
+      <input
+        type="number"
+        className="input-field w-full"
+        value={formState.discountPct}
+        placeholder="Ej: 10"
+        onChange={(e) => formState.setDiscountPct(e.target.value)}
+      />
+    </label>
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+      Descuento hasta (YYYY-MM-DD)
+      <input
+        type="date"
+        className="input-field w-full"
+        value={formState.discountUntil?.substring(0, 10) || ''}
+        onChange={(e) => formState.setDiscountUntil(e.target.value)}
+      />
+    </label>
+  </>
+);
+
+const PlanPriorityFields: React.FC<{
+  formState: ReturnType<typeof usePlanFormState>;
+  tags: ReturnType<typeof usePlanTags>;
+}> = ({ formState, tags }) => (
+  <>
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+      Prioridad
+      <select
+        className="input-field w-full"
+        value={formState.prioridad}
+        onChange={(e) => formState.setPrioridad(e.target.value)}
+      >
+        <option value="">— Seleccionar —</option>
+        <option value="1">1 (Recomendado)</option>
+        <option value="2">2 (Créditos bono)</option>
+        <option value="3">3 (Super Ahorro)</option>
+        <option value="4">4 (Básico)</option>
+      </select>
+    </label>
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+      Etiqueta visual
+      <select
+        className="input-field w-full"
+        value={formState.tagId}
+        onChange={(e) => formState.setTagId(e.target.value)}
+      >
+        <option value="">— Ninguna —</option>
+        {tags.map((t) => (
+          <option key={t._id} value={t._id}>
+            {t.name}
+          </option>
+        ))}
+      </select>
+    </label>
+    {formState.prioridad === '2' && (
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        Créditos promocionales (solo prioridad 2)
+        <input
+          type="number"
+          className="input-field w-full"
+          value={formState.freeCredits}
+          placeholder="Ej: 3000"
+          onChange={(e) => formState.setFreeCredits(e.target.value)}
+        />
+      </label>
+    )}
+  </>
+);
+
+const OverageFields: React.FC<{
+  formState: ReturnType<typeof usePlanFormState>;
+  basePlans?: { id: string; name: string }[];
+  currentParentPlan: string;
+  onParentPlanChange?: (parentPlan: string) => void;
+}> = ({ formState, basePlans, currentParentPlan, onParentPlanChange }) => {
+  if (!formState.isOverage || !basePlans || basePlans.length === 0) {
+    return null;
+  }
+
+  const canChangeParentPlan = !!onParentPlanChange;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-2xl space-y-4 shadow-xl">
-        <h3 className="text-xl font-semibold">{plan.id ? 'Editar plan' : 'Nuevo plan'}</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {!plan.id && (
-            <label className="block text-sm font-medium">ID único
-              <input className="input-field w-full" value={id} onChange={e => setId(e.target.value)} />
-            </label>
-          )}
-          <label className="block text-sm font-medium md:col-span-2">Nombre
-            <input className="input-field w-full" value={name} onChange={e => setName(e.target.value)} />
-          </label>
-          <label className="block text-sm font-medium">Precio (ARS)
-            <input type="number" className="input-field w-full" value={price} placeholder="Ej: 210000" onChange={e => setPrice(e.target.value)} />
-          </label>
-          <label className="block text-sm font-medium">Créditos por mes (vacío = ilimitado)
-            <input type="number" className="input-field w-full" value={creditosMes} onChange={e => setCreditosMes(e.target.value)} />
-          </label>
-          <label className="block text-sm font-medium">Créditos por día (vacío = ilimitado)
-            <input type="number" className="input-field w-full" value={creditosDia} onChange={e => setCreditosDia(e.target.value)} />
-          </label>
-          <div className="md:col-span-2 flex flex-col space-y-2">
-            <label className="flex items-center space-x-2 text-sm font-medium">
-              <input type="checkbox" checked={permiteCompuestas} onChange={e=>setPermiteCompuestas(e.target.checked)} />
-              <span>Permite prefactibilidades compuestas</span>
-            </label>
-            <label className="flex items-center space-x-2 text-sm font-medium">
-              <input type="checkbox" checked={wmOrg} onChange={e=>setWmOrg(e.target.checked)} />
-              <span>Marca de agua organización</span>
-            </label>
-            <label className="flex items-center space-x-2 text-sm font-medium">
-              <input type="checkbox" checked={wmPrefas} onChange={e=>setWmPrefas(e.target.checked)} />
-              <span>Marca de agua PreFac</span>
-            </label>
-            <label className="flex items-center space-x-2 text-sm font-medium">
-              <input type="checkbox" checked={showSticker} onChange={e=>setShowSticker(e.target.checked)} />
-              <span>Mostrar etiqueta de descuento en esquina</span>
-            </label>
-          </div>
-          <label className="block text-sm font-medium">Descuento %
-            <input type="number" className="input-field w-full" value={discountPct} placeholder="Ej: 10" onChange={e => setDiscountPct(e.target.value)} />
-          </label>
-          {prioridad==='2' && (
-          <label className="block text-sm font-medium">Créditos promocionales (solo prioridad 2)
-            <input type="number" className="input-field w-full" value={freeCredits} placeholder="Ej: 3" onChange={e=>setFreeCredits(e.target.value)} />
-          </label>
-          )}
-          <label className="block text-sm font-medium">Descuento hasta (YYYY-MM-DD)
-            <input type="date" className="input-field w-full" value={discountUntil?.substring(0,10) || ''} onChange={e => setDiscountUntil(e.target.value)} />
-          </label>
-          <label className="block text-sm font-medium">Prioridad
-            <select
-              className="input-field w-full"
-              value={prioridad}
-              onChange={e => { const val=e.target.value; setPrioridad(val); if(val!=='2') setFreeCredits('0'); }}
-            >
-              <option value="">— Seleccionar —</option>
-              <option value="1">1 (Recomendado)</option>
-              <option value="2">2 (Créditos bono)</option>
-              <option value="3">3 (Super Ahorro)</option>
-              <option value="4">4 (Básico)</option>
-            </select>
-          </label>
-          <label className="block text-sm font-medium">Etiqueta visual
-            <select className="input-field w-full" value={tagId} onChange={e=>setTagId(e.target.value)}>
-              <option value="">— Ninguna —</option>
-              {tags.map(t=> (
-                <option key={t._id} value={t._id}>{t.name}</option>
-              ))}
-            </select>
-          </label>
-        </div>
-        {errorMsg && <p className="text-red-600 text-sm">{errorMsg}</p>}
-        <div className="flex justify-end space-x-3 pt-2">
-          <button className="btn-secondary" onClick={onClose}>Cancelar</button>
-          <button className="btn-primary" onClick={handleSubmit}>Guardar</button>
-        </div>
+    <div className="md:col-span-2 space-y-4">
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+        Plan base (al que pertenece este overage)
+        <select
+          className="input-field w-full"
+          value={currentParentPlan}
+          onChange={(e) => {
+            if (canChangeParentPlan) {
+              onParentPlanChange(e.target.value);
+            }
+          }}
+          disabled={!canChangeParentPlan}
+        >
+          <option value="">— Seleccionar plan base —</option>
+          {basePlans.map((bp) => (
+            <option key={bp.id} value={bp.id}>
+              {bp.name}
+            </option>
+          ))}
+        </select>
+        {!canChangeParentPlan && (
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            No se puede cambiar el plan base
+          </p>
+        )}
+      </label>
+      <div className="flex items-center space-x-2">
+        <input
+          type="checkbox"
+          id="purchaseEnabled-overage"
+          checked={formState.purchaseEnabled}
+          onChange={(e) => formState.setPurchaseEnabled(e.target.checked)}
+          className="rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500 dark:bg-gray-700"
+        />
+        <label
+          htmlFor="purchaseEnabled-overage"
+          className="text-sm font-medium text-gray-700 dark:text-gray-300"
+        >
+          Habilitar botón de compra
+        </label>
       </div>
     </div>
   );
 };
 
-export default EditPlanModal; 
+const PlanFormFields: React.FC<{
+  plan: Partial<Plan> & { id?: string };
+  formState: ReturnType<typeof usePlanFormState>;
+  tags: ReturnType<typeof usePlanTags>;
+  basePlans?: { id: string; name: string }[];
+  currentParentPlan?: string;
+  onParentPlanChange?: (parentPlan: string) => void;
+}> = ({ plan, formState, tags, basePlans, currentParentPlan, onParentPlanChange }) => {
+  const isOverage = formState.isOverage;
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <PlanBasicFields plan={plan} formState={formState} />
+      {isOverage ? (
+        basePlans && currentParentPlan !== undefined ? (
+          <OverageFields
+            formState={formState}
+            basePlans={basePlans}
+            currentParentPlan={currentParentPlan}
+            {...(onParentPlanChange ? { onParentPlanChange } : {})}
+          />
+        ) : null
+      ) : (
+        <>
+          <PlanCheckboxes formState={formState} />
+          <PlanDiscountFields formState={formState} />
+          <PlanPriorityFields formState={formState} tags={tags} />
+        </>
+      )}
+    </div>
+  );
+};
+
+const ModalHeader: React.FC<{ plan: Partial<Plan> & { id?: string }; isOverage: boolean }> = ({
+  plan,
+  isOverage,
+}) => (
+  <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+    {plan.id
+      ? isOverage
+        ? 'Editar paquete overage'
+        : 'Editar plan'
+      : isOverage
+        ? 'Nuevo paquete overage'
+        : 'Nuevo plan'}
+  </h3>
+);
+
+const ModalActions: React.FC<{ onClose: () => void; onSubmit: () => void }> = ({
+  onClose,
+  onSubmit,
+}) => (
+  <div className="flex justify-end space-x-3 pt-2">
+    <button className="btn-secondary" onClick={onClose}>
+      Cancelar
+    </button>
+    <button className="btn-primary" onClick={onSubmit}>
+      Guardar
+    </button>
+  </div>
+);
+
+const usePlanValidation = (
+  plan: Partial<Plan> & { id?: string },
+  formState: ReturnType<typeof usePlanFormState>,
+  currentParentPlan: string,
+  isOverage: boolean,
+  selectedTag: PlanTag | undefined,
+  setErrorMsg: (msg: string) => void
+) => {
+  const validateBasicFields = (): boolean => {
+    if (!formState.name || formState.name.trim() === '') {
+      setErrorMsg('El nombre del plan es requerido');
+      return false;
+    }
+    if (!plan.id && !formState.id) {
+      setErrorMsg('El ID único es requerido para nuevos planes');
+      return false;
+    }
+    return true;
+  };
+
+  const validateOverageFields = (): boolean => {
+    if (!currentParentPlan) {
+      setErrorMsg('Debes seleccionar un plan base para el overage');
+      return false;
+    }
+    return true;
+  };
+
+  const validatePlanFields = (): boolean => {
+    if (!formState.price || formState.price.trim() === '' || Number(formState.price) <= 0) {
+      setErrorMsg('El precio debe ser mayor a 0');
+      return false;
+    }
+    if (
+      !formState.creditosTotales ||
+      formState.creditosTotales.trim() === '' ||
+      Number(formState.creditosTotales) <= 0
+    ) {
+      setErrorMsg('Los créditos totales deben ser mayor a 0');
+      return false;
+    }
+    if (!validatePlanForm(formState.prioridad, formState.freeCredits, selectedTag, setErrorMsg)) {
+      return false;
+    }
+    return true;
+  };
+
+  const validate = (): boolean => {
+    if (!validateBasicFields()) {
+      return false;
+    }
+    if (isOverage) {
+      return validateOverageFields();
+    }
+    return validatePlanFields();
+  };
+
+  return { validate };
+};
+
+const EditPlanModal: React.FC<Props> = ({ plan, onClose, onSave, basePlans }) => {
+  const [errorMsg, setErrorMsg] = useState<string>('');
+  const [currentParentPlan, setCurrentParentPlan] = useState<string>(plan.parentPlan || '');
+  const tags = usePlanTags();
+  const formState = usePlanFormState(plan);
+  const selectedTag = tags.find((t) => t._id === formState.tagId);
+  const isOverage = plan.isOverage ?? false;
+  const { validate } = usePlanValidation(
+    plan,
+    formState,
+    currentParentPlan,
+    isOverage,
+    selectedTag,
+    setErrorMsg
+  );
+
+  const handleSubmit = () => {
+    setErrorMsg('');
+    if (!validate()) {
+      return;
+    }
+    const modifiedFormState = {
+      ...formState,
+      parentPlan: currentParentPlan,
+    };
+    const payload = buildPlanPayload(plan, modifiedFormState);
+    onSave(payload as Partial<Plan>);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl space-y-4 shadow-xl">
+        <ModalHeader plan={plan} isOverage={isOverage} />
+        <PlanFormFields
+          plan={{ ...plan, parentPlan: currentParentPlan }}
+          formState={formState}
+          tags={tags}
+          {...(basePlans ? { basePlans } : {})}
+          {...(isOverage ? { currentParentPlan, onParentPlanChange: setCurrentParentPlan } : {})}
+        />
+        {errorMsg && <p className="text-red-600 dark:text-red-400 text-sm">{errorMsg}</p>}
+        <ModalActions onClose={onClose} onSubmit={handleSubmit} />
+      </div>
+    </div>
+  );
+};
+
+export default EditPlanModal;

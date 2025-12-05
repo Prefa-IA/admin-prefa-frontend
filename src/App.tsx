@@ -1,235 +1,341 @@
 import React from 'react';
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from 'react-router-dom';
+import { BrowserRouter as Router, Navigate, Route, Routes } from 'react-router-dom';
 
-import Dashboard from './pages/Dashboard';
-import UsersPage from './pages/UsersPage';
-import ReportsPage from './pages/ReportsPage';
-import LoginPage from './pages/LoginPage';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Layout from './components/Layout';
-import FacturacionPage from './pages/FacturacionPage';
-import CapasPage from './pages/CapasPage';
-import NormativaPage from './pages/NormativaPage';
-import CodigoUrbanisticoPage from './pages/CodigoUrbanisticoPage';
-import ParametrosEdificabilidadPage from './pages/ParametrosEdificabilidadPage';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ThemeProvider } from './contexts/ThemeContext';
+import AdminLogsPage from './pages/AdminLogsPage';
+import AdminUsersPage from './pages/AdminUsersPage';
 import AfectacionesPage from './pages/AfectacionesPage';
-import ApiServiciosPage from './pages/ApiServiciosPage';
-import AlgoritmosScoringPage from './pages/AlgoritmosScoringPage';
-import ReglasAdminPage from './pages/ReglasAdminPage';
-import ReglasCategoriaPage from './pages/ReglasCategoriaPage';
-import PromptTemplatesPage from './pages/PromptTemplatesPage';
-import EmailTemplatesPage from './pages/EmailTemplatesPage';
-import PlanTagsPage from './pages/PlanTagsPage';
+import CalculoPasosPage from './pages/CalculoPasosPage';
+import CapasPage from './pages/CapasPage';
+import ChatbotPage from './pages/ChatbotPage';
+import CodigoUrbanisticoPage from './pages/CodigoUrbanisticoPage';
 import ConstantesTronerasPage from './pages/ConstantesTronerasPage';
+import CreditsConfigPage from './pages/CreditsConfigPage';
+import Dashboard from './pages/Dashboard';
+import EmailTemplatesPage from './pages/EmailTemplatesPage';
+import FacturacionPage from './pages/FacturacionPage';
+import FailedConsultationsPage from './pages/FailedConsultationsPage';
+import LegalContentPage from './pages/LegalContentPage';
+import LoginPage from './pages/LoginPage';
+import NewsletterHistoryPage from './pages/NewsletterHistoryPage';
+import NormativaPage from './pages/NormativaPage';
+import ParametrosEdificabilidadPage from './pages/ParametrosEdificabilidadPage';
+import PlanTagsPage from './pages/PlanTagsPage';
+import PromptTemplatesPage from './pages/PromptTemplatesPage';
+import RedesSocialesPage from './pages/RedesSocialesPage';
+import ReglasAdminPage from './pages/ReglasAdminPage';
+import ReglasAllPage from './pages/ReglasAllPage';
+import ReglasCategoriaPage from './pages/ReglasCategoriaPage';
+import ReglasLogicasPage from './pages/ReglasLogicasPage';
+import ReportsPage from './pages/ReportsPage';
+import SendNewsletterPage from './pages/SendNewsletterPage';
+import StrategicDataPage from './pages/StrategicDataPage';
+import UsersPage from './pages/UsersPage';
 
 const PrivateRoute: React.FC<{ children: JSX.Element }> = ({ children }) => {
   const { user, loading } = useAuth();
-  if (loading) return null; // o spinner
+  if (loading) return null;
   return user && user.role === 'admin' ? children : <Navigate to="/login" />;
 };
 
-const App: React.FC = () => {
-  return (
+const RouteWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <PrivateRoute>
+    <Layout>{children}</Layout>
+  </PrivateRoute>
+);
+
+const createMainRoutes = (): React.ReactElement[] => [
+  <Route key="login" path="/login" element={<LoginPage />} />,
+  <Route
+    key="dashboard"
+    path="/"
+    element={
+      <RouteWrapper>
+        <Dashboard />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="usuarios"
+    path="/usuarios"
+    element={
+      <RouteWrapper>
+        <UsersPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="datos-estrategicos"
+    path="/usuarios/datos-estrategicos"
+    element={
+      <RouteWrapper>
+        <StrategicDataPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="informes"
+    path="/informes"
+    element={
+      <RouteWrapper>
+        <ReportsPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="consultas-fallidas"
+    path="/consultas-fallidas"
+    element={
+      <RouteWrapper>
+        <FailedConsultationsPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="facturacion"
+    path="/facturacion"
+    element={
+      <RouteWrapper>
+        <FacturacionPage />
+      </RouteWrapper>
+    }
+  />,
+];
+
+const createContentRoutes = (): React.ReactElement[] => [
+  <Route
+    key="capas"
+    path="/capas"
+    element={
+      <RouteWrapper>
+        <CapasPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="normativa"
+    path="/normativa"
+    element={
+      <RouteWrapper>
+        <NormativaPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="codigo-urbanistico"
+    path="/codigo-urbanistico"
+    element={
+      <RouteWrapper>
+        <CodigoUrbanisticoPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="parametros-edificabilidad"
+    path="/parametros-edificabilidad"
+    element={
+      <RouteWrapper>
+        <ParametrosEdificabilidadPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="afectaciones"
+    path="/afectaciones"
+    element={
+      <RouteWrapper>
+        <AfectacionesPage />
+      </RouteWrapper>
+    }
+  />,
+];
+
+const createRulesRoutes = (): React.ReactElement[] => [
+  <Route
+    key="reglas"
+    path="/reglas"
+    element={
+      <RouteWrapper>
+        <ReglasAdminPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="reglas-slug"
+    path="/reglas/:slug"
+    element={
+      <RouteWrapper>
+        <ReglasCategoriaPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="reglas-todas"
+    path="/reglas/ver-todas"
+    element={
+      <RouteWrapper>
+        <ReglasAllPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="reglas-logicas"
+    path="/reglas-logicas"
+    element={
+      <RouteWrapper>
+        <ReglasLogicasPage />
+      </RouteWrapper>
+    }
+  />,
+];
+
+const createAdminRoutesPart1 = (): React.ReactElement[] => [
+  <Route
+    key="email-templates"
+    path="/email-templates"
+    element={
+      <RouteWrapper>
+        <EmailTemplatesPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="prompts"
+    path="/prompts"
+    element={
+      <RouteWrapper>
+        <PromptTemplatesPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="plan-tags"
+    path="/plan-tags"
+    element={
+      <RouteWrapper>
+        <PlanTagsPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="redes-sociales"
+    path="/redes-sociales"
+    element={
+      <RouteWrapper>
+        <RedesSocialesPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="constantes-troneras"
+    path="/constantes-troneras"
+    element={
+      <RouteWrapper>
+        <ConstantesTronerasPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="creditos"
+    path="/creditos"
+    element={
+      <RouteWrapper>
+        <CreditsConfigPage />
+      </RouteWrapper>
+    }
+  />,
+];
+
+const createAdminRoutesPart2 = (): React.ReactElement[] => [
+  <Route
+    key="newsletter"
+    path="/newsletter"
+    element={
+      <RouteWrapper>
+        <SendNewsletterPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="newsletter-history"
+    path="/newsletter-history"
+    element={
+      <RouteWrapper>
+        <NewsletterHistoryPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="calculo-pasos"
+    path="/calculo-pasos"
+    element={
+      <RouteWrapper>
+        <CalculoPasosPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="admin-users"
+    path="/admin-users"
+    element={
+      <RouteWrapper>
+        <AdminUsersPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="admin-logs"
+    path="/admin-logs"
+    element={
+      <RouteWrapper>
+        <AdminLogsPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="legal-content"
+    path="/legal-content"
+    element={
+      <RouteWrapper>
+        <LegalContentPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="chatbot"
+    path="/chatbot"
+    element={
+      <RouteWrapper>
+        <ChatbotPage />
+      </RouteWrapper>
+    }
+  />,
+];
+
+const createAdminRoutes = (): React.ReactElement[] => [
+  ...createAdminRoutesPart1(),
+  ...createAdminRoutesPart2(),
+];
+
+const AppRoutes: React.FC = () => (
+  <Routes>
+    {createMainRoutes()}
+    {createContentRoutes()}
+    {createRulesRoutes()}
+    {createAdminRoutes()}
+  </Routes>
+);
+
+const App: React.FC = () => (
+  <ThemeProvider>
     <AuthProvider>
       <Router>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route
-            path="/email-templates"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <EmailTemplatesPage />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/"
-            element={
-              <PrivateRoute>
-                <>
-                  <Layout>
-                    <Dashboard />
-                  </Layout>
-                </>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/usuarios"
-            element={
-              <PrivateRoute>
-                <>
-                  <Layout>
-                    <UsersPage />
-                  </Layout>
-                </>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/informes"
-            element={
-              <PrivateRoute>
-                <>
-                  <Layout>
-                    <ReportsPage />
-                  </Layout>
-                </>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/facturacion"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <FacturacionPage />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/capas"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <CapasPage />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/normativa"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <NormativaPage />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/codigo-urbanistico"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <CodigoUrbanisticoPage />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/parametros-edificabilidad"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <ParametrosEdificabilidadPage />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/afectaciones"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <AfectacionesPage />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/api-servicios"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <ApiServiciosPage />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/algoritmos-scoring"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <AlgoritmosScoringPage />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-
-          <Route
-            path="/prompts"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <PromptTemplatesPage />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/reglas"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <ReglasAdminPage />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/reglas/:slug"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <ReglasCategoriaPage />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/analytics"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <Dashboard />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/plan-tags"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <PlanTagsPage />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/constantes-troneras"
-            element={
-              <PrivateRoute>
-                <Layout>
-                  <ConstantesTronerasPage />
-                </Layout>
-              </PrivateRoute>
-            }
-          />
-        </Routes>
+        <AppRoutes />
       </Router>
     </AuthProvider>
-  );
-};
+  </ThemeProvider>
+);
 
-export default App; 
+export default App;

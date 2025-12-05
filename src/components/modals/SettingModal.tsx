@@ -1,12 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 
-export interface Setting {
-  _id?: string;
-  key: string;
-  category: string;
-  value: any;
-  description?: string;
-}
+import { Setting } from '../../types/settings';
 
 interface Props {
   initial?: Setting;
@@ -30,14 +24,20 @@ const SettingModal: React.FC<Props> = ({ initial, category, onClose, onSave }) =
 
   const handleSubmit = () => {
     if (!keyValue.trim()) return;
-    let parsed: any;
-    try {
-      parsed = JSON.parse(value);
-    } catch (err) {
-      // fallback string
-      parsed = value;
-    }
-    onSave({ _id: initial?._id, key: keyValue.trim(), category, value: parsed, description });
+    const parsed: unknown = (() => {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return value;
+      }
+    })();
+    onSave({
+      ...(initial?._id ? { _id: initial._id } : {}),
+      key: keyValue.trim(),
+      category,
+      value: parsed,
+      description,
+    });
   };
 
   return (
@@ -84,4 +84,5 @@ const SettingModal: React.FC<Props> = ({ initial, category, onClose, onSave }) =
   );
 };
 
-export default SettingModal; 
+export type { Setting };
+export default SettingModal;

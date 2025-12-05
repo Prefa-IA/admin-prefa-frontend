@@ -1,5 +1,7 @@
 import React from 'react';
 
+import { Button, Modal } from './ui';
+
 interface Props {
   open: boolean;
   title?: string;
@@ -17,32 +19,28 @@ const ConfirmModal: React.FC<Props> = ({
   confirmText = 'Aceptar',
   cancelText = 'Cancelar',
   onConfirm,
-  onCancel
+  onCancel,
 }) => {
-  if (!open) return null;
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-sm p-6 space-y-4">
-        <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-        <p className="text-gray-700 text-sm">{message}</p>
-        <div className="flex justify-end space-x-3 pt-2">
-          <button
-            className="btn-secondary"
-            onClick={onCancel}
-          >
+    <Modal
+      show={open}
+      title={title}
+      onClose={onCancel}
+      size="sm"
+      footer={
+        <>
+          <Button variant="secondary" onClick={onCancel}>
             {cancelText}
-          </button>
-          <button
-            className="btn-primary"
-            onClick={onConfirm}
-          >
+          </Button>
+          <Button variant="danger" onClick={onConfirm}>
             {confirmText}
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </>
+      }
+    >
+      <p className="text-gray-700 dark:text-gray-300">{message}</p>
+    </Modal>
   );
 };
 
-export default ConfirmModal; 
+export default ConfirmModal;

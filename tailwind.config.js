@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: 'class',
   content: [
     "./src/**/*.{js,jsx,ts,tsx}",
   ],
@@ -26,6 +27,9 @@ module.exports = {
           800: '#075985',
           900: '#0c4a6e',
         },
+      },
+      fontFamily: {
+        sans: ['"Space Grotesk"', 'sans-serif'],
       },
     },
   },

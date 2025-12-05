@@ -1,4 +1,7 @@
 import React from 'react';
+import { PlusIcon } from '@heroicons/react/24/outline';
+
+import { Button } from './ui';
 
 interface NewItemButtonProps {
   label: string;
@@ -8,13 +11,11 @@ interface NewItemButtonProps {
 
 const NewItemButton: React.FC<NewItemButtonProps> = ({ label, onClick, className = '' }) => {
   return (
-    <button
-      className={`bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow ${className}`}
-      onClick={onClick}
-    >
+    <Button variant="success" onClick={onClick} className={className}>
+      <PlusIcon className="h-4 w-4 mr-1.5" />
       {label}
-    </button>
+    </Button>
   );
 };
 
-export default NewItemButton; 
+export default NewItemButton;

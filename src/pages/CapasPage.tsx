@@ -1,26 +1,81 @@
 import React, { useEffect, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import axios from 'axios';
-import Card from '../components/Card';
-import ShpUploadAndGrid from '../components/shp/ShpUploadAndGrid';
 
-interface Capa {
-  _id: string;
-  nombre: string;
-  categoria: string;
-  version: string;
-  status: string;
-  createdAt: string;
+import ShpUploadAndGrid from '../components/shp/ShpUploadAndGrid';
+import {
+  Button,
+  Card,
+  PageHeader,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../components/ui';
+import { Capa } from '../types/capas';
+import { qualityColor } from '../utils/qualityColor';
+
+interface StatsData {
+  featureCount?: number;
+  [key: string]: unknown;
 }
 
-const CapasPage: React.FC = () => {
-  const [capas, setCapas] = useState<Capa[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [statsMap, setStatsMap] = useState<Record<string, any>>({});
+const FileUploadZone: React.FC<{
+  isDragActive: boolean;
+  getRootProps: () => React.HTMLAttributes<HTMLDivElement>;
+  getInputProps: () => React.InputHTMLAttributes<HTMLInputElement>;
+}> = ({ isDragActive, getRootProps, getInputProps }) => (
+  <div
+    {...getRootProps()}
+    className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+      isDragActive
+        ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+        : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+    }`}
+  >
+    <input {...getInputProps()} />
+    <p className="text-gray-600 dark:text-gray-400">
+      {isDragActive
+        ? 'Suelta el ZIP o SHP aquí…'
+        : 'Arrastra un .zip/.shp o haz clic para seleccionar'}
+    </p>
+  </div>
+);
 
-  // Archivo seleccionado y features para preview
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewFeatures, setPreviewFeatures] = useState<any[]>([]);
+const createUploadFormData = (file: File): FormData => {
+  const form = new FormData();
+  form.append('file', file);
+  form.append('nombre', file.name.replace(/\.zip|\.shp/i, ''));
+  return form;
+};
+
+const CapaRow: React.FC<{
+  capa: Capa;
+  statsMap: Record<string, StatsData>;
+}> = ({ capa, statsMap }) => (
+  <TableRow key={capa._id}>
+    <TableCell className="font-medium">{capa.nombre}</TableCell>
+    <TableCell>{capa.categoria || '—'}</TableCell>
+    <TableCell>{capa.version || '—'}</TableCell>
+    <TableCell>
+      <div className="flex items-center space-x-2">
+        <span
+          className={`inline-block w-3 h-3 rounded-full ${qualityColor(
+            statsMap[capa._id]?.['featureCount']
+          )}`}
+        ></span>
+        <span>{capa.status}</span>
+      </div>
+    </TableCell>
+    <TableCell>{new Date(capa.createdAt).toLocaleDateString('es-AR')}</TableCell>
+  </TableRow>
+);
+
+const useCapasData = () => {
+  const [capas, setCapas] = useState<Capa[]>([]);
+  const [statsMap, setStatsMap] = useState<Record<string, StatsData>>({});
 
   const loadCapas = async () => {
     const res = await axios.get('/api/admin/capas');
@@ -30,110 +85,152 @@ const CapasPage: React.FC = () => {
   const fetchStats = async (id: string) => {
     try {
       const res = await axios.get(`/api/admin/capas/${id}/stats`);
-      setStatsMap(prev => ({ ...prev, [id]: res.data }));
-    } catch {}
+      setStatsMap((prev) => ({ ...prev, [id]: res.data }));
+    } catch {
+      // Silently handle errors
+    }
   };
 
   useEffect(() => {
-    loadCapas();
+    void loadCapas();
   }, []);
 
   useEffect(() => {
-    capas.forEach(c => {
-      if (!statsMap[c._id]) fetchStats(c._id);
+    capas.forEach((c) => {
+      if (!statsMap[c._id]) {
+        void fetchStats(c._id);
+      }
     });
-  }, [capas]);
+  }, [capas, statsMap]);
+
+  return { capas, statsMap, reloadCapas: loadCapas };
+};
+
+const useCapasUpload = (onUploadSuccess: () => void) => {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleDrop = (accepted: File[]) => {
+    if (!accepted.length) return;
+    const file = accepted[0];
+    if (file) {
+      setSelectedFile(file);
+    }
+  };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     accept: { 'application/zip': ['.zip'], 'application/octet-stream': ['.shp'] },
     multiple: false,
-    onDrop: async (accepted) => {
-      if (!accepted.length) return;
-      const file = accepted[0];
-      setSelectedFile(file);
-      setPreviewFeatures([]); // reset preview until loaded
+    onDrop: (accepted) => {
+      handleDrop(accepted);
     },
   });
 
   const handleConfirmUpload = async () => {
     if (!selectedFile) return;
-    const form = new FormData();
-    form.append('file', selectedFile);
-    form.append('nombre', selectedFile.name.replace(/\.zip|\.shp/i, ''));
+    const form = createUploadFormData(selectedFile);
     setLoading(true);
-    await axios.post('/api/admin/capas', form);
-    await loadCapas();
-    setSelectedFile(null);
-    setPreviewFeatures([]);
-    setLoading(false);
+    try {
+      await axios.post('/api/admin/capas', form);
+      setSelectedFile(null);
+      onUploadSuccess();
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const qualityColor = (count?: number) => {
-    if (count === undefined) return 'bg-gray-400';
-    if (count === 0) return 'bg-red-500';
-    if (count < 50) return 'bg-yellow-500';
-    return 'bg-green-500';
-  };
+  return { selectedFile, loading, getRootProps, getInputProps, isDragActive, handleConfirmUpload };
+};
+
+const CapasUploadSection: React.FC<{
+  selectedFile: File | null;
+  loading: boolean;
+  isDragActive: boolean;
+  getRootProps: () => React.HTMLAttributes<HTMLDivElement>;
+  getInputProps: () => React.InputHTMLAttributes<HTMLInputElement>;
+  onUpload: () => void;
+}> = ({ selectedFile, loading, isDragActive, getRootProps, getInputProps, onUpload }) => (
+  <Card title="Subir nueva capa" className="mb-6">
+    <FileUploadZone
+      isDragActive={isDragActive}
+      getRootProps={getRootProps}
+      getInputProps={getInputProps}
+    />
+    {selectedFile && (
+      <div className="mt-6 space-y-4">
+        <h4 className="font-semibold text-gray-900 dark:text-gray-100">
+          Vista previa: {selectedFile.name}
+        </h4>
+        <ShpUploadAndGrid />
+        <div className="flex justify-end">
+          <Button variant="primary" disabled={loading} onClick={onUpload} isLoading={loading}>
+            Confirmar y guardar capa
+          </Button>
+        </div>
+      </div>
+    )}
+    {loading && !selectedFile && (
+      <div className="mt-4 text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
+        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">Procesando…</p>
+      </div>
+    )}
+  </Card>
+);
+
+const CapasTable: React.FC<{
+  capas: Capa[];
+  statsMap: Record<string, StatsData>;
+}> = ({ capas, statsMap }) => (
+  <Card title="Capas cargadas">
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Nombre</TableHead>
+          <TableHead>Categoría</TableHead>
+          <TableHead>Versión</TableHead>
+          <TableHead>Estado</TableHead>
+          <TableHead>Fecha</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {capas.length === 0 ? (
+          <TableRow>
+            <TableCell colSpan={5} className="text-center py-8 text-gray-500 dark:text-gray-400">
+              No hay capas cargadas
+            </TableCell>
+          </TableRow>
+        ) : (
+          capas.map((c) => <CapaRow key={c._id} capa={c} statsMap={statsMap} />)
+        )}
+      </TableBody>
+    </Table>
+  </Card>
+);
+
+const CapasPage: React.FC = () => {
+  const { capas, statsMap, reloadCapas } = useCapasData();
+  const { selectedFile, loading, getRootProps, getInputProps, isDragActive, handleConfirmUpload } =
+    useCapasUpload(() => {
+      void reloadCapas();
+    });
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <div
-          {...getRootProps()}
-          className={`border-2 border-dashed rounded p-6 text-center cursor-pointer ${
-            isDragActive ? 'border-blue-500' : 'border-gray-300'
-          }`}
-        >
-          <input {...getInputProps()} />
-          {isDragActive ? 'Suelta el ZIP o SHP aquí…' : 'Arrastra un .zip/.shp o haz clic para seleccionar'}
-        </div>
-        {selectedFile && (
-          <div className="mt-4 space-y-4">
-            <h4 className="font-semibold">Vista previa: {selectedFile.name}</h4>
-            {/* preview table */}
-            <ShpUploadAndGrid onDataLoaded={setPreviewFeatures} />
-            <button
-              className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
-              onClick={handleConfirmUpload}
-              disabled={loading}
-            >
-              {loading ? 'Subiendo…' : 'Confirmar y guardar capa'}
-            </button>
-          </div>
-        )}
-        {loading && !selectedFile && <p className="mt-2 text-sm">Procesando…</p>}
-      </Card>
-
-      <Card>
-        <h3 className="text-lg font-semibold mb-2">Capas cargadas</h3>
-        <table className="min-w-full text-sm">
-          <thead>
-            <tr>
-              <th className="px-4 py-2 text-left">Nombre</th>
-              <th className="px-4 py-2 text-left">Categoría</th>
-              <th className="px-4 py-2 text-left">Versión</th>
-              <th className="px-4 py-2 text-left">Estado</th>
-              <th className="px-4 py-2 text-left">Fecha</th>
-            </tr>
-          </thead>
-          <tbody>
-            {capas.map((c) => (
-              <tr key={c._id} className="odd:bg-gray-50">
-                <td className="px-4 py-2">{c.nombre}</td>
-                <td className="px-4 py-2">{c.categoria || '-'}</td>
-                <td className="px-4 py-2">{c.version || '-'}</td>
-                <td className="px-4 py-2 flex items-center space-x-2">
-                  <span className={`inline-block w-3 h-3 rounded-full ${qualityColor(statsMap[c._id]?.featureCount)}`}></span>
-                  <span>{c.status}</span>
-                </td>
-                <td className="px-4 py-2">{new Date(c.createdAt).toLocaleDateString()}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </Card>
+    <div>
+      <PageHeader title="Capas" description="Gestiona las capas geográficas del sistema" />
+      <CapasUploadSection
+        selectedFile={selectedFile}
+        loading={loading}
+        isDragActive={isDragActive}
+        getRootProps={getRootProps}
+        getInputProps={getInputProps}
+        onUpload={() => {
+          void handleConfirmUpload();
+        }}
+      />
+      <CapasTable capas={capas} statsMap={statsMap} />
     </div>
   );
 };
 
-export default CapasPage; 
+export default CapasPage;
