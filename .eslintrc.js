@@ -4,7 +4,6 @@ module.exports = {
     'plugin:react/recommended',
     'plugin:react-hooks/recommended',
     'plugin:jsx-a11y/strict', // A11y modo estricto
-    'prettier',
   ],
   parser: '@typescript-eslint/parser',
   parserOptions: {
@@ -27,7 +26,6 @@ module.exports = {
     'react-hooks',
     'jsx-a11y',
     'security',
-    'prettier',
     // Plugins requeridos por el estándar PDF
     'functional', // Para inmutabilidad y pureza
     'risxss', // Para sanitización XSS específica de React
@@ -145,8 +143,6 @@ module.exports = {
     'react/react-in-jsx-scope': 'off',
     'react/prop-types': 'off',
     'react/display-name': 'off',
-
-    'prettier/prettier': 'error',
   },
   settings: {
     react: {
