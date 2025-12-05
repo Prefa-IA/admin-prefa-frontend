@@ -11,6 +11,7 @@ import {
   HomeIcon,
   Square3Stack3DIcon,
   UsersIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline';
 import axios from 'axios';
 
@@ -318,7 +319,10 @@ const SidebarFooter: React.FC<{
   </div>
 );
 
-const Sidebar: React.FC = () => {
+const Sidebar: React.FC<{ isOpen?: boolean; onClose?: () => void }> = ({
+  isOpen = true,
+  onClose,
+}) => {
   const [open, setOpen] = useState<Record<string, boolean>>({});
   const [dynGroups] = useCategories();
   const { logout } = useAuth();
@@ -342,10 +346,32 @@ const Sidebar: React.FC = () => {
   };
 
   return (
-    <aside className="bg-[#1976d2] text-white w-64 h-screen fixed inset-y-0 left-0 flex flex-col z-40 overflow-y-auto">
-      <div className="p-6 flex items-center justify-center">
+    <aside
+      className={`bg-[#1976d2] text-white w-64 h-screen fixed inset-y-0 left-0 flex flex-col z-50 overflow-y-auto transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+        isOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}
+    >
+      {/* Botón cerrar para móvil/tablet */}
+      {onClose && (
+        <div className="flex items-center justify-between p-4 lg:hidden border-b border-blue-600">
+          <div className="flex items-center justify-center flex-1">
+            <img src="/logo.png" alt="PreFactibilidadYa" className="w-auto h-8" />
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-white"
+            aria-label="Cerrar menú"
+          >
+            <XMarkIcon className="h-6 w-6" />
+          </button>
+        </div>
+      )}
+
+      {/* Logo para desktop */}
+      <div className={`p-6 flex items-center justify-center ${onClose ? 'hidden lg:flex' : ''}`}>
         <img src="/logo.png" alt="PreFactibilidadYa" className="w-auto" />
       </div>
+
       <NavigationGroups
         groups={groups}
         open={open}

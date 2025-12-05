@@ -16,14 +16,18 @@ const Card: React.FC<CardProps> = ({ className = '', children, title, headerActi
     `}
     >
       {(title || headerActions) && (
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-2 p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700">
           {title && (
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
+              {title}
+            </h3>
           )}
-          {headerActions && <div className="flex items-center gap-2">{headerActions}</div>}
+          {headerActions && (
+            <div className="flex items-center gap-2 flex-wrap">{headerActions}</div>
+          )}
         </div>
       )}
-      <div className={title || headerActions ? 'p-6' : 'p-6'}>{children}</div>
+      <div className={title || headerActions ? 'p-4 sm:p-6' : 'p-4 sm:p-6'}>{children}</div>
     </div>
   );
 };

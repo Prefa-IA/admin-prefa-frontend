@@ -32,12 +32,17 @@ const HeatLayer: React.FC<{ points: HeatMapPoint[] }> = ({ points }) => {
         blur: 25,
         maxZoom: 17,
         gradient: {
-          0.0: 'rgba(255, 255, 0, 0.4)', // Amarillo visible desde el inicio
-          0.2: 'rgba(255, 200, 0, 0.7)', // Amarillo más opaco
-          0.4: 'rgba(255, 150, 0, 0.8)', // Amarillo-naranja
-          0.6: 'rgba(255, 100, 0, 0.9)', // Naranja
-          0.8: 'rgba(255, 50, 0, 0.95)', // Naranja-rojo
-          1.0: 'rgba(255, 0, 0, 1)', // Rojo intenso
+          0.0: 'rgba(255, 255, 0, 0.05)', // 5% - Amarillo muy sutil
+          0.1: 'rgba(255, 240, 0, 0.1)', // 10% - Amarillo
+          0.2: 'rgba(255, 220, 0, 0.15)', // 15% - Amarillo más visible
+          0.3: 'rgba(255, 200, 0, 0.2)', // 20% - Amarillo-naranja claro
+          0.4: 'rgba(255, 180, 0, 0.25)', // 25% - Amarillo-naranja
+          0.5: 'rgba(255, 150, 0, 0.3)', // 30% - Naranja claro
+          0.6: 'rgba(255, 120, 0, 0.35)', // 35% - Naranja
+          0.7: 'rgba(255, 90, 0, 0.4)', // 40% - Naranja intenso
+          0.8: 'rgba(255, 60, 0, 0.45)', // 45% - Naranja-rojo
+          0.9: 'rgba(255, 30, 0, 0.5)', // 50% - Rojo-naranja
+          1.0: 'rgba(255, 0, 0, 0.55)', // 55% - Rojo (máximo escalable)
         },
       }
     ).addTo(map);

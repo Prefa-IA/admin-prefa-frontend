@@ -102,19 +102,22 @@ const Pagination: React.FC<PaginationProps> = ({
   };
 
   return (
-    <div className={`flex items-center justify-between ${className}`}>
-      <div className="flex items-center gap-2">
+    <div
+      className={`flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0 ${className}`}
+    >
+      <div className="flex items-center gap-1 sm:gap-2">
         <Button
           variant="secondary"
           size="sm"
           onClick={() => onPageChange(current - 1)}
           disabled={current === 1}
+          className="flex-shrink-0"
         >
           <ChevronLeftIcon className="h-4 w-4" />
         </Button>
 
         {showPageNumbers && (
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 overflow-x-auto max-w-full">
             {getPageNumbers(current, totalPages).map((page, idx) => (
               <PageNumberButton key={idx} page={page} index={idx} />
             ))}
@@ -126,12 +129,13 @@ const Pagination: React.FC<PaginationProps> = ({
           size="sm"
           onClick={() => onPageChange(current + 1)}
           disabled={current === totalPages}
+          className="flex-shrink-0"
         >
           <ChevronRightIcon className="h-4 w-4" />
         </Button>
       </div>
 
-      <div className="text-sm text-gray-600 dark:text-gray-400">
+      <div className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 text-center sm:text-right whitespace-nowrap">
         Mostrando {(current - 1) * pageSize + 1} - {Math.min(current * pageSize, total)} de {total}
       </div>
     </div>

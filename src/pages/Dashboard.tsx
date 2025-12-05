@@ -133,11 +133,11 @@ const ChartControls: React.FC<{
   range: 'day' | 'week' | 'month' | 'year' | 'historic';
   onRangeChange: (r: 'day' | 'week' | 'month' | 'year' | 'historic') => void;
 }> = ({ yAxisInterval, onYAxisIntervalChange, range, onRangeChange }) => (
-  <div className="flex gap-2">
+  <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
     <select
       value={yAxisInterval}
       onChange={(e) => onYAxisIntervalChange(Number(e.target.value) as 10 | 100 | 1000 | 10000)}
-      className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+      className="px-3 sm:px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm w-full sm:w-auto"
       title="Intervalo del eje Y"
     >
       <option value="10">De a 10</option>
@@ -150,7 +150,7 @@ const ChartControls: React.FC<{
       onChange={(e) =>
         onRangeChange(e.target.value as 'day' | 'week' | 'month' | 'year' | 'historic')
       }
-      className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+      className="px-3 sm:px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm w-full sm:w-auto"
     >
       <option value="day">Día</option>
       <option value="week">Semana</option>
@@ -173,10 +173,18 @@ const ConsultasLineChart: React.FC<{
   yAxisDomain: [number, number];
   yAxisTicks: number[];
 }> = ({ series, range, yAxisDomain, yAxisTicks }) => (
-  <ResponsiveContainer width="100%" height={300}>
-    <LineChart data={series} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+  <ResponsiveContainer width="100%" height={250} minHeight={250}>
+    <LineChart data={series} margin={{ top: 5, right: 10, left: -10, bottom: 5 }}>
       <CartesianGrid stroke="#e5e7eb" strokeDasharray="5 5" />
-      <XAxis dataKey="label" hide={range === 'day' || range === 'historic'} stroke="#6b7280" />
+      <XAxis
+        dataKey="label"
+        hide={range === 'day' || range === 'historic'}
+        stroke="#6b7280"
+        angle={-45}
+        textAnchor="end"
+        height={60}
+        tick={{ fontSize: 12 }}
+      />
       <YAxis
         stroke="#6b7280"
         domain={yAxisDomain}
@@ -184,10 +192,11 @@ const ConsultasLineChart: React.FC<{
         interval={0}
         allowDecimals={false}
         tickFormatter={(value) => value.toLocaleString('es-AR')}
-        width={60}
+        width={50}
+        tick={{ fontSize: 11 }}
       />
       <Tooltip />
-      <Legend />
+      <Legend wrapperStyle={{ fontSize: '12px' }} />
       <Line
         type="monotone"
         dataKey="busquedasDirecciones"
@@ -305,10 +314,12 @@ const TopDireccionesCard: React.FC<{ direcciones: { direccion: string; count: nu
         direcciones.map((d, idx) => (
           <li
             key={idx}
-            className="flex justify-between items-center py-1 border-b border-gray-100 dark:border-gray-700 last:border-0"
+            className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0 py-2 sm:py-1 border-b border-gray-100 dark:border-gray-700 last:border-0"
           >
-            <span className="text-gray-700 dark:text-gray-300">{d.direccion}</span>
-            <span className="font-semibold text-primary-600 dark:text-primary-400">{d.count}</span>
+            <span className="text-gray-700 dark:text-gray-300 break-words">{d.direccion}</span>
+            <span className="font-semibold text-primary-600 dark:text-primary-400 text-xs sm:text-sm">
+              {d.count}
+            </span>
           </li>
         ))
       )}
@@ -327,10 +338,14 @@ const BarriosCard: React.FC<{ barrios: { barrio: string; count: number }[] }> = 
         barrios.map((b, idx) => (
           <li
             key={idx}
-            className="flex justify-between items-center py-1 border-b border-gray-100 dark:border-gray-700 last:border-0"
+            className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0 py-2 sm:py-1 border-b border-gray-100 dark:border-gray-700 last:border-0"
           >
-            <span className="text-gray-700 dark:text-gray-300 capitalize">{b.barrio || '—'}</span>
-            <span className="font-semibold text-primary-600 dark:text-primary-400">{b.count}</span>
+            <span className="text-gray-700 dark:text-gray-300 capitalize break-words">
+              {b.barrio || '—'}
+            </span>
+            <span className="font-semibold text-primary-600 dark:text-primary-400 text-xs sm:text-sm">
+              {b.count}
+            </span>
           </li>
         ))
       )}
@@ -351,13 +366,16 @@ const TopUsersCard: React.FC<{
         users.map((u, idx) => (
           <li
             key={u.usuarioId}
-            className="flex justify-between items-center py-1 border-b border-gray-100 dark:border-gray-700 last:border-0"
+            className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0 py-2 sm:py-1 border-b border-gray-100 dark:border-gray-700 last:border-0"
           >
-            <span className="text-gray-700 dark:text-gray-300">
+            <span className="text-gray-700 dark:text-gray-300 break-words">
               <span className="font-medium text-primary-600 dark:text-primary-400">{idx + 1}.</span>{' '}
-              {u.nombre} <span className="text-gray-500 dark:text-gray-400">({u.email})</span>
+              {u.nombre}{' '}
+              <span className="text-gray-500 dark:text-gray-400 text-xs sm:text-sm">
+                ({u.email})
+              </span>
             </span>
-            <span className="font-semibold text-primary-600 dark:text-primary-400">
+            <span className="font-semibold text-primary-600 dark:text-primary-400 text-xs sm:text-sm">
               {u.count.toLocaleString('es-AR')} créditos
             </span>
           </li>
@@ -385,29 +403,29 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 sm:space-y-6 lg:space-y-8">
       <PageHeader
         title="Panel de administración"
         description="Vista general del sistema y métricas"
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         <MetricTile title="Usuarios activos" value={data.activeUsers} />
         <MetricTile title="Usuarios suspendidos" value={data.suspendedUsers} variant="danger" />
       </div>
 
-      <div className="mt-8">
+      <div className="mt-4 sm:mt-6 lg:mt-8">
         <ConsultasChart series={series} range={range} onRangeChange={setRange} />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
         <TopDireccionesCard direcciones={topDirecciones} />
         <BarriosCard barrios={barrios} />
       </div>
 
       <TopUsersCard users={data.topMonth} />
 
-      <div className="mt-8">
+      <div className="mt-4 sm:mt-6 lg:mt-8">
         <HeatMapCard points={heatPoints} />
       </div>
     </div>

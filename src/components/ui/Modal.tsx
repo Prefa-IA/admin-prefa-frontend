@@ -66,7 +66,7 @@ const Modal: React.FC<ModalProps> = ({
       aria-labelledby="modal-title"
       tabIndex={-1}
     >
-      <div className="flex min-h-screen items-center justify-center p-4">
+      <div className="flex min-h-screen items-center justify-center p-4 sm:p-6">
         <button
           type="button"
           className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
@@ -77,30 +77,35 @@ const Modal: React.FC<ModalProps> = ({
         {/* eslint-disable-next-line jsx-a11y/no-static-element-interactions */}
         <div
           className={`
-            relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full ${sizeClass}
+            relative bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-h-[90vh] overflow-y-auto
+            ${sizeClass}
             transform transition-all
           `}
           onMouseDown={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-            <h3 id="modal-title" className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+          <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 z-10">
+            <h3
+              id="modal-title"
+              className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-gray-100 pr-4"
+            >
               {title}
             </h3>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors flex-shrink-0"
+              aria-label="Cerrar modal"
             >
-              <XMarkIcon className="h-6 w-6" />
+              <XMarkIcon className="h-5 w-5 sm:h-6 sm:w-6" />
             </button>
           </div>
 
           {/* Body */}
-          <div className="p-6">{children}</div>
+          <div className="p-4 sm:p-6">{children}</div>
 
           {/* Footer */}
           {footer && (
-            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-3 p-4 sm:p-6 border-t border-gray-200 dark:border-gray-700 sticky bottom-0 bg-white dark:bg-gray-800">
               {footer}
             </div>
           )}

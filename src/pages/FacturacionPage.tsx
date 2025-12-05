@@ -749,11 +749,11 @@ const FacturacionTabs: React.FC<{
   ];
 
   return (
-    <div className="mb-6 flex space-x-2 border-b border-gray-200 dark:border-gray-700">
+    <div className="mb-4 sm:mb-6 flex space-x-1 sm:space-x-2 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
       {tabs.map((t) => (
         <button
           key={t.id}
-          className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 ${
+          className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-colors border-b-2 whitespace-nowrap flex-shrink-0 ${
             tab === t.id
               ? 'border-primary-600 text-primary-600 dark:text-primary-400'
               : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'

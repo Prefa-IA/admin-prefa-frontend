@@ -82,12 +82,17 @@ const AdminUsersTable: React.FC<{
               <TableCell>{admin.email}</TableCell>
               <TableCell>
                 <div className="flex flex-row gap-1">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 w-fit">
-                    {admin.isSuperAdmin ? 'super admin' : admin.role}
-                  </span>
-                  {admin.adminRole && !admin.isSuperAdmin && (
+                  {admin.isSuperAdmin ? (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 w-fit">
+                      super admin
+                    </span>
+                  ) : admin.adminRole ? (
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400 w-fit">
                       {admin.adminRole}
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 w-fit">
+                      {admin.role}
                     </span>
                   )}
                 </div>
@@ -252,6 +257,7 @@ const AdminFormContent: React.FC<{
   return (
     <div className="space-y-4">
       <Input
+        name="nombre"
         label="Nombre"
         value={formData.nombre}
         onChange={(e) => updateFormData({ nombre: e.target.value })}
@@ -259,6 +265,7 @@ const AdminFormContent: React.FC<{
         placeholder="Nombre completo"
       />
       <Input
+        name="email"
         label="Email"
         type="email"
         value={formData.email}
@@ -267,6 +274,7 @@ const AdminFormContent: React.FC<{
         placeholder="admin@ejemplo.com"
       />
       <Input
+        name="password"
         label={
           selectedAdmin ? 'Nueva contraseña (dejar vacío para mantener la actual)' : 'Contraseña'
         }
@@ -465,12 +473,23 @@ const useRoleInfo = (isSuperAdmin: boolean) => {
   useEffect(() => {
     const fetchRoles = async () => {
       if (!isSuperAdmin) return;
+
       try {
         const res = await axios.get<RoleInfo>('/api/admin/admins/roles');
         setRoleInfo(res.data);
       } catch (err: unknown) {
-        const error = err as { response?: { data?: { error?: string } } };
-        console.error('Error al cargar roles:', error.response?.data?.error);
+        const errorMessage = axios.isAxiosError(err)
+          ? err.response?.data?.error ||
+            err.response?.data?.message ||
+            err.message ||
+            'Error desconocido al cargar roles'
+          : err instanceof Error
+            ? err.message
+            : typeof err === 'string'
+              ? err
+              : 'Error desconocido al cargar roles';
+
+        console.error('Error al cargar roles:', errorMessage);
       }
     };
     void fetchRoles();
