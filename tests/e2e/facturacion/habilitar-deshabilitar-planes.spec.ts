@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { expect } from '@playwright/test';
 import { test as adminTest } from '../fixtures/admin-auth.fixture';
 import { AdminPlanesPage } from '../helpers/page-objects/PlanesPage';
 
@@ -74,15 +74,17 @@ adminTest.describe('Habilitar/Deshabilitar Planes - Admin', () => {
       const toggleButton = firstRow.locator('button:has-text("Activar"), button:has-text("Desactivar"), input[type="checkbox"]').first();
       
       if (await toggleButton.isVisible({ timeout: 2000 })) {
-        const stateBefore = await toggleButton.getAttribute('checked') || 
-                          (await toggleButton.textContent()?.includes('Activar') ? 'inactive' : 'active');
+        const checkedBefore = await toggleButton.getAttribute('checked');
+        const textBefore = await toggleButton.textContent();
+        const stateBefore = checkedBefore || (textBefore?.includes('Activar') ? 'inactive' : 'active');
         
         await toggleButton.click();
         await adminPage.waitForTimeout(2000);
         
         // Verificar cambio visual
-        const stateAfter = await toggleButton.getAttribute('checked') ||
-                          (await toggleButton.textContent()?.includes('Activar') ? 'inactive' : 'active');
+        const checkedAfter = await toggleButton.getAttribute('checked');
+        const textAfter = await toggleButton.textContent();
+        const stateAfter = checkedAfter || (textAfter?.includes('Activar') ? 'inactive' : 'active');
         
         // El estado debería haber cambiado
         expect(stateBefore).not.toBe(stateAfter);
