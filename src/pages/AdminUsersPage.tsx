@@ -61,10 +61,10 @@ const AdminUsersTable: React.FC<{
         <TableRow>
           <TableHead>Nombre</TableHead>
           <TableHead>Email</TableHead>
-          <TableHead>Rol / Admin Role</TableHead>
-          <TableHead>Super Admin</TableHead>
+          <TableHead className="hidden md:table-cell">Rol / Admin Role</TableHead>
+          <TableHead className="hidden lg:table-cell">Super Admin</TableHead>
           <TableHead>Estado</TableHead>
-          <TableHead>Fecha creación</TableHead>
+          <TableHead className="hidden md:table-cell">Fecha creación</TableHead>
           <TableHead align="right">Acciones</TableHead>
         </TableRow>
       </TableHeader>
@@ -80,7 +80,7 @@ const AdminUsersTable: React.FC<{
             <TableRow key={admin._id}>
               <TableCell className="font-medium">{admin.nombre}</TableCell>
               <TableCell>{admin.email}</TableCell>
-              <TableCell>
+              <TableCell className="hidden md:table-cell">
                 <div className="flex flex-row gap-1">
                   {admin.isSuperAdmin ? (
                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 w-fit">
@@ -97,7 +97,7 @@ const AdminUsersTable: React.FC<{
                   )}
                 </div>
               </TableCell>
-              <TableCell>
+              <TableCell className="hidden lg:table-cell">
                 {admin.isSuperAdmin ? (
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400">
                     Sí
@@ -117,7 +117,7 @@ const AdminUsersTable: React.FC<{
                   {admin.isActive ? 'Activo' : 'Inactivo'}
                 </span>
               </TableCell>
-              <TableCell>
+              <TableCell className="hidden md:table-cell">
                 {admin.createdAt ? new Date(admin.createdAt).toLocaleDateString('es-AR') : '—'}
               </TableCell>
               <TableCell align="right">

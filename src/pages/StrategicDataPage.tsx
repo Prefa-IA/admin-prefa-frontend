@@ -102,7 +102,7 @@ const StrategicDataRow: React.FC<StrategicDataRowProps> = ({ item }) => (
         <div className="text-sm text-gray-500 dark:text-gray-400">{item.email}</div>
       </div>
     </TableCell>
-    <TableCell>
+    <TableCell className="hidden md:table-cell">
       <span className="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded text-xs">
         {item.planActual}
       </span>
@@ -110,13 +110,13 @@ const StrategicDataRow: React.FC<StrategicDataRowProps> = ({ item }) => (
     <TableCell className="font-semibold">
       {(item.creditosConsumidosTotal || 0).toLocaleString('es-AR')}
     </TableCell>
-    <TableCell>{(item.creditosConsumidosMes || 0).toLocaleString('es-AR')}</TableCell>
-    <TableCell>{(item.creditosConsumidosDia || 0).toLocaleString('es-AR')}</TableCell>
-    <TableCell>{(item.creditosDisponibles || 0).toLocaleString('es-AR')}</TableCell>
-    <TableCell>{item.renovacionesEstimadas}</TableCell>
-    <TableCell>{item.cambiosPlanEstimados}</TableCell>
-    <TableCell>{item.diasActivo} días</TableCell>
-    <TableCell>{formatDate(item.fechaRegistro)}</TableCell>
+    <TableCell className="hidden lg:table-cell">{(item.creditosConsumidosMes || 0).toLocaleString('es-AR')}</TableCell>
+    <TableCell className="hidden lg:table-cell">{(item.creditosConsumidosDia || 0).toLocaleString('es-AR')}</TableCell>
+    <TableCell className="hidden md:table-cell">{(item.creditosDisponibles || 0).toLocaleString('es-AR')}</TableCell>
+    <TableCell className="hidden lg:table-cell">{item.renovacionesEstimadas}</TableCell>
+    <TableCell className="hidden lg:table-cell">{item.cambiosPlanEstimados}</TableCell>
+    <TableCell className="hidden md:table-cell">{item.diasActivo} días</TableCell>
+    <TableCell className="hidden lg:table-cell">{formatDate(item.fechaRegistro)}</TableCell>
   </TableRow>
 );
 
@@ -159,15 +159,15 @@ const StrategicDataTable: React.FC<StrategicDataTableProps> = ({
           <TableHeader>
             <TableRow>
               <TableHead>Usuario</TableHead>
-              <TableHead>Plan Actual</TableHead>
+              <TableHead className="hidden md:table-cell">Plan Actual</TableHead>
               <TableHead>Créditos Consumidos</TableHead>
-              <TableHead>Créditos Mes</TableHead>
-              <TableHead>Créditos Día</TableHead>
-              <TableHead>Créditos Disponibles</TableHead>
-              <TableHead>Renovaciones</TableHead>
-              <TableHead>Cambios Plan</TableHead>
-              <TableHead>Días Activo</TableHead>
-              <TableHead>Fecha Registro</TableHead>
+              <TableHead className="hidden lg:table-cell">Créditos Mes</TableHead>
+              <TableHead className="hidden lg:table-cell">Créditos Día</TableHead>
+              <TableHead className="hidden md:table-cell">Créditos Disponibles</TableHead>
+              <TableHead className="hidden lg:table-cell">Renovaciones</TableHead>
+              <TableHead className="hidden lg:table-cell">Cambios Plan</TableHead>
+              <TableHead className="hidden md:table-cell">Días Activo</TableHead>
+              <TableHead className="hidden lg:table-cell">Fecha Registro</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

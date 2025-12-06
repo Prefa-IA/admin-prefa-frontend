@@ -22,19 +22,24 @@ interface TableCellProps {
   align?: 'left' | 'center' | 'right';
   colSpan?: number;
   title?: string;
+  style?: React.CSSProperties;
 }
 
 const Table: React.FC<TableProps> = ({ children, className = '' }) => {
   return (
-    <div className="overflow-x-auto">
-      <table
-        className={`
-        w-full divide-y divide-gray-200 dark:divide-gray-700
-        ${className}
-      `}
-      >
-        {children}
-      </table>
+    <div className="overflow-x-auto -mx-4 sm:mx-0">
+      <div className="inline-block min-w-full align-middle px-4 sm:px-0">
+        <div className="overflow-hidden shadow ring-1 ring-black ring-opacity-5 dark:ring-gray-700 rounded-lg">
+          <table
+            className={`
+            min-w-full divide-y divide-gray-200 dark:divide-gray-700
+            ${className}
+          `}
+          >
+            {children}
+          </table>
+        </div>
+      </div>
     </div>
   );
 };
@@ -74,6 +79,7 @@ const TableHead: React.FC<TableCellProps> = ({
   align = 'left',
   colSpan,
   title,
+  style,
 }) => {
   const alignClasses = {
     left: 'text-left',
@@ -85,12 +91,13 @@ const TableHead: React.FC<TableCellProps> = ({
   return (
     <th
       className={`
-        px-4 md:px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider
+        px-3 sm:px-4 md:px-6 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider
         ${alignClass}
         ${className}
       `}
       colSpan={colSpan}
       title={title}
+      style={style}
     >
       {children}
     </th>
@@ -103,6 +110,7 @@ const TableCell: React.FC<TableCellProps> = ({
   align = 'left',
   colSpan,
   title,
+  style,
 }) => {
   const alignClasses = {
     left: 'text-left',
@@ -114,12 +122,13 @@ const TableCell: React.FC<TableCellProps> = ({
   return (
     <td
       className={`
-        px-4 md:px-6 py-4 text-sm text-gray-900 dark:text-gray-100
+        px-3 sm:px-4 md:px-6 py-3 sm:py-4 text-sm text-gray-900 dark:text-gray-100 whitespace-nowrap
         ${alignClass}
         ${className}
       `}
       colSpan={colSpan}
       title={title}
+      style={style}
     >
       {children}
     </td>

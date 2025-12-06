@@ -73,8 +73,8 @@ const RedSocialRow: React.FC<{
   return (
     <TableRow key={redSocial._id}>
       <TableCell className="font-medium">{redSocial.nombre}</TableCell>
-      <TableCell>{logoLabel}</TableCell>
-      <TableCell>
+      <TableCell className="hidden md:table-cell">{logoLabel}</TableCell>
+      <TableCell className="hidden lg:table-cell">
         <a
           href={redSocial.url}
           target="_blank"
@@ -84,7 +84,7 @@ const RedSocialRow: React.FC<{
           {redSocial.url}
         </a>
       </TableCell>
-      <TableCell className="text-center">{redSocial.orden}</TableCell>
+      <TableCell className="text-center hidden lg:table-cell">{redSocial.orden}</TableCell>
       <TableCell className="text-center">
         <span
           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -174,9 +174,9 @@ const RedesSocialesTable: React.FC<{
       <TableHeader>
         <TableRow>
           <TableHead>Nombre</TableHead>
-          <TableHead>Logo</TableHead>
-          <TableHead>URL</TableHead>
-          <TableHead className="text-center">Orden</TableHead>
+          <TableHead className="hidden md:table-cell">Logo</TableHead>
+          <TableHead className="hidden lg:table-cell">URL</TableHead>
+          <TableHead className="text-center hidden lg:table-cell">Orden</TableHead>
           <TableHead className="text-center">Estado</TableHead>
           <TableHead align="right">Acciones</TableHead>
         </TableRow>

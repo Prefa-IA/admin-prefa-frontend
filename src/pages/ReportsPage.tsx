@@ -60,8 +60,8 @@ const InformeRow: React.FC<{ informe: Informe }> = ({ informe }) => {
 
   return (
     <TableRow key={informe._id}>
-      <TableCell>{informe.direccionCompleta || '—'}</TableCell>
-      <TableCell>
+      <TableCell className="font-medium">{informe.direccionCompleta || '—'}</TableCell>
+      <TableCell className="hidden md:table-cell">
         {informe.usuario ? (
           <div>
             <div className="font-medium">{informe.usuario.nombre}</div>
@@ -71,7 +71,7 @@ const InformeRow: React.FC<{ informe: Informe }> = ({ informe }) => {
           '—'
         )}
       </TableCell>
-      <TableCell>
+      <TableCell className="hidden lg:table-cell">
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
           {tipoPrefaLabel}
         </span>
@@ -83,13 +83,13 @@ const InformeRow: React.FC<{ informe: Informe }> = ({ informe }) => {
           {informe.estado}
         </span>
       </TableCell>
-      <TableCell>
+      <TableCell className="hidden md:table-cell">
         <div>
           <div>{fecha}</div>
           <div className="text-sm text-gray-500 dark:text-gray-400">{hora}</div>
         </div>
       </TableCell>
-      <TableCell>
+      <TableCell className="hidden lg:table-cell">
         <span
           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
             informe.fueDescargado
@@ -174,11 +174,11 @@ const ReportsPageContent: React.FC<{
           <TableHeader>
             <TableRow>
               <TableHead>Dirección</TableHead>
-              <TableHead>Usuario</TableHead>
-              <TableHead>Tipo Prefa</TableHead>
+              <TableHead className="hidden md:table-cell">Usuario</TableHead>
+              <TableHead className="hidden lg:table-cell">Tipo Prefa</TableHead>
               <TableHead>Estado</TableHead>
-              <TableHead>Fecha y Hora</TableHead>
-              <TableHead>Descargado</TableHead>
+              <TableHead className="hidden md:table-cell">Fecha y Hora</TableHead>
+              <TableHead className="hidden lg:table-cell">Descargado</TableHead>
               <TableHead align="right">Acciones</TableHead>
             </TableRow>
           </TableHeader>

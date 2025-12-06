@@ -147,7 +147,7 @@ const TemplatesTable: React.FC<{
       <TableHeader>
         <TableRow>
           <TableHead>Slug</TableHead>
-          <TableHead>Descripción</TableHead>
+          <TableHead className="hidden md:table-cell">Descripción</TableHead>
           <TableHead>Estado</TableHead>
           <TableHead align="right">Acciones</TableHead>
         </TableRow>
@@ -163,7 +163,7 @@ const TemplatesTable: React.FC<{
           templates.map((t) => (
             <TableRow key={t._id}>
               <TableCell className="font-medium font-mono text-sm">{t.slug}</TableCell>
-              <TableCell>{t.description || '—'}</TableCell>
+              <TableCell className="hidden md:table-cell">{t.description || '—'}</TableCell>
               <TableCell>
                 {t.isActive ? (
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
