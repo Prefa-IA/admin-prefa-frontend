@@ -134,23 +134,27 @@ const UserRow: React.FC<{
   onToggleActivo: (id: string, isActive: boolean) => void;
 }> = ({ usuario, isSuperAdmin, onEditPlan, onEditCredits, onEdit, onDelete, onToggleActivo }) => (
   <TableRow key={usuario._id}>
-    <TableCell>{usuario.nombre}</TableCell>
+    <TableCell className="font-medium">{usuario.nombre}</TableCell>
     <TableCell>{usuario.email}</TableCell>
     <TableCell>
       <UserStatusBadge isActive={usuario.isActive} />
     </TableCell>
-    <TableCell>{usuario.suscripcion?.nombrePlan || usuario.suscripcion?.tipo || '—'}</TableCell>
-    <TableCell>{usuario.creditBalance ?? usuario.consultasDisponibles ?? '—'}</TableCell>
-    <PlanActionCell
-      isSuperAdmin={isSuperAdmin}
-      userIsSuperAdmin={usuario.isSuperAdmin || false}
-      onEditPlan={() => onEditPlan(usuario)}
-    />
-    <CreditsActionCell
-      isSuperAdmin={isSuperAdmin}
-      userIsSuperAdmin={usuario.isSuperAdmin || false}
-      onEditCredits={() => onEditCredits(usuario)}
-    />
+    <TableCell className="hidden md:table-cell">{usuario.suscripcion?.nombrePlan || usuario.suscripcion?.tipo || '—'}</TableCell>
+    <TableCell className="hidden lg:table-cell">{usuario.creditBalance ?? usuario.consultasDisponibles ?? '—'}</TableCell>
+    {isSuperAdmin && (
+      <PlanActionCell
+        isSuperAdmin={isSuperAdmin}
+        userIsSuperAdmin={usuario.isSuperAdmin || false}
+        onEditPlan={() => onEditPlan(usuario)}
+      />
+    )}
+    {isSuperAdmin && (
+      <CreditsActionCell
+        isSuperAdmin={isSuperAdmin}
+        userIsSuperAdmin={usuario.isSuperAdmin || false}
+        onEditCredits={() => onEditCredits(usuario)}
+      />
+    )}
     <UserActionsCell
       isSuperAdmin={isSuperAdmin}
       userIsSuperAdmin={usuario.isSuperAdmin || false}
@@ -180,10 +184,10 @@ const UsersTable: React.FC<{
           <TableHead>Nombre</TableHead>
           <TableHead>Email</TableHead>
           <TableHead>Activo</TableHead>
-          <TableHead>Plan</TableHead>
-          <TableHead>Créditos</TableHead>
-          {isSuperAdmin && <TableHead>Acciones Plan</TableHead>}
-          {isSuperAdmin && <TableHead>Acciones Créditos</TableHead>}
+          <TableHead className="hidden md:table-cell">Plan</TableHead>
+          <TableHead className="hidden lg:table-cell">Créditos</TableHead>
+          {isSuperAdmin && <TableHead className="hidden lg:table-cell">Acciones Plan</TableHead>}
+          {isSuperAdmin && <TableHead className="hidden lg:table-cell">Acciones Créditos</TableHead>}
           <TableHead align="right">Acciones</TableHead>
         </TableRow>
       </TableHeader>
@@ -193,6 +197,7 @@ const UsersTable: React.FC<{
             <TableCell
               colSpan={isSuperAdmin ? 8 : 6}
               className="text-center py-8 text-gray-500 dark:text-gray-400"
+              style={{ width: '100%' }}
             >
               No se encontraron usuarios
             </TableCell>
