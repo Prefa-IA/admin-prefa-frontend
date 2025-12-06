@@ -22,6 +22,14 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Create .env
+        run: |
+          echo "REACT_APP_API_URL=${{ secrets.REACT_APP_API_URL }}" > .env
+          echo "REACT_APP_MP_PUBLIC_KEY=${{ secrets.REACT_APP_MP_PUBLIC_KEY }}" >> .env
+          echo "REACT_APP_GOOGLE_CLIENT_ID=${{ secrets.REACT_APP_GOOGLE_CLIENT_ID }}" >> .env
+          echo "REACT_APP_RECAPTCHA_SITE_KEY=${{ secrets.REACT_APP_RECAPTCHA_SITE_KEY }}" >> .env
+          echo "REACT_APP_GOOGLE_MAPS_API_KEY=${{ secrets.REACT_APP_GOOGLE_MAPS_API_KEY }}" >> .env
+
       - name: Build project
         run: npm run build
 
