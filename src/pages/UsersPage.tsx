@@ -139,8 +139,12 @@ const UserRow: React.FC<{
     <TableCell>
       <UserStatusBadge isActive={usuario.isActive} />
     </TableCell>
-    <TableCell className="hidden md:table-cell">{usuario.suscripcion?.nombrePlan || usuario.suscripcion?.tipo || '—'}</TableCell>
-    <TableCell className="hidden lg:table-cell">{usuario.creditBalance ?? usuario.consultasDisponibles ?? '—'}</TableCell>
+    <TableCell className="hidden md:table-cell">
+      {usuario.suscripcion?.nombrePlan || usuario.suscripcion?.tipo || '—'}
+    </TableCell>
+    <TableCell className="hidden lg:table-cell">
+      {usuario.creditBalance ?? usuario.consultasDisponibles ?? '—'}
+    </TableCell>
     {isSuperAdmin && (
       <PlanActionCell
         isSuperAdmin={isSuperAdmin}
@@ -187,7 +191,9 @@ const UsersTable: React.FC<{
           <TableHead className="hidden md:table-cell">Plan</TableHead>
           <TableHead className="hidden lg:table-cell">Créditos</TableHead>
           {isSuperAdmin && <TableHead className="hidden lg:table-cell">Acciones Plan</TableHead>}
-          {isSuperAdmin && <TableHead className="hidden lg:table-cell">Acciones Créditos</TableHead>}
+          {isSuperAdmin && (
+            <TableHead className="hidden lg:table-cell">Acciones Créditos</TableHead>
+          )}
           <TableHead align="right">Acciones</TableHead>
         </TableRow>
       </TableHeader>

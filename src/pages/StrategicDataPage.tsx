@@ -110,9 +110,15 @@ const StrategicDataRow: React.FC<StrategicDataRowProps> = ({ item }) => (
     <TableCell className="font-semibold">
       {(item.creditosConsumidosTotal || 0).toLocaleString('es-AR')}
     </TableCell>
-    <TableCell className="hidden lg:table-cell">{(item.creditosConsumidosMes || 0).toLocaleString('es-AR')}</TableCell>
-    <TableCell className="hidden lg:table-cell">{(item.creditosConsumidosDia || 0).toLocaleString('es-AR')}</TableCell>
-    <TableCell className="hidden md:table-cell">{(item.creditosDisponibles || 0).toLocaleString('es-AR')}</TableCell>
+    <TableCell className="hidden lg:table-cell">
+      {(item.creditosConsumidosMes || 0).toLocaleString('es-AR')}
+    </TableCell>
+    <TableCell className="hidden lg:table-cell">
+      {(item.creditosConsumidosDia || 0).toLocaleString('es-AR')}
+    </TableCell>
+    <TableCell className="hidden md:table-cell">
+      {(item.creditosDisponibles || 0).toLocaleString('es-AR')}
+    </TableCell>
     <TableCell className="hidden lg:table-cell">{item.renovacionesEstimadas}</TableCell>
     <TableCell className="hidden lg:table-cell">{item.cambiosPlanEstimados}</TableCell>
     <TableCell className="hidden md:table-cell">{item.diasActivo} días</TableCell>

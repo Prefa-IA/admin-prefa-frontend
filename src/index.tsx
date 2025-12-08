@@ -21,21 +21,49 @@ if (!windowWithBuffer.Buffer) {
   windowWithBuffer.Buffer = Buffer;
 }
 
+// Hook para detectar si es mobile
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = React.useState(
+    typeof window !== 'undefined' && window.innerWidth < 768
+  );
+
+  React.useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return isMobile;
+};
+
+// Componente wrapper para ToastContainer con detección de mobile
+const ResponsiveToastContainer: React.FC = () => {
+  const isMobile = useIsMobile();
+
+  return (
+    <ToastContainer
+      position={isMobile ? 'bottom-center' : 'top-right'}
+      autoClose={4000}
+      hideProgressBar={false}
+      limit={3}
+      newestOnTop
+      closeOnClick
+      pauseOnHover
+      theme="colored"
+      className="mobile-toast-container"
+    />
+  );
+};
+
 const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
 root.render(
   <React.StrictMode>
     <>
       <App />
-      <ToastContainer
-        position="top-right"
-        autoClose={4000}
-        hideProgressBar={false}
-        limit={3}
-        newestOnTop
-        closeOnClick
-        pauseOnHover
-        theme="colored"
-      />
+      <ResponsiveToastContainer />
     </>
   </React.StrictMode>
 );
