@@ -158,11 +158,28 @@ const saveOverage = async (editing: Partial<Plan>, updated: Partial<Plan>): Prom
 };
 
 const savePlan = async (editing: Partial<Plan>, updated: Partial<Plan>): Promise<string> => {
+  console.log('[FacturacionPage] savePlan llamado:', {
+    editingId: editing.id,
+    updatedTag: updated.tag,
+    updatedTagType: typeof updated.tag,
+    fullPayload: updated,
+  });
+
   if (editing.id) {
-    await axios.patch(`${PLANES_API_ENDPOINT}/${editing.id}`, updated);
+    const response = await axios.patch(`${PLANES_API_ENDPOINT}/${editing.id}`, updated);
+    console.log('[FacturacionPage] Respuesta del PATCH:', {
+      planId: response.data?.id,
+      tagEnRespuesta: response.data?.tag,
+      tagEnRespuestaType: typeof response.data?.tag,
+    });
     return 'Plan actualizado correctamente';
   }
-  await axios.post(PLANES_API_ENDPOINT, updated);
+  const response = await axios.post(PLANES_API_ENDPOINT, updated);
+  console.log('[FacturacionPage] Respuesta del POST:', {
+    planId: response.data?.id,
+    tagEnRespuesta: response.data?.tag,
+    tagEnRespuestaType: typeof response.data?.tag,
+  });
   return 'Plan creado correctamente';
 };
 
@@ -209,6 +226,13 @@ const handleSavePlan = async (
   refreshData: () => void
 ) => {
   try {
+    console.log('[FacturacionPage] handleSavePlan llamado:', {
+      editingId: editing.id,
+      updatedTag: updated.tag,
+      updatedTagType: typeof updated.tag,
+      fullUpdated: updated,
+    });
+
     if (!validatePlanBasicFields(updated)) {
       return;
     }
@@ -224,6 +248,12 @@ const handleSavePlan = async (
       }
     }
 
+    console.log('[FacturacionPage] Enviando a savePlan/saveOverage:', {
+      editingId: editing.id,
+      tagValue: updated.tag,
+      tagType: typeof updated.tag,
+    });
+
     const successMessage = updated.isOverage
       ? await saveOverage(editing, updated)
       : await savePlan(editing, updated);
@@ -232,7 +262,7 @@ const handleSavePlan = async (
     setEditing(null);
     refreshData();
   } catch (err: unknown) {
-    console.error(err);
+    console.error('[FacturacionPage] Error guardando plan:', err);
     const errorMessage =
       (err as { response?: { data?: { error?: string; message?: string } } })?.response?.data
         ?.error ||
@@ -358,7 +388,9 @@ const PlanRow: React.FC<{
   <TableRow key={plan.id}>
     <TableCell className="font-medium">{plan.name}</TableCell>
     <TableCell>{plan.price != null ? `$${plan.price.toLocaleString('es-AR')}` : '—'}</TableCell>
-    <TableCell className="hidden md:table-cell">{(plan.creditosTotales || 0) + (plan.freeCredits || 0)}</TableCell>
+    <TableCell className="hidden md:table-cell">
+      {(plan.creditosTotales || 0) + (plan.freeCredits || 0)}
+    </TableCell>
     <TableCell className="hidden lg:table-cell">
       <span
         className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
@@ -370,8 +402,12 @@ const PlanRow: React.FC<{
         {plan.permiteCompuestas ? 'Sí' : 'No'}
       </span>
     </TableCell>
-    <TableCell className="hidden lg:table-cell">{(plan as Plan & { prioridad?: number }).prioridad ?? '—'}</TableCell>
-    <TableCell className="hidden md:table-cell">{plan.discountPct ? `${plan.discountPct}%` : '—'}</TableCell>
+    <TableCell className="hidden lg:table-cell">
+      {(plan as Plan & { prioridad?: number }).prioridad ?? '—'}
+    </TableCell>
+    <TableCell className="hidden md:table-cell">
+      {plan.discountPct ? `${plan.discountPct}%` : '—'}
+    </TableCell>
     <TableCell className="hidden lg:table-cell">
       {plan.discountUntil ? new Date(plan.discountUntil).toLocaleDateString('es-AR') : '—'}
     </TableCell>
@@ -407,19 +443,19 @@ const PlanesTable: React.FC<{
   onDeletePlan: (p: Plan) => void;
 }> = ({ planes, overages, isSuperAdmin, onEditPlan, onDeletePlan }) => (
   <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Plan</TableHead>
-          <TableHead>Precio (ARS)</TableHead>
-          <TableHead className="hidden md:table-cell">Créditos totales</TableHead>
-          <TableHead className="hidden lg:table-cell">Compuestas</TableHead>
-          <TableHead className="hidden lg:table-cell">Prioridad</TableHead>
-          <TableHead className="hidden md:table-cell">Descuento</TableHead>
-          <TableHead className="hidden lg:table-cell">Válido hasta</TableHead>
-          <TableHead className="hidden lg:table-cell">Overage</TableHead>
-          <TableHead align="right">Acciones</TableHead>
-        </TableRow>
-      </TableHeader>
+    <TableHeader>
+      <TableRow>
+        <TableHead>Plan</TableHead>
+        <TableHead>Precio (ARS)</TableHead>
+        <TableHead className="hidden md:table-cell">Créditos totales</TableHead>
+        <TableHead className="hidden lg:table-cell">Compuestas</TableHead>
+        <TableHead className="hidden lg:table-cell">Prioridad</TableHead>
+        <TableHead className="hidden md:table-cell">Descuento</TableHead>
+        <TableHead className="hidden lg:table-cell">Válido hasta</TableHead>
+        <TableHead className="hidden lg:table-cell">Overage</TableHead>
+        <TableHead align="right">Acciones</TableHead>
+      </TableRow>
+    </TableHeader>
     <TableBody>
       {planes.length === 0 ? (
         <TableRow>
@@ -507,15 +543,15 @@ const OveragesTable: React.FC<{
   onDeleteOverage: (p: Plan) => void;
 }> = ({ planes, basePlans, isSuperAdmin, onEditOverage, onDeleteOverage }) => (
   <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Paquete</TableHead>
-          <TableHead>Precio</TableHead>
-          <TableHead className="hidden md:table-cell">Créditos</TableHead>
-          <TableHead className="hidden md:table-cell">Plan base</TableHead>
-          <TableHead align="right">Acciones</TableHead>
-        </TableRow>
-      </TableHeader>
+    <TableHeader>
+      <TableRow>
+        <TableHead>Paquete</TableHead>
+        <TableHead>Precio</TableHead>
+        <TableHead className="hidden md:table-cell">Créditos</TableHead>
+        <TableHead className="hidden md:table-cell">Plan base</TableHead>
+        <TableHead align="right">Acciones</TableHead>
+      </TableRow>
+    </TableHeader>
     <TableBody>
       {planes.length === 0 ? (
         <TableRow>

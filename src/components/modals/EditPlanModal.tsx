@@ -187,7 +187,7 @@ const buildPlanPayload = (
     discountPct: discountPct === '' ? undefined : Number(discountPct),
     discountUntil: discountUntil || undefined,
     prioridad: prioridadNum,
-    tag: tagId === '' ? null : tagId,
+    tag: tagId === '' ? null : tagId, // tagId es el _id del tag seleccionado
     showDiscountSticker: showSticker,
     purchaseEnabled,
     isOverage,
@@ -574,6 +574,17 @@ const EditPlanModal: React.FC<Props> = ({ plan, onClose, onSave, basePlans }) =>
       parentPlan: currentParentPlan,
     };
     const payload = buildPlanPayload(plan, modifiedFormState);
+
+    console.log('[EditPlanModal] Enviando payload:', {
+      planId: plan.id,
+      tagId: formState.tagId,
+      tagIdType: typeof formState.tagId,
+      tagInPayload: payload.tag,
+      tagInPayloadType: typeof payload.tag,
+      selectedTag: selectedTag,
+      allTags: tags,
+    });
+
     onSave(payload as Partial<Plan>);
   };
 
