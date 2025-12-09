@@ -236,6 +236,56 @@ const createUpdatePromises = (
     })
     .filter(Boolean) as Promise<unknown>[];
 
+const validateDateValue = (key: string, value: unknown): boolean => {
+  if (typeof value !== 'string' || value.trim() === '') {
+    toast.error(`El valor para "${key}" debe ser una fecha válida`);
+    return false;
+  }
+  return true;
+};
+
+const validateNumericValue = (key: string, value: unknown): boolean => {
+  const numValue = Number(value);
+  if (Number.isNaN(numValue) || !Number.isFinite(numValue)) {
+    toast.error(`El valor para "${key}" debe ser un número válido`);
+    return false;
+  }
+  if (numValue < 0) {
+    toast.error(`El valor para "${key}" no puede ser negativo`);
+    return false;
+  }
+  return true;
+};
+
+const validateValue = (key: string, value: unknown): boolean => {
+  if (value === '' || value === null || value === undefined) {
+    toast.error(`El valor para "${key}" no puede estar vacío`);
+    return false;
+  }
+
+  if (key === 'CODIGO_URBANISTICO_EDICION') {
+    return validateDateValue(key, value);
+  }
+
+  return validateNumericValue(key, value);
+};
+
+const validateAllValues = (values: { [key: string]: number | string }): boolean => {
+  for (const [key, value] of Object.entries(values)) {
+    if (!validateValue(key, value)) {
+      return false;
+    }
+  }
+  return true;
+};
+
+const extractErrorMessage = (e: unknown): string => {
+  const error = e as { response?: { data?: { error?: string; message?: string } } };
+  return (
+    error?.response?.data?.error || error?.response?.data?.message || 'Error guardando constantes'
+  );
+};
+
 const useSaveConstants = (
   values: { [key: string]: number | string },
   settings: Setting[],
@@ -244,20 +294,8 @@ const useSaveConstants = (
   fetchConstants: () => Promise<void>
 ) => {
   const save = useCallback(async () => {
-    for (const [key, value] of Object.entries(values)) {
-      if (value === '' || value === null || value === undefined) {
-        toast.error(`El valor para "${key}" no puede estar vacío`);
-        return;
-      }
-      const numValue = Number(value);
-      if (Number.isNaN(numValue) || !Number.isFinite(numValue)) {
-        toast.error(`El valor para "${key}" debe ser un número válido`);
-        return;
-      }
-      if (numValue < 0) {
-        toast.error(`El valor para "${key}" no puede ser negativo`);
-        return;
-      }
+    if (!validateAllValues(values)) {
+      return;
     }
 
     setSaving(true);
@@ -269,12 +307,7 @@ const useSaveConstants = (
       void fetchConstants();
     } catch (e) {
       console.error('Error guardando constantes:', e);
-      const errorMessage =
-        (e as { response?: { data?: { error?: string; message?: string } } })?.response?.data
-          ?.error ||
-        (e as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-        'Error guardando constantes';
-      toast.error(errorMessage);
+      toast.error(extractErrorMessage(e));
     } finally {
       setSaving(false);
     }
