@@ -11,6 +11,7 @@ export interface Usuario {
     nombrePlan?: string;
     fechaInicio?: string;
     fechaFin?: string;
+    suscripcionInterna?: boolean;
   };
   consultasDisponibles?: number;
   creditBalance?: number;

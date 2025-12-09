@@ -8,6 +8,7 @@ import EditIconButton from '../components/EditIconButton';
 import {
   Button,
   Card,
+  Checkbox,
   FilterBar,
   Input,
   Modal,
@@ -231,12 +232,25 @@ const PlanModal: React.FC<{
   show: boolean;
   editingUsuario: Usuario | null;
   selectedPlan: string;
+  suscripcionInterna: boolean;
   planes: Plan[];
   saving: boolean;
   onClose: () => void;
   onPlanChange: (plan: string) => void;
+  onSuscripcionInternaChange: (checked: boolean) => void;
   onSave: () => void;
-}> = ({ show, editingUsuario, selectedPlan, planes, saving, onClose, onPlanChange, onSave }) => {
+}> = ({
+  show,
+  editingUsuario,
+  selectedPlan,
+  suscripcionInterna,
+  planes,
+  saving,
+  onClose,
+  onPlanChange,
+  onSuscripcionInternaChange,
+  onSave,
+}) => {
   if (!show) return null;
   return (
     <Modal show={true} title="Asignar Plan" onClose={onClose} size="md">
@@ -253,6 +267,15 @@ const PlanModal: React.FC<{
             })),
           ]}
         />
+        <Checkbox
+          label="Suscripción interna"
+          checked={suscripcionInterna}
+          onChange={(e) => onSuscripcionInternaChange(e.target.checked)}
+        />
+        <p className="text-xs text-gray-500 dark:text-gray-400">
+          Si está marcado, el usuario podrá usar el servicio sin validar la suscripción de Mercado
+          Pago
+        </p>
         {editingUsuario && (
           <div className="text-sm text-gray-600 dark:text-gray-400">
             <p>
@@ -483,7 +506,7 @@ const useUserPlanHandlers = (
   setSaving: (saving: boolean) => void
 ) => {
   const handleSavePlan = useCallback(
-    async (selectedPlan: string, planes: Plan[]) => {
+    async (selectedPlan: string, suscripcionInterna: boolean, planes: Plan[]) => {
       if (!editingUsuario || !selectedPlan) {
         toast.error('Selecciona un plan');
         return false;
@@ -497,6 +520,7 @@ const useUserPlanHandlers = (
           nombrePlan?: string;
           fechaInicio?: string;
           fechaFin?: string;
+          suscripcionInterna?: boolean;
         } = {};
 
         if (plan) {
@@ -507,6 +531,8 @@ const useUserPlanHandlers = (
           updateData.fechaInicio = now.toISOString();
           updateData.fechaFin = fin.toISOString();
         }
+
+        updateData.suscripcionInterna = suscripcionInterna;
 
         await axios.patch(`/api/admin/usuarios/${editingUsuario._id}/plan`, updateData);
         toast.success('Plan asignado correctamente');
@@ -564,6 +590,7 @@ const useUserModalState = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState('');
+  const [suscripcionInterna, setSuscripcionInterna] = useState(false);
   const [creditsAmount, setCreditsAmount] = useState('');
   const [editFormData, setEditFormData] = useState({ nombre: '', email: '' });
 
@@ -578,6 +605,8 @@ const useUserModalState = () => {
     setShowDeleteModal,
     selectedPlan,
     setSelectedPlan,
+    suscripcionInterna,
+    setSuscripcionInterna,
     creditsAmount,
     setCreditsAmount,
     editFormData,
@@ -592,6 +621,7 @@ const useUserHandlers = (
   setShowEditModal: (show: boolean) => void,
   setShowDeleteModal: (show: boolean) => void,
   setSelectedPlan: (plan: string) => void,
+  setSuscripcionInterna: (checked: boolean) => void,
   setCreditsAmount: (amount: string) => void,
   setEditFormData: (data: { nombre: string; email: string }) => void
 ) => {
@@ -616,9 +646,10 @@ const useUserHandlers = (
     (usuario: Usuario) => {
       setEditingUsuario(usuario);
       setSelectedPlan(usuario.suscripcion?.plan || usuario.suscripcion?.nombrePlan || '');
+      setSuscripcionInterna(usuario.suscripcion?.suscripcionInterna || false);
       setShowPlanModal(true);
     },
-    [setEditingUsuario, setSelectedPlan, setShowPlanModal]
+    [setEditingUsuario, setSelectedPlan, setSuscripcionInterna, setShowPlanModal]
   );
 
   const handleEditCredits = useCallback(
@@ -704,20 +735,35 @@ const PlanModalWrapper: React.FC<{
   show: boolean;
   editingUsuario: Usuario | null;
   selectedPlan: string;
+  suscripcionInterna: boolean;
   planes: Plan[];
   saving: boolean;
   onClose: () => void;
   onPlanChange: (plan: string) => void;
+  onSuscripcionInternaChange: (checked: boolean) => void;
   onSave: () => Promise<boolean>;
-}> = ({ show, editingUsuario, selectedPlan, planes, saving, onClose, onPlanChange, onSave }) => (
+}> = ({
+  show,
+  editingUsuario,
+  selectedPlan,
+  suscripcionInterna,
+  planes,
+  saving,
+  onClose,
+  onPlanChange,
+  onSuscripcionInternaChange,
+  onSave,
+}) => (
   <PlanModal
     show={show}
     editingUsuario={editingUsuario}
     selectedPlan={selectedPlan}
+    suscripcionInterna={suscripcionInterna}
     planes={planes}
     saving={saving}
     onClose={onClose}
     onPlanChange={onPlanChange}
+    onSuscripcionInternaChange={onSuscripcionInternaChange}
     onSave={createModalSaveHandler(onSave, onClose)}
   />
 );
@@ -786,6 +832,7 @@ const UsersModals: React.FC<{
   showDeleteModal: boolean;
   editingUsuario: Usuario | null;
   selectedPlan: string;
+  suscripcionInterna: boolean;
   creditsAmount: string;
   editFormData: { nombre: string; email: string };
   saving: boolean;
@@ -795,6 +842,7 @@ const UsersModals: React.FC<{
   onCloseEditModal: () => void;
   onCloseDeleteModal: () => void;
   onPlanChange: (plan: string) => void;
+  onSuscripcionInternaChange: (checked: boolean) => void;
   onCreditsChange: (amount: string) => void;
   onFormDataChange: (data: { nombre: string; email: string }) => void;
   onSavePlan: () => Promise<boolean>;
@@ -807,10 +855,12 @@ const UsersModals: React.FC<{
       show={props.showPlanModal}
       editingUsuario={props.editingUsuario}
       selectedPlan={props.selectedPlan}
+      suscripcionInterna={props.suscripcionInterna}
       planes={props.planes}
       saving={props.saving}
       onClose={props.onClosePlanModal}
       onPlanChange={props.onPlanChange}
+      onSuscripcionInternaChange={props.onSuscripcionInternaChange}
       onSave={props.onSavePlan}
     />
     <CreditsModalWrapper
@@ -865,6 +915,7 @@ const UsersPageContent: React.FC<{
   editingUsuario: Usuario | null;
   saving: boolean;
   selectedPlan: string;
+  suscripcionInterna: boolean;
   creditsAmount: string;
   editFormData: { nombre: string; email: string };
   showPlanModal: boolean;
@@ -883,6 +934,7 @@ const UsersPageContent: React.FC<{
   onCloseEditModal: () => void;
   onCloseDeleteModal: () => void;
   onPlanChange: (plan: string) => void;
+  onSuscripcionInternaChange: (checked: boolean) => void;
   onCreditsChange: (amount: string) => void;
   onFormDataChange: (data: { nombre: string; email: string }) => void;
   onSavePlan: () => Promise<boolean>;
@@ -934,6 +986,7 @@ const UsersPageContent: React.FC<{
         showDeleteModal={props.showDeleteModal}
         editingUsuario={props.editingUsuario}
         selectedPlan={props.selectedPlan}
+        suscripcionInterna={props.suscripcionInterna}
         creditsAmount={props.creditsAmount}
         editFormData={props.editFormData}
         saving={props.saving}
@@ -943,6 +996,7 @@ const UsersPageContent: React.FC<{
         onCloseEditModal={props.onCloseEditModal}
         onCloseDeleteModal={props.onCloseDeleteModal}
         onPlanChange={props.onPlanChange}
+        onSuscripcionInternaChange={props.onSuscripcionInternaChange}
         onCreditsChange={props.onCreditsChange}
         onFormDataChange={props.onFormDataChange}
         onSavePlan={props.onSavePlan}
@@ -973,6 +1027,7 @@ const useUsersPageHandlers = (
     modalState.setShowPlanModal(false);
     setEditingUsuario(null);
     modalState.setSelectedPlan('');
+    modalState.setSuscripcionInterna(false);
   }, [modalState, setEditingUsuario]);
 
   const createCloseCreditsModal = useCallback(() => {
@@ -1082,6 +1137,7 @@ const useUsersPageHandlersAndState = (refetch: () => Promise<void>) => {
     modalState.setShowEditModal,
     modalState.setShowDeleteModal,
     modalState.setSelectedPlan,
+    modalState.setSuscripcionInterna,
     modalState.setCreditsAmount,
     modalState.setEditFormData
   );
@@ -1125,6 +1181,7 @@ const buildUsersPageContentProps = (
     editingUsuario: handlers.editingUsuario,
     saving: handlers.saving,
     selectedPlan: handlers.modalState.selectedPlan,
+    suscripcionInterna: handlers.modalState.suscripcionInterna,
     creditsAmount: handlers.modalState.creditsAmount,
     editFormData: handlers.modalState.editFormData,
     showPlanModal: handlers.modalState.showPlanModal,
@@ -1143,11 +1200,17 @@ const buildUsersPageContentProps = (
     onCloseEditModal: handlers.createCloseEditModal,
     onCloseDeleteModal: handlers.createCloseDeleteModal,
     onPlanChange: handlers.modalState.setSelectedPlan,
+    onSuscripcionInternaChange: handlers.modalState.setSuscripcionInterna,
     onCreditsChange: handlers.modalState.setCreditsAmount,
     onFormDataChange: handlers.modalState.setEditFormData,
   };
   const saveHandlers = {
-    onSavePlan: async () => handlers.handleSavePlan(handlers.modalState.selectedPlan, data.planes),
+    onSavePlan: async () =>
+      handlers.handleSavePlan(
+        handlers.modalState.selectedPlan,
+        handlers.modalState.suscripcionInterna,
+        data.planes
+      ),
     onSaveCredits: async () => handlers.handleSaveCredits(handlers.modalState.creditsAmount),
     onSaveEdit: async () => handlers.handleSaveEdit(handlers.modalState.editFormData),
     onConfirmDelete: handlers.handleConfirmDelete,

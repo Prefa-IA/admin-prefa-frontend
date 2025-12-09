@@ -114,26 +114,26 @@ const useJobStatus = (
 ) => {
   useEffect(() => {
     if (!jobId) return;
-    const intervalState = { interval: null as NodeJS.Timeout | null };
+    const intervalIdRef: { current: NodeJS.Timeout | null } = { current: null };
     const fetchStatus = async () => {
       try {
         const data = await fetchJobStatus(jobId);
         const shouldStop = updateProgress(data, setJobStatus, setChunkProgress, setMessage);
-        if (shouldStop && intervalState.interval) {
-          clearInterval(intervalState.interval);
-          intervalState.interval = null;
+        if (shouldStop && intervalIdRef.current) {
+          clearInterval(intervalIdRef.current);
+          intervalIdRef.current = null;
         }
       } catch (err) {
         console.error(err);
       }
     };
     void fetchStatus();
-    intervalState.interval = setInterval(() => {
+    intervalIdRef.current = setInterval(() => {
       void fetchStatus();
     }, 5000);
     return () => {
-      if (intervalState.interval) {
-        clearInterval(intervalState.interval);
+      if (intervalIdRef.current) {
+        clearInterval(intervalIdRef.current);
       }
     };
   }, [jobId, setJobStatus, setChunkProgress, setMessage]);
