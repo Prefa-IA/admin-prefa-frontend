@@ -170,8 +170,9 @@ const UsersSelector: React.FC<{
   selectedUserIds: string[];
   onUserToggle: (id: string) => void;
 }> = ({ users, searchUser, onSearchChange, selectedUserIds, onUserToggle }) => {
-  const filteredUsers = users.filter((u) =>
-    u.email.toLowerCase().includes(searchUser.toLowerCase())
+  const usersSafe = Array.isArray(users) ? users : [];
+  const filteredUsers = usersSafe.filter((u) =>
+    u.email?.toLowerCase().includes(searchUser.toLowerCase())
   );
 
   return (

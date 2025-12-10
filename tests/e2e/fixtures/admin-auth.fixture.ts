@@ -32,7 +32,10 @@ export const test = base.extend<{
 
         // Si no es el primer intento, esperar con backoff exponencial
         if (attempt > 0) {
-          const backoffDelay = Math.min(1000 * Math.pow(2, attempt - 1), 15000); // Máximo 15 segundos
+          // Si el último error fue rate limit, esperar más tiempo pero no tanto
+          const isRateLimit = lastError?.message?.includes('429') || lastError?.message?.includes('Rate limit');
+          const baseDelay = isRateLimit ? 2000 : 500; // 2 segundos para rate limit, 500ms para otros errores
+          const backoffDelay = Math.min(baseDelay * Math.pow(2, attempt - 1), isRateLimit ? 10000 : 5000); // Máximo 10s para rate limit, 5s para otros
           
           // Verificar que la página no esté cerrada antes de esperar
           if (page.isClosed()) {

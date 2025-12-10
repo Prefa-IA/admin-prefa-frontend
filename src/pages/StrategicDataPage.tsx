@@ -209,10 +209,13 @@ const StrategicDataPage: React.FC = () => {
       setLoading(true);
       try {
         const res = await axios.get<StrategicData[]>('/admin/usuarios/datos-estrategicos');
-        setData(res.data);
-        setFilteredData(res.data);
+        const dataSafe = Array.isArray(res.data) ? res.data : [];
+        setData(dataSafe);
+        setFilteredData(dataSafe);
       } catch (error) {
         console.error('Error cargando datos estratégicos:', error);
+        setData([]);
+        setFilteredData([]);
       } finally {
         setLoading(false);
       }
@@ -222,23 +225,26 @@ const StrategicDataPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const filtered = data.filter(
+    const dataSafe = Array.isArray(data) ? data : [];
+    const filtered = dataSafe.filter(
       (item) =>
-        item.nombre.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.planActual.toLowerCase().includes(searchQuery.toLowerCase())
+        item.nombre?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.planActual?.toLowerCase().includes(searchQuery.toLowerCase())
     );
     setFilteredData(filtered);
     setPage(1);
   }, [searchQuery, data]);
 
-  const paginatedData = filteredData.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  const totalPages = Math.ceil(filteredData.length / PAGE_SIZE);
+  const dataSafe = Array.isArray(data) ? data : [];
+  const filteredDataSafe = Array.isArray(filteredData) ? filteredData : [];
+  const paginatedData = filteredDataSafe.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.ceil(filteredDataSafe.length / PAGE_SIZE);
 
-  const totalCreditosConsumidos = data.reduce((sum, item) => sum + item.creditosConsumidosTotal, 0);
-  const totalRenovaciones = data.reduce((sum, item) => sum + item.renovacionesEstimadas, 0);
-  const totalCambiosPlan = data.reduce((sum, item) => sum + item.cambiosPlanEstimados, 0);
-  const usuariosConPlan = data.filter((item) => item.planActual !== 'Sin plan').length;
+  const totalCreditosConsumidos = dataSafe.reduce((sum, item) => sum + (item.creditosConsumidosTotal || 0), 0);
+  const totalRenovaciones = dataSafe.reduce((sum, item) => sum + (item.renovacionesEstimadas || 0), 0);
+  const totalCambiosPlan = dataSafe.reduce((sum, item) => sum + (item.cambiosPlanEstimados || 0), 0);
+  const usuariosConPlan = dataSafe.filter((item) => item.planActual !== 'Sin plan').length;
 
   return (
     <div className="space-y-6">

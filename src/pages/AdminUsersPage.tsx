@@ -786,10 +786,11 @@ const AdminUsersPageContent: React.FC<{
   onSave,
   onConfirmDelete,
 }) => {
-  const filtered = admins.filter(
+  const adminsSafe = Array.isArray(admins) ? admins : [];
+  const filtered = adminsSafe.filter(
     (a) =>
-      a.nombre.toLowerCase().includes(query.toLowerCase()) ||
-      a.email.toLowerCase().includes(query.toLowerCase())
+      a.nombre?.toLowerCase().includes(query.toLowerCase()) ||
+      a.email?.toLowerCase().includes(query.toLowerCase())
   );
 
   return (
