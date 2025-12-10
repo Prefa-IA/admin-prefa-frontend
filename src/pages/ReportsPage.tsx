@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import axios from 'axios';
 
@@ -116,50 +116,69 @@ const InformeRow: React.FC<{ informe: Informe }> = ({ informe }) => {
   );
 };
 
-const filterInformes = (informes: Informe[], query: string): Informe[] =>
-  informes.filter(
-    (i) =>
-      (i.direccionCompleta || '').toLowerCase().includes(query.toLowerCase()) ||
-      (i.usuario?.email || '').toLowerCase().includes(query.toLowerCase())
-  );
+interface InformesResponse {
+  informes: Informe[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
 
-const paginateInformes = (informes: Informe[], page: number): Informe[] =>
-  informes.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-
-const useInformes = () => {
+const useInformes = (page: number, limit: number) => {
   const [informes, setInformes] = useState<Informe[]>([]);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: PAGE_SIZE,
+    total: 0,
+    totalPages: 0,
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchInformes = async () => {
+  const fetchInformes = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await axios.get<Informe[]>('/api/admin/informes');
-      setInformes(res.data);
+      const res = await axios.get<InformesResponse>('/api/admin/informes', {
+        params: { page, limit },
+      });
+      setInformes(res.data.informes);
+      setPagination(res.data.pagination);
     } catch (err: unknown) {
       const error = err as { response?: { data?: { error?: string } } };
       setError(error.response?.data?.error || 'Error al cargar informes');
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, limit]);
 
   useEffect(() => {
     void fetchInformes();
-  }, []);
+  }, [fetchInformes]);
 
-  return { informes, loading, error };
+  return { informes, pagination, loading, error, refetch: fetchInformes };
 };
 
 const ReportsPageContent: React.FC<{
   informes: Informe[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
   query: string;
-  page: number;
   onQueryChange: (q: string) => void;
   onPageChange: (p: number) => void;
-}> = ({ informes, query, page, onQueryChange, onPageChange }) => {
-  const filtered = filterInformes(informes, query);
-  const paginated = paginateInformes(filtered, page);
+}> = ({ informes, pagination, query, onQueryChange, onPageChange }) => {
+  // Nota: El filtrado por query ahora debería hacerse en el backend
+  // Por ahora mantenemos el filtrado en cliente para compatibilidad
+  const filtered = informes.filter(
+    (i) =>
+      (i.direccionCompleta || '').toLowerCase().includes(query.toLowerCase()) ||
+      (i.usuario?.email || '').toLowerCase().includes(query.toLowerCase())
+  );
 
   return (
     <>
@@ -183,7 +202,7 @@ const ReportsPageContent: React.FC<{
             </TableRow>
           </TableHeader>
           <TableBody>
-            {paginated.length === 0 ? (
+            {filtered.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={7}
@@ -193,17 +212,17 @@ const ReportsPageContent: React.FC<{
                 </TableCell>
               </TableRow>
             ) : (
-              paginated.map((inf) => <InformeRow key={inf._id} informe={inf} />)
+              filtered.map((inf) => <InformeRow key={inf._id} informe={inf} />)
             )}
           </TableBody>
         </Table>
 
-        {filtered.length > 0 && (
+        {pagination.total > 0 && (
           <div className="mt-6">
             <Pagination
-              total={filtered.length}
-              current={page}
-              pageSize={PAGE_SIZE}
+              total={pagination.total}
+              current={pagination.page}
+              pageSize={pagination.limit}
               onPageChange={onPageChange}
             />
           </div>
@@ -216,7 +235,7 @@ const ReportsPageContent: React.FC<{
 const ReportsPage: React.FC = () => {
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
-  const { informes, loading, error } = useInformes();
+  const { informes, pagination, loading, error } = useInformes(page, PAGE_SIZE);
 
   if (loading) {
     return <LoadingSpinner />;
@@ -237,8 +256,8 @@ const ReportsPage: React.FC = () => {
       <PageHeader title="Informes" description="Visualiza y gestiona los informes generados" />
       <ReportsPageContent
         informes={informes}
+        pagination={pagination}
         query={query}
-        page={page}
         onQueryChange={setQuery}
         onPageChange={setPage}
       />

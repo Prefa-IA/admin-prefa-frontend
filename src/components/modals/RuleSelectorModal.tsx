@@ -17,10 +17,12 @@ const useRuleSelectorData = (search: string) => {
     setLoading(true);
     setError('');
     try {
-      const { data } = await axios.get<RuleSelectorRule[]>(
+      const { data } = await axios.get<RuleSelectorRule[] | { reglas: RuleSelectorRule[]; pagination: unknown }>(
         `/api/reglas?search=${encodeURIComponent(search)}`
       );
-      setRules(data);
+      // Handle both array response and paginated response
+      const rulesArray = Array.isArray(data) ? data : (data?.reglas || []);
+      setRules(rulesArray);
     } catch (err) {
       console.error(err);
       setError('Error obteniendo reglas');

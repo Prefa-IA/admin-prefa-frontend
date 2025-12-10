@@ -12,6 +12,7 @@ import {
   Card,
   FilterBar,
   PageHeader,
+  Pagination,
   Table,
   TableBody,
   TableCell,
@@ -164,8 +165,23 @@ const ReglaRow: React.FC<ReglaRowProps> = ({
   </TableRow>
 );
 
-const useReglasData = (filterEstado: string, categoria?: string) => {
+const PAGE_SIZE = 50;
+
+interface PaginationData {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+const useReglasData = (filterEstado: string, categoria?: string, page: number = 1, limit: number = PAGE_SIZE) => {
   const [reglas, setReglas] = useState<Regla[]>([]);
+  const [pagination, setPagination] = useState<PaginationData>({
+    page: 1,
+    limit: PAGE_SIZE,
+    total: 0,
+    totalPages: 0,
+  });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -175,12 +191,17 @@ const useReglasData = (filterEstado: string, categoria?: string) => {
         interface Params {
           estado?: string;
           categoria?: string;
+          page?: number;
+          limit?: number;
         }
-        const params: Params = {};
+        const params: Params = { page, limit };
         if (filterEstado) params.estado = filterEstado;
         if (categoria) params.categoria = categoria;
-        const { data } = await axios.get<Regla[]>('/api/reglas', { params });
-        setReglas(Array.isArray(data) ? data : []);
+        const { data } = await axios.get<{ reglas: Regla[]; pagination: PaginationData }>('/api/reglas', { params });
+        setReglas(data.reglas || []);
+        if (data.pagination) {
+          setPagination(data.pagination);
+        }
       } catch (err) {
         console.error(err);
       } finally {
@@ -188,9 +209,9 @@ const useReglasData = (filterEstado: string, categoria?: string) => {
       }
     };
     void fetchReglas();
-  }, [filterEstado, categoria]);
+  }, [filterEstado, categoria, page, limit]);
 
-  return { reglas, setReglas, loading };
+  return { reglas, setReglas, pagination, loading };
 };
 
 interface UpdatePayload {
@@ -473,11 +494,12 @@ const ReglasModals: React.FC<{
 const ReglasPageContent: React.FC<{
   mode: 'admin' | 'view';
   categoria?: string | undefined;
-  reglas: Regla[];
   reglasByCategory: Record<string, Regla[]>;
   search: string;
   modified: Record<string, Regla>;
+  pagination: PaginationData;
   onSearchChange: (value: string) => void;
+  onPageChange: (page: number) => void;
   onEdit: (regla: Regla) => void;
   onApprove: (regla: Regla) => void;
   onReject: (regla: Regla) => void;
@@ -488,11 +510,12 @@ const ReglasPageContent: React.FC<{
 }> = ({
   mode,
   categoria,
-  reglas,
   reglasByCategory,
   search,
   modified,
+  pagination,
   onSearchChange,
+  onPageChange,
   onEdit,
   onApprove,
   onReject,
@@ -505,7 +528,7 @@ const ReglasPageContent: React.FC<{
     <ReglasPageHeader
       mode={mode}
       categoria={categoria}
-      reglasCount={reglas.length}
+      reglasCount={pagination.total}
       approveAll={approveAll}
       rejectAll={rejectAll}
     />
@@ -525,6 +548,17 @@ const ReglasPageContent: React.FC<{
       onDelete={onDelete}
     />
 
+    {pagination.total > 0 && (
+      <div className="mt-6">
+        <Pagination
+          total={pagination.total}
+          current={pagination.page}
+          pageSize={pagination.limit}
+          onPageChange={onPageChange}
+        />
+      </div>
+    )}
+
     {mode === 'admin' && Object.keys(modified).length > 0 && (
       <div className="fixed bottom-6 right-6 z-50">
         <Button variant="primary" size="lg" onClick={handlePersistChanges} className="shadow-lg">
@@ -536,6 +570,7 @@ const ReglasPageContent: React.FC<{
 );
 
 const ReglasPage: React.FC<ReglasPageProps> = ({ mode, categoria }) => {
+  const [page, setPage] = useState(1);
   const {
     filterEstado,
     selected,
@@ -548,7 +583,7 @@ const ReglasPage: React.FC<ReglasPageProps> = ({ mode, categoria }) => {
     setModified,
   } = useReglasPageState(mode);
 
-  const { reglas, setReglas, loading } = useReglasData(filterEstado, categoria);
+  const { reglas, setReglas, pagination, loading } = useReglasData(filterEstado, categoria, page, PAGE_SIZE);
 
   const {
     updateRule,
@@ -559,6 +594,11 @@ const ReglasPage: React.FC<ReglasPageProps> = ({ mode, categoria }) => {
     approveAll,
     rejectAll,
   } = useReglasHandlers(reglas, setReglas, setModified, modified);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [filterEstado, categoria]);
 
   const filteredReglas = filterReglas(reglas, search);
   const reglasByCategory = groupReglasByCategory(filteredReglas);
@@ -572,11 +612,12 @@ const ReglasPage: React.FC<ReglasPageProps> = ({ mode, categoria }) => {
       <ReglasPageContent
         mode={mode}
         categoria={categoria}
-        reglas={reglas}
         reglasByCategory={reglasByCategory}
         search={search}
         modified={modified}
+        pagination={pagination}
         onSearchChange={setSearch}
+        onPageChange={setPage}
         onEdit={setSelected}
         onApprove={handleApprove}
         onReject={handleReject}

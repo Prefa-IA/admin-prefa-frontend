@@ -19,15 +19,24 @@ import { AnalyticsResponse } from '../types/dashboard';
 const useDashboardData = () => {
   const [data, setData] = React.useState<AnalyticsResponse | null>(null);
   const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     const load = async () => {
       setLoading(true);
+      setError(null);
       try {
         const res = await axios.get<AnalyticsResponse>('/admin/analytics');
         setData(res.data);
       } catch (e) {
-        console.error('Error al cargar analíticas', e);
+        const axiosError = e as { response?: { status?: number; data?: { error?: string; retryAfter?: number } } };
+        if (axiosError.response?.status === 429) {
+          const retryAfter = axiosError.response.data?.retryAfter || 60;
+          setError(`Demasiadas solicitudes. Por favor espera ${retryAfter} segundos antes de recargar.`);
+        } else {
+          console.error('Error al cargar analíticas', e);
+          setError('Error al cargar datos del dashboard. Por favor recarga la página.');
+        }
       } finally {
         setLoading(false);
       }
@@ -35,7 +44,7 @@ const useDashboardData = () => {
     void load();
   }, []);
 
-  return { data, loading };
+  return { data, loading, error };
 };
 
 const useDashboardSeries = (range: 'day' | 'week' | 'month' | 'year' | 'historic') => {
@@ -387,7 +396,7 @@ const TopUsersCard: React.FC<{
 
 const Dashboard: React.FC = () => {
   const [range, setRange] = React.useState<'day' | 'week' | 'month' | 'year' | 'historic'>('month');
-  const { data, loading } = useDashboardData();
+  const { data, loading, error } = useDashboardData();
   const { series, topDirecciones, barrios } = useDashboardSeries(range);
   const heatPoints = useHeatMapData();
 
@@ -395,8 +404,21 @@ const Dashboard: React.FC = () => {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Cargando datos del dashboard...</p>
+          {error ? (
+            <>
+              <div className="text-red-600 dark:text-red-400 mb-4">
+                <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <p className="mt-4 text-red-600 dark:text-red-400">{error}</p>
+            </>
+          ) : (
+            <>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+              <p className="mt-4 text-gray-600 dark:text-gray-400">Cargando datos del dashboard...</p>
+            </>
+          )}
         </div>
       </div>
     );
