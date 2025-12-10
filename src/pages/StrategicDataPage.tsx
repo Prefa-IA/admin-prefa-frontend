@@ -208,8 +208,10 @@ const StrategicDataPage: React.FC = () => {
     const loadData = async () => {
       setLoading(true);
       try {
-        const res = await axios.get<StrategicData[]>('/admin/usuarios/datos-estrategicos');
-        const dataSafe = Array.isArray(res.data) ? res.data : [];
+        const res = await axios.get<{ datos: StrategicData[]; pagination?: unknown }>(
+          '/admin/usuarios/datos-estrategicos'
+        );
+        const dataSafe = Array.isArray(res.data?.datos) ? res.data.datos : Array.isArray(res.data) ? res.data : [];
         setData(dataSafe);
         setFilteredData(dataSafe);
       } catch (error) {
