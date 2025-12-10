@@ -391,18 +391,35 @@ const EditUserModal: React.FC<{
   );
 };
 
-const useUsers = () => {
+interface UsuariosResponse {
+  usuarios: Usuario[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+const useUsers = (page: number, limit: number) => {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 0,
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [hasFetched, setHasFetched] = useState(false);
 
   const fetchUsuarios = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await axios.get<Usuario[]>('/api/admin/usuarios');
-      setUsuarios(res.data);
-      setHasFetched(true);
+      const res = await axios.get<UsuariosResponse>('/api/admin/usuarios', {
+        params: { page, limit },
+      });
+      setUsuarios(res.data.usuarios);
+      setPagination(res.data.pagination);
       setError(null);
     } catch (err: unknown) {
       const error = err as { response?: { data?: { error?: string } } };
@@ -410,15 +427,13 @@ const useUsers = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [page, limit]);
 
   useEffect(() => {
-    if (!hasFetched) {
-      void fetchUsuarios();
-    }
-  }, [hasFetched, fetchUsuarios]);
+    void fetchUsuarios();
+  }, [fetchUsuarios]);
 
-  return { usuarios, loading, error, refetch: fetchUsuarios };
+  return { usuarios, pagination, loading, error, refetch: fetchUsuarios };
 };
 
 const usePlans = (isSuperAdmin: boolean) => {
@@ -890,23 +905,14 @@ const UsersModals: React.FC<{
   </>
 );
 
-const filterAndPaginateUsers = (
-  usuarios: Usuario[],
-  query: string,
-  page: number,
-  PAGE_SIZE: number
-) => {
-  const filtered = usuarios.filter(
-    (u) =>
-      u.nombre.toLowerCase().includes(query.toLowerCase()) ||
-      u.email.toLowerCase().includes(query.toLowerCase())
-  );
-  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-  return { filtered, paginated };
-};
-
 const UsersPageContent: React.FC<{
   usuarios: Usuario[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
   planes: Plan[];
   isSuperAdmin: boolean;
   query: string;
@@ -945,11 +951,11 @@ const UsersPageContent: React.FC<{
   onCancelToggleActivo: () => void;
   onConfirmToggleActivo: () => void;
 }> = (props) => {
-  const { filtered, paginated } = filterAndPaginateUsers(
-    props.usuarios,
-    props.query,
-    props.page,
-    props.PAGE_SIZE
+  // Filtrar en cliente por ahora (idealmente debería hacerse en backend)
+  const filtered = props.usuarios.filter(
+    (u) =>
+      u.nombre.toLowerCase().includes(props.query.toLowerCase()) ||
+      u.email.toLowerCase().includes(props.query.toLowerCase())
   );
 
   return (
@@ -961,7 +967,7 @@ const UsersPageContent: React.FC<{
         searchPlaceholder="Buscar por nombre o email..."
       />
       <UsersTable
-        usuarios={paginated}
+        usuarios={filtered}
         isSuperAdmin={props.isSuperAdmin}
         onEditPlan={props.onEditPlan}
         onEditCredits={props.onEditCredits}
@@ -969,12 +975,12 @@ const UsersPageContent: React.FC<{
         onDelete={props.onDelete}
         onToggleActivo={props.onToggleActivo}
       />
-      {filtered.length > 0 && (
+      {props.pagination.total > 0 && (
         <div className="mt-6">
           <Pagination
-            total={filtered.length}
-            current={props.page}
-            pageSize={props.PAGE_SIZE}
+            total={props.pagination.total}
+            current={props.pagination.page}
+            pageSize={props.pagination.limit}
             onPageChange={props.onPageChange}
           />
         </div>
@@ -1058,15 +1064,16 @@ const useUsersPageHandlers = (
 const useUsersPageData = () => {
   const { user } = useAuth();
   const isSuperAdmin = user?.isSuperAdmin === true;
-  const { usuarios, loading, error, refetch } = useUsers();
-  const planes = usePlans(isSuperAdmin);
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 20;
+  const { usuarios, pagination, loading, error, refetch } = useUsers(page, PAGE_SIZE);
+  const planes = usePlans(isSuperAdmin);
 
   return {
     isSuperAdmin,
     usuarios,
+    pagination,
     loading,
     error,
     refetch,
@@ -1173,6 +1180,7 @@ const buildUsersPageContentProps = (
 ) => {
   const baseProps = {
     usuarios: data.usuarios,
+    pagination: data.pagination,
     planes: data.planes,
     isSuperAdmin: data.isSuperAdmin,
     query: data.query,
