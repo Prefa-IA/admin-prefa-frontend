@@ -418,11 +418,12 @@ const useUsers = (page: number, limit: number) => {
       const res = await axios.get<UsuariosResponse>('/api/admin/usuarios', {
         params: { page, limit },
       });
-      setUsuarios(res.data.usuarios);
-      setPagination(res.data.pagination);
+      setUsuarios(Array.isArray(res.data?.usuarios) ? res.data.usuarios : []);
+      setPagination(res.data?.pagination || { page: 1, limit: 20, total: 0, totalPages: 0 });
       setError(null);
     } catch (err: unknown) {
       const error = err as { response?: { data?: { error?: string } } };
+      setUsuarios([]);
       setError(error.response?.data?.error || 'Error al cargar usuarios');
     } finally {
       setLoading(false);
@@ -951,11 +952,11 @@ const UsersPageContent: React.FC<{
   onCancelToggleActivo: () => void;
   onConfirmToggleActivo: () => void;
 }> = (props) => {
-  // Filtrar en cliente por ahora (idealmente debería hacerse en backend)
-  const filtered = props.usuarios.filter(
+  const usuarios = Array.isArray(props.usuarios) ? props.usuarios : [];
+  const filtered = usuarios.filter(
     (u) =>
-      u.nombre.toLowerCase().includes(props.query.toLowerCase()) ||
-      u.email.toLowerCase().includes(props.query.toLowerCase())
+      u.nombre?.toLowerCase().includes(props.query.toLowerCase()) ||
+      u.email?.toLowerCase().includes(props.query.toLowerCase())
   );
 
   return (

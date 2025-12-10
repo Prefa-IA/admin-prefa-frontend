@@ -143,10 +143,11 @@ const useInformes = (page: number, limit: number) => {
       const res = await axios.get<InformesResponse>('/api/admin/informes', {
         params: { page, limit },
       });
-      setInformes(res.data.informes);
-      setPagination(res.data.pagination);
+      setInformes(Array.isArray(res.data?.informes) ? res.data.informes : []);
+      setPagination(res.data?.pagination || { page: 1, limit: PAGE_SIZE, total: 0, totalPages: 0 });
     } catch (err: unknown) {
       const error = err as { response?: { data?: { error?: string } } };
+      setInformes([]);
       setError(error.response?.data?.error || 'Error al cargar informes');
     } finally {
       setLoading(false);
@@ -172,9 +173,8 @@ const ReportsPageContent: React.FC<{
   onQueryChange: (q: string) => void;
   onPageChange: (p: number) => void;
 }> = ({ informes, pagination, query, onQueryChange, onPageChange }) => {
-  // Nota: El filtrado por query ahora debería hacerse en el backend
-  // Por ahora mantenemos el filtrado en cliente para compatibilidad
-  const filtered = informes.filter(
+  const informesSafe = Array.isArray(informes) ? informes : [];
+  const filtered = informesSafe.filter(
     (i) =>
       (i.direccionCompleta || '').toLowerCase().includes(query.toLowerCase()) ||
       (i.usuario?.email || '').toLowerCase().includes(query.toLowerCase())
