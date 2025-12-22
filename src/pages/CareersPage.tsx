@@ -209,6 +209,71 @@ const CareersTable: React.FC<{
   </Card>
 );
 
+const CareerForm: React.FC<{
+  career: Career;
+  onChange: (key: keyof Career, value: string | number | boolean) => void;
+}> = ({ career, onChange }) => (
+  <div className="space-y-4">
+    <Input
+      label="Título"
+      value={career.titulo}
+      onChange={(e) => onChange('titulo', e.target.value)}
+      placeholder="Ej: Desarrollador Full Stack"
+      required
+    />
+    <Select
+      label="Tipo"
+      value={career.tipo || 'other'}
+      onChange={(e) => onChange('tipo', e.target.value as Career['tipo'])}
+      options={TIPO_OPTIONS}
+      required
+    />
+    <div>
+      <label
+        htmlFor="descripcion"
+        className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+      >
+        Descripción
+      </label>
+      <textarea
+        id="descripcion"
+        value={career.descripcion || ''}
+        onChange={(e) => onChange('descripcion', e.target.value)}
+        placeholder="Descripción de la postulación..."
+        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-gray-100"
+        rows={4}
+      />
+    </div>
+    <Input
+      label="URL"
+      value={career.url}
+      onChange={(e) => onChange('url', e.target.value)}
+      placeholder="https://..."
+      type="url"
+      required
+    />
+    <Input
+      label="Orden"
+      value={career.orden.toString()}
+      onChange={(e) => onChange('orden', Number.parseInt(e.target.value, 10) || 0)}
+      type="number"
+      min="0"
+    />
+    <div className="flex items-center">
+      <input
+        type="checkbox"
+        id="activo"
+        checked={career.activo}
+        onChange={(e) => onChange('activo', e.target.checked)}
+        className="mr-2"
+      />
+      <label htmlFor="activo" className="text-sm text-gray-700 dark:text-gray-300">
+        Activa
+      </label>
+    </div>
+  </div>
+);
+
 const CareerModal: React.FC<{
   career: Career;
   onClose: () => void;
@@ -240,61 +305,7 @@ const CareerModal: React.FC<{
         </>
       }
     >
-      <div className="space-y-4">
-        <Input
-          label="Título"
-          value={career.titulo}
-          onChange={(e) => handleChange('titulo', e.target.value)}
-          placeholder="Ej: Desarrollador Full Stack"
-          required
-        />
-        <Select
-          label="Tipo"
-          value={career.tipo || 'other'}
-          onChange={(e) => handleChange('tipo', e.target.value as Career['tipo'])}
-          options={TIPO_OPTIONS}
-          required
-        />
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            Descripción
-          </label>
-          <textarea
-            value={career.descripcion || ''}
-            onChange={(e) => handleChange('descripcion', e.target.value)}
-            placeholder="Descripción de la postulación..."
-            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-gray-100"
-            rows={4}
-          />
-        </div>
-        <Input
-          label="URL"
-          value={career.url}
-          onChange={(e) => handleChange('url', e.target.value)}
-          placeholder="https://..."
-          type="url"
-          required
-        />
-        <Input
-          label="Orden"
-          value={career.orden.toString()}
-          onChange={(e) => handleChange('orden', Number.parseInt(e.target.value, 10) || 0)}
-          type="number"
-          min="0"
-        />
-        <div className="flex items-center">
-          <input
-            type="checkbox"
-            id="activo"
-            checked={career.activo}
-            onChange={(e) => handleChange('activo', e.target.checked)}
-            className="mr-2"
-          />
-          <label htmlFor="activo" className="text-sm text-gray-700 dark:text-gray-300">
-            Activa
-          </label>
-        </div>
-      </div>
+      <CareerForm career={career} onChange={handleChange} />
     </Modal>
   );
 };
