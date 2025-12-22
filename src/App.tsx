@@ -9,6 +9,7 @@ import AdminUsersPage from './pages/AdminUsersPage';
 import AfectacionesPage from './pages/AfectacionesPage';
 import CalculoPasosPage from './pages/CalculoPasosPage';
 import CapasPage from './pages/CapasPage';
+import CareersPage from './pages/CareersPage';
 import ChatbotPage from './pages/ChatbotPage';
 import CodigoUrbanisticoPage from './pages/CodigoUrbanisticoPage';
 import ConstantesTronerasPage from './pages/ConstantesTronerasPage';
@@ -225,6 +226,15 @@ const createAdminRoutesPart1 = (): React.ReactElement[] => [
     element={
       <RouteWrapper>
         <RedesSocialesPage />
+      </RouteWrapper>
+    }
+  />,
+  <Route
+    key="careers"
+    path="/careers"
+    element={
+      <RouteWrapper>
+        <CareersPage />
       </RouteWrapper>
     }
   />,

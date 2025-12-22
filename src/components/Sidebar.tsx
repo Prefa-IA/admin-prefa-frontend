@@ -113,6 +113,7 @@ const baseGroups: Group[] = [
       { to: '/prompts', label: 'Prompts' },
       { to: ROUTE_LEGAL_CONTENT, label: 'Contenido Legal' },
       { to: '/redes-sociales', label: 'Redes Sociales' },
+      { to: '/careers', label: 'Trabaja con Nosotros' },
     ],
   },
 ];
