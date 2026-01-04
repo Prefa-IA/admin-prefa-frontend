@@ -1,0 +1,54 @@
+name: Deploy to S3 and CloudFront prev-22
+
+on:
+  push:
+    branches:
+      - "prev-22"  # Cambia a la rama que desees para activar el despliegue
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20.19.6'  # Cambia a la versión de Node.js que necesites
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Create .env
+        run: |
+          echo "REACT_APP_API_URL=${{ secrets.REACT_APP_API_URL }}" > .env
+          echo "REACT_APP_MP_PUBLIC_KEY=${{ secrets.REACT_APP_MP_PUBLIC_KEY }}" >> .env
+          echo "REACT_APP_GOOGLE_CLIENT_ID=${{ secrets.REACT_APP_GOOGLE_CLIENT_ID }}" >> .env
+          echo "REACT_APP_RECAPTCHA_SITE_KEY=${{ secrets.REACT_APP_RECAPTCHA_SITE_KEY }}" >> .env
+          echo "REACT_APP_GOOGLE_MAPS_API_KEY=${{ secrets.REACT_APP_GOOGLE_MAPS_API_KEY }}" >> .env
+
+      - name: Build project
+        run: npm run build
+
+      - name: Deploy to S3
+        uses: jakejarvis/s3-sync-action@master
+        with:
+          args: --delete
+        env:
+          AWS_S3_BUCKET: ${{ secrets.AWS_PRODUCTION_BUCKET_NAME }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          SOURCE_DIR: "build"
+
+      - name: Invalidate CloudFront
+        uses: chetan/invalidate-cloudfront-action@v2
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          DISTRIBUTION: ${{ secrets.CLOUDFRONT_DISTRIBUTION }}
+          PATHS: "/*"
