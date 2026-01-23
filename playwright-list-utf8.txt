@@ -1,0 +1,171 @@
+﻿Listing tests:
+  [chromium] ÔÇ║ administradores\gestion-admins.spec.ts:13:12 ÔÇ║ Gesti├│n de Administradores - Admin ÔÇ║ debe mostrar la lista de administradores
+  [chromium] ÔÇ║ administradores\gestion-admins.spec.ts:17:12 ÔÇ║ Gesti├│n de Administradores - Admin ÔÇ║ debe mostrar bot├│n de crear administrador
+  [chromium] ÔÇ║ administradores\gestion-admins.spec.ts:21:12 ÔÇ║ Gesti├│n de Administradores - Admin ÔÇ║ debe crear nuevo administrador
+  [chromium] ÔÇ║ administradores\gestion-admins.spec.ts:65:12 ÔÇ║ Gesti├│n de Administradores - Admin ÔÇ║ debe editar administrador existente
+  [chromium] ÔÇ║ administradores\gestion-admins.spec.ts:78:12 ÔÇ║ Gesti├│n de Administradores - Admin ÔÇ║ debe eliminar administrador con confirmaci├│n
+  [chromium] ÔÇ║ administradores\gestion-admins.spec.ts:91:12 ÔÇ║ Gesti├│n de Administradores - Admin ÔÇ║ debe habilitar administrador deshabilitado
+  [chromium] ÔÇ║ administradores\gestion-admins.spec.ts:114:12 ÔÇ║ Gesti├│n de Administradores - Admin ÔÇ║ debe deshabilitar administrador habilitado
+  [chromium] ÔÇ║ administradores\gestion-admins.spec.ts:137:12 ÔÇ║ Gesti├│n de Administradores - Admin ÔÇ║ debe buscar administradores
+  [chromium] ÔÇ║ auth\admin-login.spec.ts:13:7 ÔÇ║ Admin Login ÔÇ║ debe mostrar el formulario de login admin
+  [chromium] ÔÇ║ auth\admin-login.spec.ts:19:7 ÔÇ║ Admin Login ÔÇ║ debe validar campos requeridos
+  [chromium] ÔÇ║ auth\admin-login.spec.ts:29:7 ÔÇ║ Admin Login ÔÇ║ debe hacer login exitoso con credenciales admin v├ílidas
+  [chromium] ÔÇ║ auth\admin-login.spec.ts:47:7 ÔÇ║ Admin Login ÔÇ║ debe mostrar error con credenciales inv├ílidas
+  [chromium] ÔÇ║ auth\admin-logout.spec.ts:5:12 ÔÇ║ Admin Logout ÔÇ║ debe mostrar bot├│n de logout
+  [chromium] ÔÇ║ auth\admin-logout.spec.ts:18:12 ÔÇ║ Admin Logout ÔÇ║ debe hacer logout exitoso
+  [chromium] ÔÇ║ auth\admin-logout.spec.ts:37:12 ÔÇ║ Admin Logout ÔÇ║ debe redirigir a login despu├®s de logout
+  [chromium] ÔÇ║ codigo-urbanistico\crud-codigo.spec.ts:31:12 ÔÇ║ Gesti├│n de C├│digo Urban├¡stico - Admin ÔÇ║ debe mostrar lista de art├¡culos
+  [chromium] ÔÇ║ codigo-urbanistico\crud-codigo.spec.ts:46:12 ÔÇ║ Gesti├│n de C├│digo Urban├¡stico - Admin ÔÇ║ debe mostrar bot├│n de crear art├¡culo
+  [chromium] ÔÇ║ codigo-urbanistico\crud-codigo.spec.ts:61:12 ÔÇ║ Gesti├│n de C├│digo Urban├¡stico - Admin ÔÇ║ debe crear nuevo art├¡culo
+  [chromium] ÔÇ║ codigo-urbanistico\crud-codigo.spec.ts:95:12 ÔÇ║ Gesti├│n de C├│digo Urban├¡stico - Admin ÔÇ║ debe editar art├¡culo existente
+  [chromium] ÔÇ║ codigo-urbanistico\crud-codigo.spec.ts:108:12 ÔÇ║ Gesti├│n de C├│digo Urban├¡stico - Admin ÔÇ║ debe eliminar art├¡culo con confirmaci├│n
+  [chromium] ÔÇ║ codigo-urbanistico\crud-codigo.spec.ts:121:12 ÔÇ║ Gesti├│n de C├│digo Urban├¡stico - Admin ÔÇ║ debe buscar art├¡culos
+  [chromium] ÔÇ║ codigo-urbanistico\crud-codigo.spec.ts:128:12 ÔÇ║ Gesti├│n de C├│digo Urban├¡stico - Admin ÔÇ║ debe ver detalle de art├¡culo
+  [chromium] ÔÇ║ comunicacion\chatbot.spec.ts:13:12 ÔÇ║ Gesti├│n de Chatbot - Admin ÔÇ║ debe mostrar la lista de preguntas
+  [chromium] ÔÇ║ comunicacion\chatbot.spec.ts:17:12 ÔÇ║ Gesti├│n de Chatbot - Admin ÔÇ║ debe mostrar bot├│n de crear pregunta
+  [chromium] ÔÇ║ comunicacion\chatbot.spec.ts:28:12 ÔÇ║ Gesti├│n de Chatbot - Admin ÔÇ║ debe crear nueva pregunta
+  [chromium] ÔÇ║ comunicacion\chatbot.spec.ts:44:12 ÔÇ║ Gesti├│n de Chatbot - Admin ÔÇ║ debe editar pregunta existente
+  [chromium] ÔÇ║ comunicacion\chatbot.spec.ts:57:12 ÔÇ║ Gesti├│n de Chatbot - Admin ÔÇ║ debe eliminar pregunta con confirmaci├│n
+  [chromium] ÔÇ║ comunicacion\chatbot.spec.ts:70:12 ÔÇ║ Gesti├│n de Chatbot - Admin ÔÇ║ debe buscar preguntas
+  [chromium] ÔÇ║ comunicacion\chatbot.spec.ts:77:12 ÔÇ║ Gesti├│n de Chatbot - Admin ÔÇ║ debe filtrar por categor├¡a
+  [chromium] ÔÇ║ comunicacion\email-templates.spec.ts:43:12 ÔÇ║ Gesti├│n de Email Templates - Admin ÔÇ║ debe mostrar la lista de templates
+  [chromium] ÔÇ║ comunicacion\email-templates.spec.ts:47:12 ÔÇ║ Gesti├│n de Email Templates - Admin ÔÇ║ debe mostrar bot├│n de crear template
+  [chromium] ÔÇ║ comunicacion\email-templates.spec.ts:58:12 ÔÇ║ Gesti├│n de Email Templates - Admin ÔÇ║ debe crear nuevo template
+  [chromium] ÔÇ║ comunicacion\email-templates.spec.ts:74:12 ÔÇ║ Gesti├│n de Email Templates - Admin ÔÇ║ debe editar template existente
+  [chromium] ÔÇ║ comunicacion\email-templates.spec.ts:87:12 ÔÇ║ Gesti├│n de Email Templates - Admin ÔÇ║ debe eliminar template con confirmaci├│n
+  [chromium] ÔÇ║ comunicacion\email-templates.spec.ts:160:12 ÔÇ║ Gesti├│n de Email Templates - Admin ÔÇ║ debe buscar templates
+  [chromium] ÔÇ║ comunicacion\email-templates.spec.ts:167:12 ÔÇ║ Gesti├│n de Email Templates - Admin ÔÇ║ debe filtrar por activo/inactivo
+  [chromium] ÔÇ║ comunicacion\newsletter-history.spec.ts:13:12 ÔÇ║ Historial de Newsletters - Admin ÔÇ║ debe mostrar historial de newsletters
+  [chromium] ÔÇ║ comunicacion\newsletter-history.spec.ts:22:12 ÔÇ║ Historial de Newsletters - Admin ÔÇ║ debe listar newsletters enviados
+  [chromium] ÔÇ║ comunicacion\newsletter-history.spec.ts:34:12 ÔÇ║ Historial de Newsletters - Admin ÔÇ║ debe mostrar detalles de cada newsletter
+  [chromium] ÔÇ║ comunicacion\newsletter-history.spec.ts:46:12 ÔÇ║ Historial de Newsletters - Admin ÔÇ║ debe filtrar historial por fecha
+  [chromium] ÔÇ║ comunicacion\newsletter.spec.ts:13:12 ÔÇ║ Newsletter - Admin ÔÇ║ debe mostrar formulario de newsletter
+  [chromium] ÔÇ║ comunicacion\newsletter.spec.ts:23:12 ÔÇ║ Newsletter - Admin ÔÇ║ debe permitir crear newsletter
+  [chromium] ÔÇ║ comunicacion\newsletter.spec.ts:38:12 ÔÇ║ Newsletter - Admin ÔÇ║ debe validar campos requeridos
+  [chromium] ÔÇ║ comunicacion\newsletter.spec.ts:61:12 ÔÇ║ Newsletter - Admin ÔÇ║ debe navegar a historial de newsletters
+  [chromium] ÔÇ║ configuracion\calculo-pasos.spec.ts:9:12 ÔÇ║ Gesti├│n de Pasos de C├ílculo - Admin ÔÇ║ debe mostrar la lista de pasos de c├ílculo
+  [chromium] ÔÇ║ configuracion\calculo-pasos.spec.ts:14:12 ÔÇ║ Gesti├│n de Pasos de C├ílculo - Admin ÔÇ║ debe mostrar bot├│n de crear paso
+  [chromium] ÔÇ║ configuracion\calculo-pasos.spec.ts:19:12 ÔÇ║ Gesti├│n de Pasos de C├ílculo - Admin ÔÇ║ debe crear nuevo paso de c├ílculo
+  [chromium] ÔÇ║ configuracion\calculo-pasos.spec.ts:29:12 ÔÇ║ Gesti├│n de Pasos de C├ílculo - Admin ÔÇ║ debe editar paso existente
+  [chromium] ÔÇ║ configuracion\calculo-pasos.spec.ts:48:12 ÔÇ║ Gesti├│n de Pasos de C├ílculo - Admin ÔÇ║ debe eliminar paso con confirmaci├│n
+  [chromium] ÔÇ║ configuracion\calculo-pasos.spec.ts:68:12 ÔÇ║ Gesti├│n de Pasos de C├ílculo - Admin ÔÇ║ debe mostrar orden de pasos
+  [chromium] ÔÇ║ configuracion\constantes-troneras.spec.ts:9:12 ÔÇ║ Configuraci├│n de Constantes de Troneras - Admin ÔÇ║ debe mostrar formulario de constantes
+  [chromium] ÔÇ║ configuracion\constantes-troneras.spec.ts:20:12 ÔÇ║ Configuraci├│n de Constantes de Troneras - Admin ÔÇ║ debe permitir editar constantes
+  [chromium] ÔÇ║ configuracion\constantes-troneras.spec.ts:41:12 ÔÇ║ Configuraci├│n de Constantes de Troneras - Admin ÔÇ║ debe guardar constantes
+  [chromium] ÔÇ║ configuracion\constantes-troneras.spec.ts:64:12 ÔÇ║ Configuraci├│n de Constantes de Troneras - Admin ÔÇ║ debe validar valores de constantes
+  [chromium] ÔÇ║ configuracion\creditos-config.spec.ts:13:12 ÔÇ║ Configuraci├│n de Cr├®ditos - Admin ÔÇ║ debe mostrar configuraci├│n de cr├®ditos
+  [chromium] ÔÇ║ configuracion\creditos-config.spec.ts:23:12 ÔÇ║ Configuraci├│n de Cr├®ditos - Admin ÔÇ║ debe permitir editar l├¡mites diarios
+  [chromium] ÔÇ║ configuracion\creditos-config.spec.ts:36:12 ÔÇ║ Configuraci├│n de Cr├®ditos - Admin ÔÇ║ debe permitir editar l├¡mites mensuales
+  [chromium] ÔÇ║ configuracion\creditos-config.spec.ts:48:12 ÔÇ║ Configuraci├│n de Cr├®ditos - Admin ÔÇ║ debe permitir configurar cr├®ditos por tipo de consulta
+  [chromium] ÔÇ║ configuracion\creditos-config.spec.ts:70:12 ÔÇ║ Configuraci├│n de Cr├®ditos - Admin ÔÇ║ debe guardar configuraci├│n de cr├®ditos
+  [chromium] ÔÇ║ configuracion\creditos-config.spec.ts:91:12 ÔÇ║ Configuraci├│n de Cr├®ditos - Admin ÔÇ║ debe validar valores de cr├®ditos
+  [chromium] ÔÇ║ configuracion\habilitar-deshabilitar-pasos.spec.ts:9:12 ÔÇ║ Habilitar/Deshabilitar Pasos de C├ílculo - Admin ÔÇ║ debe mostrar estado de cada paso
+  [chromium] ÔÇ║ configuracion\habilitar-deshabilitar-pasos.spec.ts:25:12 ÔÇ║ Habilitar/Deshabilitar Pasos de C├ílculo - Admin ÔÇ║ debe habilitar paso deshabilitado
+  [chromium] ÔÇ║ configuracion\habilitar-deshabilitar-pasos.spec.ts:50:12 ÔÇ║ Habilitar/Deshabilitar Pasos de C├ílculo - Admin ÔÇ║ debe deshabilitar paso habilitado
+  [chromium] ÔÇ║ configuracion\reordenar-pasos.spec.ts:9:12 ÔÇ║ Reordenar Pasos de C├ílculo - Admin ÔÇ║ debe mostrar pasos en orden
+  [chromium] ÔÇ║ configuracion\reordenar-pasos.spec.ts:20:12 ÔÇ║ Reordenar Pasos de C├ílculo - Admin ÔÇ║ debe permitir reordenar pasos con drag & drop
+  [chromium] ÔÇ║ configuracion\reordenar-pasos.spec.ts:49:12 ÔÇ║ Reordenar Pasos de C├ílculo - Admin ÔÇ║ debe guardar nuevo orden de pasos
+  [chromium] ÔÇ║ consultas\consultas-admin.spec.ts:10:12 ÔÇ║ Consultas e Informes Admin ÔÇ║ debe mostrar lista de consultas
+  [chromium] ÔÇ║ consultas\consultas-admin.spec.ts:15:12 ÔÇ║ Consultas e Informes Admin ÔÇ║ debe filtrar consultas
+  [chromium] ÔÇ║ consultas\consultas-admin.spec.ts:33:12 ÔÇ║ Consultas e Informes Admin ÔÇ║ debe ver detalle de consulta
+  [chromium] ÔÇ║ consultas\consultas-admin.spec.ts:59:12 ÔÇ║ Consultas e Informes Admin ÔÇ║ debe mostrar paginaci├│n si hay m├║ltiples p├íginas
+  [chromium] ÔÇ║ consultas\consultas-fallidas.spec.ts:13:12 ÔÇ║ Consultas Fallidas - Admin ÔÇ║ debe mostrar lista de consultas fallidas
+  [chromium] ÔÇ║ consultas\consultas-fallidas.spec.ts:17:12 ÔÇ║ Consultas Fallidas - Admin ÔÇ║ debe buscar consultas fallidas
+  [chromium] ÔÇ║ consultas\consultas-fallidas.spec.ts:24:12 ÔÇ║ Consultas Fallidas - Admin ÔÇ║ debe mostrar informaci├│n de cada consulta fallida
+  [chromium] ÔÇ║ consultas\consultas-fallidas.spec.ts:41:12 ÔÇ║ Consultas Fallidas - Admin ÔÇ║ debe mostrar datos faltantes
+  [chromium] ÔÇ║ consultas\consultas-fallidas.spec.ts:54:12 ÔÇ║ Consultas Fallidas - Admin ÔÇ║ debe paginar consultas fallidas
+  [chromium] ÔÇ║ consultas\creditos-consumidos.spec.ts:10:12 ÔÇ║ Cr├®ditos Consumidos - Admin ÔÇ║ debe mostrar informaci├│n de cr├®ditos consumidos
+  [chromium] ÔÇ║ consultas\creditos-consumidos.spec.ts:19:12 ÔÇ║ Cr├®ditos Consumidos - Admin ÔÇ║ debe mostrar cr├®ditos por usuario
+  [chromium] ÔÇ║ consultas\creditos-consumidos.spec.ts:37:12 ÔÇ║ Cr├®ditos Consumidos - Admin ÔÇ║ debe filtrar cr├®ditos por usuario
+  [chromium] ÔÇ║ consultas\creditos-consumidos.spec.ts:46:12 ÔÇ║ Cr├®ditos Consumidos - Admin ÔÇ║ debe mostrar total de cr├®ditos consumidos
+  [chromium] ÔÇ║ contenido\legal-content.spec.ts:13:12 ÔÇ║ Gesti├│n de Contenido Legal - Admin ÔÇ║ debe mostrar acceso denegado si no es super admin
+  [chromium] ÔÇ║ contenido\legal-content.spec.ts:22:12 ÔÇ║ Gesti├│n de Contenido Legal - Admin ÔÇ║ debe mostrar tabs de t├®rminos y privacidad
+  [chromium] ÔÇ║ contenido\legal-content.spec.ts:31:12 ÔÇ║ Gesti├│n de Contenido Legal - Admin ÔÇ║ debe cambiar entre tabs
+  [chromium] ÔÇ║ contenido\legal-content.spec.ts:41:12 ÔÇ║ Gesti├│n de Contenido Legal - Admin ÔÇ║ debe editar contenido legal
+  [chromium] ÔÇ║ contenido\redes-sociales.spec.ts:13:12 ÔÇ║ Gesti├│n de Redes Sociales - Admin ÔÇ║ debe mostrar la lista de redes sociales
+  [chromium] ÔÇ║ contenido\redes-sociales.spec.ts:17:12 ÔÇ║ Gesti├│n de Redes Sociales - Admin ÔÇ║ debe mostrar bot├│n de crear red social
+  [chromium] ÔÇ║ contenido\redes-sociales.spec.ts:28:12 ÔÇ║ Gesti├│n de Redes Sociales - Admin ÔÇ║ debe crear nueva red social
+  [chromium] ÔÇ║ contenido\redes-sociales.spec.ts:80:12 ÔÇ║ Gesti├│n de Redes Sociales - Admin ÔÇ║ debe editar red social existente
+  [chromium] ÔÇ║ contenido\redes-sociales.spec.ts:93:12 ÔÇ║ Gesti├│n de Redes Sociales - Admin ÔÇ║ debe eliminar red social con confirmaci├│n
+  [chromium] ÔÇ║ dashboard\dashboard.spec.ts:13:12 ÔÇ║ Dashboard Admin ÔÇ║ debe cargar el dashboard
+  [chromium] ÔÇ║ dashboard\dashboard.spec.ts:17:12 ÔÇ║ Dashboard Admin ÔÇ║ debe mostrar m├®tricas principales
+  [chromium] ÔÇ║ dashboard\dashboard.spec.ts:31:12 ÔÇ║ Dashboard Admin ÔÇ║ debe mostrar gr├íficos
+  [chromium] ÔÇ║ dashboard\dashboard.spec.ts:37:12 ÔÇ║ Dashboard Admin ÔÇ║ debe mostrar sidebar de navegaci├│n
+  [chromium] ÔÇ║ dashboard\dashboard.spec.ts:42:12 ÔÇ║ Dashboard Admin ÔÇ║ debe navegar desde sidebar
+  [chromium] ÔÇ║ dashboard\filtros-fecha.spec.ts:13:12 ÔÇ║ Filtros de Fecha en Dashboard - Admin ÔÇ║ debe mostrar filtros de fecha
+  [chromium] ÔÇ║ dashboard\filtros-fecha.spec.ts:26:12 ÔÇ║ Filtros de Fecha en Dashboard - Admin ÔÇ║ debe cambiar filtro de fecha
+  [chromium] ÔÇ║ dashboard\filtros-fecha.spec.ts:61:12 ÔÇ║ Filtros de Fecha en Dashboard - Admin ÔÇ║ debe aplicar filtro de fecha a gr├íficos
+  [chromium] ÔÇ║ facturacion\habilitar-deshabilitar-planes.spec.ts:15:12 ÔÇ║ Habilitar/Deshabilitar Planes - Admin ÔÇ║ debe mostrar estado de planes
+  [chromium] ÔÇ║ facturacion\habilitar-deshabilitar-planes.spec.ts:25:12 ÔÇ║ Habilitar/Deshabilitar Planes - Admin ÔÇ║ debe habilitar plan deshabilitado
+  [chromium] ÔÇ║ facturacion\habilitar-deshabilitar-planes.spec.ts:46:12 ÔÇ║ Habilitar/Deshabilitar Planes - Admin ÔÇ║ debe deshabilitar plan habilitado
+  [chromium] ÔÇ║ facturacion\habilitar-deshabilitar-planes.spec.ts:67:12 ÔÇ║ Habilitar/Deshabilitar Planes - Admin ÔÇ║ debe actualizar estado visualmente al cambiar
+  [chromium] ÔÇ║ facturacion\overages-gestion.spec.ts:15:12 ÔÇ║ Gesti├│n de Overages - Admin ÔÇ║ debe mostrar lista de overages
+  [chromium] ÔÇ║ facturacion\overages-gestion.spec.ts:20:12 ÔÇ║ Gesti├│n de Overages - Admin ÔÇ║ debe crear nuevo overage
+  [chromium] ÔÇ║ facturacion\overages-gestion.spec.ts:33:12 ÔÇ║ Gesti├│n de Overages - Admin ÔÇ║ debe editar overage existente
+  [chromium] ÔÇ║ facturacion\overages-gestion.spec.ts:52:12 ÔÇ║ Gesti├│n de Overages - Admin ÔÇ║ debe eliminar overage con confirmaci├│n
+  [chromium] ÔÇ║ facturacion\pagos.spec.ts:15:12 ÔÇ║ Gesti├│n de Pagos - Admin ÔÇ║ debe mostrar lista de pagos
+  [chromium] ÔÇ║ facturacion\pagos.spec.ts:28:12 ÔÇ║ Gesti├│n de Pagos - Admin ÔÇ║ debe filtrar pagos
+  [chromium] ÔÇ║ facturacion\pagos.spec.ts:43:12 ÔÇ║ Gesti├│n de Pagos - Admin ÔÇ║ debe mostrar detalles de pago
+  [chromium] ÔÇ║ facturacion\pagos.spec.ts:65:12 ÔÇ║ Gesti├│n de Pagos - Admin ÔÇ║ debe mostrar m├®tricas de pagos
+  [chromium] ÔÇ║ facturacion\plan-tags.spec.ts:9:12 ÔÇ║ Etiquetas de Planes - Admin ÔÇ║ debe mostrar lista de etiquetas
+  [chromium] ÔÇ║ facturacion\plan-tags.spec.ts:18:12 ÔÇ║ Etiquetas de Planes - Admin ÔÇ║ debe crear nueva etiqueta
+  [chromium] ÔÇ║ facturacion\plan-tags.spec.ts:33:12 ÔÇ║ Etiquetas de Planes - Admin ÔÇ║ debe editar etiqueta existente
+  [chromium] ÔÇ║ facturacion\plan-tags.spec.ts:59:12 ÔÇ║ Etiquetas de Planes - Admin ÔÇ║ debe eliminar etiqueta con confirmaci├│n
+  [chromium] ÔÇ║ facturacion\planes.spec.ts:14:12 ÔÇ║ Gesti├│n de Planes - Admin ÔÇ║ debe mostrar la lista de planes
+  [chromium] ÔÇ║ facturacion\planes.spec.ts:20:12 ÔÇ║ Gesti├│n de Planes - Admin ÔÇ║ debe mostrar tabs de pagos, planes y overages
+  [chromium] ÔÇ║ facturacion\planes.spec.ts:26:12 ÔÇ║ Gesti├│n de Planes - Admin ÔÇ║ debe cambiar entre tabs
+  [chromium] ÔÇ║ facturacion\planes.spec.ts:37:12 ÔÇ║ Gesti├│n de Planes - Admin ÔÇ║ debe crear nuevo plan
+  [chromium] ÔÇ║ facturacion\planes.spec.ts:53:12 ÔÇ║ Gesti├│n de Planes - Admin ÔÇ║ debe editar plan existente
+  [chromium] ÔÇ║ facturacion\planes.spec.ts:89:12 ÔÇ║ Gesti├│n de Planes - Admin ÔÇ║ debe eliminar plan con confirmaci├│n
+  [chromium] ÔÇ║ filtros\filtros-avanzados.spec.ts:7:12 ÔÇ║ Filtros Avanzados - Admin ÔÇ║ debe filtrar usuarios por b├║squeda
+  [chromium] ÔÇ║ filtros\filtros-avanzados.spec.ts:21:12 ÔÇ║ Filtros Avanzados - Admin ÔÇ║ debe filtrar reglas por distrito
+  [chromium] ÔÇ║ filtros\filtros-avanzados.spec.ts:37:12 ÔÇ║ Filtros Avanzados - Admin ÔÇ║ debe filtrar por m├║ltiples criterios
+  [chromium] ÔÇ║ filtros\filtros-avanzados.spec.ts:58:12 ÔÇ║ Filtros Avanzados - Admin ÔÇ║ debe resetear filtros
+  [chromium] ÔÇ║ filtros\filtros-avanzados.spec.ts:81:12 ÔÇ║ Filtros Avanzados - Admin ÔÇ║ debe filtrar por fecha en logs
+  [chromium] ÔÇ║ permisos\roles-permisos.spec.ts:5:12 ÔÇ║ Permisos y Roles - Admin ÔÇ║ debe mostrar sidebar con navegaci├│n seg├║n permisos
+  [chromium] ÔÇ║ permisos\roles-permisos.spec.ts:18:12 ÔÇ║ Permisos y Roles - Admin ÔÇ║ debe ocultar rutas seg├║n permisos
+  [chromium] ÔÇ║ permisos\roles-permisos.spec.ts:33:12 ÔÇ║ Permisos y Roles - Admin ÔÇ║ debe redirigir desde rutas sin permisos
+  [chromium] ÔÇ║ permisos\roles-permisos.spec.ts:45:12 ÔÇ║ Permisos y Roles - Admin ÔÇ║ debe mostrar botones seg├║n permisos
+  [chromium] ÔÇ║ permisos\roles-permisos.spec.ts:56:12 ÔÇ║ Permisos y Roles - Admin ÔÇ║ debe verificar permisos de super admin
+  [chromium] ÔÇ║ reglas\crud-reglas.spec.ts:13:12 ÔÇ║ Gesti├│n de Reglas - Admin ÔÇ║ debe mostrar la lista de reglas l├│gicas
+  [chromium] ÔÇ║ reglas\crud-reglas.spec.ts:17:12 ÔÇ║ Gesti├│n de Reglas - Admin ÔÇ║ debe mostrar bot├│n de crear regla
+  [chromium] ÔÇ║ reglas\crud-reglas.spec.ts:21:12 ÔÇ║ Gesti├│n de Reglas - Admin ÔÇ║ debe crear nueva regla
+  [chromium] ÔÇ║ reglas\crud-reglas.spec.ts:30:12 ÔÇ║ Gesti├│n de Reglas - Admin ÔÇ║ debe editar regla existente
+  [chromium] ÔÇ║ reglas\crud-reglas.spec.ts:48:12 ÔÇ║ Gesti├│n de Reglas - Admin ÔÇ║ debe eliminar regla con confirmaci├│n
+  [chromium] ÔÇ║ reglas\crud-reglas.spec.ts:71:12 ÔÇ║ Gesti├│n de Reglas - Admin ÔÇ║ debe filtrar reglas por distrito
+  [chromium] ÔÇ║ reglas\crud-reglas.spec.ts:79:12 ÔÇ║ Gesti├│n de Reglas - Admin ÔÇ║ debe buscar reglas
+  [chromium] ÔÇ║ reglas\detalle-regla.spec.ts:13:12 ÔÇ║ Detalle de Regla - Admin ÔÇ║ debe navegar a detalle de regla
+  [chromium] ÔÇ║ reglas\detalle-regla.spec.ts:38:12 ÔÇ║ Detalle de Regla - Admin ÔÇ║ debe mostrar informaci├│n completa de la regla
+  [chromium] ÔÇ║ reglas\habilitar-deshabilitar.spec.ts:13:12 ÔÇ║ Habilitar/Deshabilitar Reglas - Admin ÔÇ║ debe mostrar estado activo/inactivo de reglas
+  [chromium] ÔÇ║ reglas\habilitar-deshabilitar.spec.ts:28:12 ÔÇ║ Habilitar/Deshabilitar Reglas - Admin ÔÇ║ debe habilitar regla deshabilitada
+  [chromium] ÔÇ║ reglas\habilitar-deshabilitar.spec.ts:56:12 ÔÇ║ Habilitar/Deshabilitar Reglas - Admin ÔÇ║ debe deshabilitar regla habilitada
+  [chromium] ÔÇ║ reglas\habilitar-deshabilitar.spec.ts:83:12 ÔÇ║ Habilitar/Deshabilitar Reglas - Admin ÔÇ║ debe actualizar estado visualmente al cambiar
+  [chromium] ÔÇ║ smoke\admin-navigation.spec.ts:8:7 ÔÇ║ Smoke Tests - Admin Navigation ÔÇ║ debe cargar la p├ígina de login
+  [chromium] ÔÇ║ smoke\admin-navigation.spec.ts:25:7 ÔÇ║ Smoke Tests - Admin Navigation ÔÇ║ debe mostrar sidebar despu├®s de login
+  [chromium] ÔÇ║ usuarios\asignar-creditos.spec.ts:13:12 ÔÇ║ Asignar Cr├®ditos Manualmente - Admin ÔÇ║ debe mostrar bot├│n de asignar cr├®ditos
+  [chromium] ÔÇ║ usuarios\asignar-creditos.spec.ts:30:12 ÔÇ║ Asignar Cr├®ditos Manualmente - Admin ÔÇ║ debe abrir modal de asignar cr├®ditos
+  [chromium] ÔÇ║ usuarios\asignar-creditos.spec.ts:50:12 ÔÇ║ Asignar Cr├®ditos Manualmente - Admin ÔÇ║ debe asignar cr├®ditos a usuario
+  [chromium] ÔÇ║ usuarios\datos-estrategicos.spec.ts:9:12 ÔÇ║ Datos Estrat├®gicos del Usuario - Admin ÔÇ║ debe mostrar datos estrat├®gicos
+  [chromium] ÔÇ║ usuarios\datos-estrategicos.spec.ts:16:12 ÔÇ║ Datos Estrat├®gicos del Usuario - Admin ÔÇ║ debe listar usuarios con datos estrat├®gicos
+  [chromium] ÔÇ║ usuarios\datos-estrategicos.spec.ts:28:12 ÔÇ║ Datos Estrat├®gicos del Usuario - Admin ÔÇ║ debe mostrar m├®tricas de datos estrat├®gicos
+  [chromium] ÔÇ║ usuarios\datos-estrategicos.spec.ts:41:12 ÔÇ║ Datos Estrat├®gicos del Usuario - Admin ÔÇ║ debe buscar datos estrat├®gicos
+  [chromium] ÔÇ║ usuarios\datos-estrategicos.spec.ts:52:12 ÔÇ║ Datos Estrat├®gicos del Usuario - Admin ÔÇ║ debe paginar datos estrat├®gicos
+  [chromium] ÔÇ║ usuarios\detalle-usuario.spec.ts:13:12 ÔÇ║ Detalle de Usuario - Admin ÔÇ║ debe navegar a detalle de usuario
+  [chromium] ÔÇ║ usuarios\detalle-usuario.spec.ts:38:12 ÔÇ║ Detalle de Usuario - Admin ÔÇ║ debe mostrar informaci├│n completa del usuario
+  [chromium] ÔÇ║ usuarios\gestion-usuarios.spec.ts:13:12 ÔÇ║ Gesti├│n de Usuarios - Admin ÔÇ║ debe mostrar la lista de usuarios
+  [chromium] ÔÇ║ usuarios\gestion-usuarios.spec.ts:17:12 ÔÇ║ Gesti├│n de Usuarios - Admin ÔÇ║ debe mostrar b├║squeda de usuarios
+  [chromium] ÔÇ║ usuarios\gestion-usuarios.spec.ts:28:12 ÔÇ║ Gesti├│n de Usuarios - Admin ÔÇ║ debe buscar usuarios por email
+  [chromium] ÔÇ║ usuarios\gestion-usuarios.spec.ts:41:12 ÔÇ║ Gesti├│n de Usuarios - Admin ÔÇ║ debe mostrar botones de acci├│n para cada usuario
+  [chromium] ÔÇ║ usuarios\gestion-usuarios.spec.ts:55:12 ÔÇ║ Gesti├│n de Usuarios - Admin ÔÇ║ debe habilitar usuario
+  [chromium] ÔÇ║ usuarios\gestion-usuarios.spec.ts:77:12 ÔÇ║ Gesti├│n de Usuarios - Admin ÔÇ║ debe deshabilitar usuario
+  [chromium] ÔÇ║ usuarios\gestion-usuarios.spec.ts:95:12 ÔÇ║ Gesti├│n de Usuarios - Admin ÔÇ║ debe editar usuario
+  [chromium] ÔÇ║ usuarios\gestion-usuarios.spec.ts:114:12 ÔÇ║ Gesti├│n de Usuarios - Admin ÔÇ║ debe eliminar usuario con confirmaci├│n
+  [chromium] ÔÇ║ usuarios\gestion-usuarios.spec.ts:139:12 ÔÇ║ Gesti├│n de Usuarios - Admin ÔÇ║ debe mostrar estado de usuario (activo/inactivo)
+  [chromium] ÔÇ║ usuarios\habilitar-deshabilitar.spec.ts:13:12 ÔÇ║ Habilitar/Deshabilitar Usuarios - Admin ÔÇ║ debe mostrar estado activo/inactivo de usuarios
+  [chromium] ÔÇ║ usuarios\habilitar-deshabilitar.spec.ts:28:12 ÔÇ║ Habilitar/Deshabilitar Usuarios - Admin ÔÇ║ debe habilitar usuario deshabilitado
+  [chromium] ÔÇ║ usuarios\habilitar-deshabilitar.spec.ts:61:12 ÔÇ║ Habilitar/Deshabilitar Usuarios - Admin ÔÇ║ debe deshabilitar usuario habilitado
+  [chromium] ÔÇ║ usuarios\habilitar-deshabilitar.spec.ts:88:12 ÔÇ║ Habilitar/Deshabilitar Usuarios - Admin ÔÇ║ debe actualizar estado visualmente al cambiar
+  [chromium] ÔÇ║ usuarios\habilitar-deshabilitar.spec.ts:118:12 ÔÇ║ Habilitar/Deshabilitar Usuarios - Admin ÔÇ║ debe mantener estado despu├®s de recargar p├ígina
+  [chromium] ÔÇ║ usuarios\historial-consultas-usuario.spec.ts:13:12 ÔÇ║ Historial de Consultas del Usuario - Admin ÔÇ║ debe mostrar historial de consultas del usuario
+  [chromium] ÔÇ║ usuarios\historial-consultas-usuario.spec.ts:34:12 ÔÇ║ Historial de Consultas del Usuario - Admin ÔÇ║ debe listar consultas del usuario
+Total: 169 tests in 37 files

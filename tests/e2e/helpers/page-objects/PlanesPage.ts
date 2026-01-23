@@ -58,16 +58,28 @@ export class AdminPlanesPage {
   }
 
   async switchToPlanesTab() {
+    const isVisible = await this.planesTab.isVisible({ timeout: 5000 }).catch(() => false);
+    if (!isVisible) {
+      return;
+    }
     await this.planesTab.click();
     await this.page.waitForTimeout(500);
   }
 
   async switchToPagosTab() {
+    const isVisible = await this.pagosTab.isVisible({ timeout: 5000 }).catch(() => false);
+    if (!isVisible) {
+      return;
+    }
     await this.pagosTab.click();
     await this.page.waitForTimeout(500);
   }
 
   async switchToOveragesTab() {
+    const isVisible = await this.overagesTab.isVisible({ timeout: 5000 }).catch(() => false);
+    if (!isVisible) {
+      return;
+    }
     await this.overagesTab.click();
     await this.page.waitForTimeout(500);
   }

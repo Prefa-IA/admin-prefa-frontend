@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { test as base, Page } from '@playwright/test';
 import { AdminSelectors } from '../helpers/selectors';
 
@@ -11,12 +13,26 @@ export const adminTestUsers = {
   },
 } as const;
 
+const authDir = path.resolve(__dirname, '..', '.auth');
+const adminStorageStatePath = path.resolve(authDir, 'admin.json');
+
+const ensureAuthDir = () => {
+  fs.mkdirSync(authDir, { recursive: true });
+};
+
 /**
  * Fixture que proporciona una página autenticada como admin
  */
 export const test = base.extend<{
   adminPage: Page;
 }>({
+  storageState: async ({}, use) => {
+    if (fs.existsSync(adminStorageStatePath)) {
+      await use(adminStorageStatePath);
+    } else {
+      await use(undefined);
+    }
+  },
   adminPage: async ({ page }, use, testInfo) => {
     testInfo.setTimeout(60000);
 
@@ -34,8 +50,8 @@ export const test = base.extend<{
         if (attempt > 0) {
           // Si el último error fue rate limit, esperar más tiempo pero no tanto
           const isRateLimit = lastError?.message?.includes('429') || lastError?.message?.includes('Rate limit');
-          const baseDelay = isRateLimit ? 2000 : 500; // 2 segundos para rate limit, 500ms para otros errores
-          const backoffDelay = Math.min(baseDelay * Math.pow(2, attempt - 1), isRateLimit ? 10000 : 5000); // Máximo 10s para rate limit, 5s para otros
+          const baseDelay = isRateLimit ? 5000 : 500; // 5s para rate limit, 500ms para otros errores
+          const backoffDelay = Math.min(baseDelay * Math.pow(2, attempt - 1), isRateLimit ? 30000 : 5000); // Máximo 30s para rate limit, 5s para otros
           
           // Verificar que la página no esté cerrada antes de esperar
           if (page.isClosed()) {
@@ -255,6 +271,29 @@ export const test = base.extend<{
       }
       throw new Error('Admin login failed: Unknown error after retries');
     };
+
+    // Si ya hay storageState, verificar si el usuario sigue logueado
+    if (fs.existsSync(adminStorageStatePath)) {
+      try {
+        await page.goto('/', { waitUntil: 'domcontentloaded', timeout: 30000 });
+        const hasAdminUser = await page.evaluate(() => {
+          const stored = localStorage.getItem('adminUser');
+          if (!stored) return false;
+          try {
+            const parsed = JSON.parse(stored);
+            return Boolean(parsed && parsed.token && parsed.token.length > 0);
+          } catch {
+            return false;
+          }
+        });
+        if (hasAdminUser) {
+          await use(page);
+          return;
+        }
+      } catch {
+        // Si falla la verificación, continuar con login normal
+      }
+    }
 
     // Realizar login admin con retry
     await performAdminLoginWithRetry();
