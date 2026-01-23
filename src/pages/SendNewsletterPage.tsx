@@ -67,8 +67,8 @@ const useNewsletterData = (recipientMode: 'all' | 'plan' | 'emails') => {
   useEffect(() => {
     const loadPlans = async () => {
       try {
-        const res = await axios.get<Plan[]>('/planes');
-        setPlans(res.data || []);
+        const res = await axios.get<Plan[]>('/api/admin/billing/planes');
+        setPlans(Array.isArray(res.data) ? res.data : []);
       } catch {
         // Silently handle error
       }
@@ -76,8 +76,10 @@ const useNewsletterData = (recipientMode: 'all' | 'plan' | 'emails') => {
 
     const loadUsers = async () => {
       try {
-        const res = await axios.get<Usuario[]>('/usuarios');
-        setUsers(res.data || []);
+        const res = await axios.get<{ usuarios?: Usuario[] }>('/api/admin/usuarios', {
+          params: { page: 1, limit: 100 },
+        });
+        setUsers(Array.isArray(res.data?.usuarios) ? res.data.usuarios : []);
       } catch {
         // Silently handle error
       }
@@ -94,6 +96,98 @@ const useNewsletterData = (recipientMode: 'all' | 'plan' | 'emails') => {
   return { plans, users };
 };
 
+const getVariableLabel = (key: string) =>
+  key.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+
+const applyTextReplacement = (
+  textarea: HTMLTextAreaElement,
+  value: string,
+  replacement: string,
+  selectFrom: number,
+  selectTo: number
+) => {
+  const before = value.slice(0, selectFrom);
+  const after = value.slice(selectTo);
+  const nextValue = `${before}${replacement}${after}`;
+  const cursor = selectFrom + replacement.length;
+  setTimeout(() => {
+    textarea.focus();
+    textarea.setSelectionRange(cursor, cursor);
+  }, 0);
+  return nextValue;
+};
+
+const RichTextInput: React.FC<{
+  label: string;
+  value: string;
+  onChange: (val: string) => void;
+}> = ({ label, value, onChange }) => {
+  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+
+  const wrapSelection = (openTag: string, closeTag: string, placeholder = 'Texto') => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    const { selectionStart, selectionEnd } = textarea;
+    const selected = value.slice(selectionStart, selectionEnd) || placeholder;
+    const replacement = `${openTag}${selected}${closeTag}`;
+    onChange(applyTextReplacement(textarea, value, replacement, selectionStart, selectionEnd));
+  };
+
+  const insertList = (tag: 'ul' | 'ol') => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+    const { selectionStart, selectionEnd } = textarea;
+    const selected = value.slice(selectionStart, selectionEnd).trim();
+    const lines = selected ? selected.split(/\r?\n/).filter(Boolean) : ['Item'];
+    const items = lines.map((line) => `  <li>${line}</li>`).join('\n');
+    const replacement = `<${tag}>\n${items}\n</${tag}>`;
+    onChange(applyTextReplacement(textarea, value, replacement, selectionStart, selectionEnd));
+  };
+
+  return (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        {label}
+      </label>
+      <div className="flex flex-wrap gap-2 mb-2">
+        <Button variant="secondary" size="sm" type="button" onClick={() => wrapSelection('<b>', '</b>')}>
+          B
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          type="button"
+          onClick={() => wrapSelection('<u>', '</u>')}
+        >
+          U
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          type="button"
+          onClick={() => wrapSelection('<i>', '</i>')}
+        >
+          I
+        </Button>
+        <Button variant="secondary" size="sm" type="button" onClick={() => insertList('ul')}>
+          UL
+        </Button>
+        <Button variant="secondary" size="sm" type="button" onClick={() => insertList('ol')}>
+          OL
+        </Button>
+      </div>
+      <textarea
+        ref={textareaRef}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        rows={6}
+        className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-gray-100"
+        placeholder="Escribe el detalle aquí..."
+      />
+    </div>
+  );
+};
+
 const TemplateVariablesSection: React.FC<{
   template: TemplateKey;
   variables: Record<string, string>;
@@ -105,10 +199,22 @@ const TemplateVariablesSection: React.FC<{
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {templateData.variables.map((k) => {
         const varValue = Reflect.get(variables, k);
+        if (k === 'details_summary') {
+          return (
+            <div key={k} className="md:col-span-2">
+              <RichTextInput
+                label={getVariableLabel(k)}
+                value={varValue || ''}
+                onChange={(val) => onVarChange(k, val)}
+              />
+            </div>
+          );
+        }
         return (
           <Input
             key={k}
-            label={k.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+            label={getVariableLabel(k)}
+            type={k === 'effective_date' ? 'date' : 'text'}
             value={varValue || ''}
             onChange={(e) => onVarChange(k, e.target.value)}
           />
@@ -158,7 +264,7 @@ const PlanSelector: React.FC<{
     onChange={(e) => onPlanChange(e.target.value)}
     options={[
       { value: '', label: '-- seleccionar plan --' },
-      ...plans.map((p) => ({ value: p.name, label: p.name })),
+      ...plans.map((p) => ({ value: p.id, label: p.name })),
     ]}
   />
 );
@@ -171,8 +277,11 @@ const UsersSelector: React.FC<{
   onUserToggle: (id: string) => void;
 }> = ({ users, searchUser, onSearchChange, selectedUserIds, onUserToggle }) => {
   const usersSafe = Array.isArray(users) ? users : [];
-  const filteredUsers = usersSafe.filter((u) =>
-    u.email?.toLowerCase().includes(searchUser.toLowerCase())
+  const search = searchUser.toLowerCase();
+  const filteredUsers = usersSafe.filter(
+    (u) =>
+      u.email?.toLowerCase().includes(search) ||
+      u.nombre?.toLowerCase().includes(search)
   );
 
   return (
@@ -192,22 +301,30 @@ const UsersSelector: React.FC<{
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredUsers.map((u) => {
-              const checked = selectedUserIds.includes(u._id);
-              return (
-                <TableRow key={u._id}>
-                  <TableCell>
-                    <Checkbox
-                      checked={checked}
-                      onChange={() => {
-                        onUserToggle(u._id);
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell>{u.email}</TableCell>
-                </TableRow>
-              );
-            })}
+            {filteredUsers.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={2} className="text-center text-sm text-gray-500 py-6">
+                  No hay usuarios que coincidan
+                </TableCell>
+              </TableRow>
+            ) : (
+              filteredUsers.map((u) => {
+                const checked = selectedUserIds.includes(u._id);
+                return (
+                  <TableRow key={u._id}>
+                    <TableCell>
+                      <Checkbox
+                        checked={checked}
+                        onChange={() => {
+                          onUserToggle(u._id);
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell>{u.email}</TableCell>
+                  </TableRow>
+                );
+              })
+            )}
           </TableBody>
         </Table>
       </div>

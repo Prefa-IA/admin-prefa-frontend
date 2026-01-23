@@ -28,10 +28,14 @@ const LoadingSpinner: React.FC = () => (
   </div>
 );
 
-const getTipoPrefaLabel = (tipoPrefa?: string): string => {
-  if (tipoPrefa === 'prefa1') return 'Simple';
-  if (tipoPrefa === 'prefa2') return 'Completa';
-  return tipoPrefa || '—';
+const getTipoPrefaLabel = (informe: Informe): string => {
+  if (informe.basicSearch) return 'Busqueda de direccion';
+  const isCompuesta =
+    Array.isArray(informe.direccionesNormalizadas) && informe.direccionesNormalizadas.length > 1;
+  if (isCompuesta) return 'Informe compuesto';
+  if (informe.tipoPrefa === 'prefa2') return 'Informe completo';
+  if (informe.tipoPrefa === 'prefa1') return 'Informe simple';
+  return 'Busqueda de direccion';
 };
 
 const getEstadoBadgeClass = (estado?: string): string => {
@@ -56,7 +60,7 @@ const formatDateTime = (date: Date): { fecha: string; hora: string } => {
 const InformeRow: React.FC<{ informe: Informe }> = ({ informe }) => {
   const fechaHora = new Date(informe.createdAt);
   const { fecha, hora } = formatDateTime(fechaHora);
-  const tipoPrefaLabel = getTipoPrefaLabel(informe.tipoPrefa);
+  const tipoPrefaLabel = getTipoPrefaLabel(informe);
 
   return (
     <TableRow key={informe._id}>

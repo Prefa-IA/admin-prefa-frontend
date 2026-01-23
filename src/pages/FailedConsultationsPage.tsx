@@ -19,6 +19,9 @@ interface ConsultaFallida {
   direccion: string;
   datosFaltantes: string[];
   tipo: string;
+  tipoPrefa?: string | null;
+  basicSearch?: boolean;
+  consultaKey?: string | null;
   createdAt: string;
   finalizadoEn: string;
   usuario: {
@@ -58,9 +61,15 @@ const formatDateTime = (dateString: string): { fecha: string; hora: string } => 
   return { fecha, hora };
 };
 
-const getTipoLabel = (tipo: string): string => {
-  if (tipo === 'compuesta') return 'Compuesta';
-  return 'Simple';
+const isBasicSearch = (consulta: ConsultaFallida): boolean =>
+  Boolean(consulta.basicSearch) || Boolean(consulta.consultaKey?.endsWith('-basic'));
+
+const getTipoLabel = (consulta: ConsultaFallida): string => {
+  if (isBasicSearch(consulta)) return 'Busqueda de direccion';
+  if (consulta.tipo === 'compuesta') return 'Informe compuesto';
+  if (consulta.tipoPrefa === 'prefa2') return 'Informe completo';
+  if (consulta.tipoPrefa === 'prefa1') return 'Informe simple';
+  return 'Informe simple';
 };
 
 const ConsultaRow: React.FC<{ consulta: ConsultaFallida }> = ({ consulta }) => {
@@ -81,7 +90,7 @@ const ConsultaRow: React.FC<{ consulta: ConsultaFallida }> = ({ consulta }) => {
       </TableCell>
       <TableCell>
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400">
-          {getTipoLabel(consulta.tipo)}
+          {getTipoLabel(consulta)}
         </span>
       </TableCell>
       <TableCell>

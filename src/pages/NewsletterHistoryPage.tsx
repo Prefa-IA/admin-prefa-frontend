@@ -17,10 +17,15 @@ import {
 interface NewsletterJob {
   _id: string;
   createdAt: string;
+  scheduledAt?: string;
+  sentAt?: string;
   template: string;
-  recipients?: { mode?: string };
+  recipients?: { mode?: string; plan?: string[]; emails?: string[] };
+  total?: number;
+  sentCount?: number;
   status?: string;
   state?: string;
+  error?: string;
   [key: string]: unknown;
 }
 
@@ -45,11 +50,30 @@ const getStatusBadgeClass = (state: string | undefined): string => {
   return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400';
 };
 
+const formatDateTime = (value?: string) =>
+  value ? new Date(value).toLocaleString('es-AR') : '—';
+
+const formatRecipients = (recipients?: NewsletterJob['recipients']): string => {
+  if (!recipients?.mode) return '—';
+  if (recipients.mode === 'all') return 'Todos';
+  if (recipients.mode === 'plan') {
+    return recipients.plan && recipients.plan.length > 0
+      ? `Plan: ${recipients.plan.join(', ')}`
+      : 'Plan';
+  }
+  if (recipients.mode === 'emails') {
+    return recipients.emails && recipients.emails.length > 0
+      ? `${recipients.emails.length} emails`
+      : 'Emails';
+  }
+  return recipients.mode;
+};
+
 const HistoryTable: React.FC<{ history: NewsletterJob[] }> = ({ history }) => {
   if (history.length === 0) {
     return (
       <TableRow>
-        <TableCell colSpan={4} className="text-center py-8 text-gray-500 dark:text-gray-400">
+        <TableCell colSpan={7} className="text-center py-8 text-gray-500 dark:text-gray-400">
           No hay historial disponible
         </TableCell>
       </TableRow>
@@ -60,9 +84,12 @@ const HistoryTable: React.FC<{ history: NewsletterJob[] }> = ({ history }) => {
     <>
       {history.map((j) => (
         <TableRow key={j._id}>
-          <TableCell>{new Date(j.createdAt).toLocaleString('es-AR')}</TableCell>
+          <TableCell>{formatDateTime(j.createdAt)}</TableCell>
+          <TableCell>{formatDateTime(j.scheduledAt)}</TableCell>
+          <TableCell>{formatDateTime(j.sentAt)}</TableCell>
           <TableCell>{j.template}</TableCell>
-          <TableCell>{j.recipients?.mode}</TableCell>
+          <TableCell>{formatRecipients(j.recipients)}</TableCell>
+          <TableCell>{`${j.sentCount ?? 0}/${j.total ?? 0}`}</TableCell>
           <TableCell>
             <span
               className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusBadgeClass(
@@ -71,6 +98,9 @@ const HistoryTable: React.FC<{ history: NewsletterJob[] }> = ({ history }) => {
             >
               {j['state'] != null ? String(j['state']) : '—'}
             </span>
+            {j['state'] === 'failed' && j.error ? (
+              <div className="text-xs text-red-600 dark:text-red-400 mt-1">{j.error}</div>
+            ) : null}
           </TableCell>
         </TableRow>
       ))}
@@ -126,9 +156,12 @@ const NewsletterHistoryPage: React.FC = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Fecha</TableHead>
+              <TableHead>Creado</TableHead>
+              <TableHead>Programado</TableHead>
+              <TableHead>Enviado</TableHead>
               <TableHead>Plantilla</TableHead>
-              <TableHead>Modo</TableHead>
+              <TableHead>Destinatarios</TableHead>
+              <TableHead>Envíos</TableHead>
               <TableHead>Estado</TableHead>
             </TableRow>
           </TableHeader>
